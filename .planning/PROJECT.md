@@ -46,7 +46,7 @@ QRを読んだらその場でSNSリンクが見えてつながれる——口頭
 ## Constraints
 
 - **Tech Stack**: React + Vite（Phase 0）→ TanStack Start（Phase 1〜）、Cloudflare Workers デプロイ
-- **Auth**: X OAuth優先。本名をUIに露出しない設計必須
+- **Auth**: Google / Facebook OAuth。X OAuthは有料APIのため除外。本名をUIに露出しない設計必須
 - **DB**: Postgres（Supabase / Neon 有力）— Phase 1から導入
 - **Privacy**: ハンドルネーム・アバター運用を前提。フィールド単位で公開/非公開を制御
 
