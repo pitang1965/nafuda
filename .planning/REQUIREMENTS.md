@@ -77,21 +77,33 @@
 
 ## Traceability
 
-*ロードマップ作成後に更新*
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROF-01〜05 | — | Pending |
-| OSHI-01〜05 | — | Pending |
-| AUTH-01〜04 | — | Pending |
-| CONN-01〜03 | — | Pending |
-| PWA-01〜02  | — | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| PROF-01 | Phase 1 | Pending |
+| PROF-02 | Phase 1 | Pending |
+| PROF-03 | Phase 1 | Pending |
+| PROF-04 | Phase 1 | Pending |
+| PROF-05 | Phase 1 | Pending |
+| OSHI-01 | Phase 1 | Pending |
+| OSHI-02 | Phase 1 | Pending |
+| OSHI-03 | Phase 2 | Pending |
+| OSHI-04 | Phase 2 | Pending |
+| OSHI-05 | Phase 2 | Pending |
+| CONN-01 | Phase 3 | Pending |
+| CONN-02 | Phase 3 | Pending |
+| CONN-03 | Phase 3 | Pending |
+| PWA-01 | Phase 3 | Pending |
+| PWA-02 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 18 total
-- Mapped to phases: 0（ロードマップ作成後に更新）
-- Unmapped: 18 ⚠
+- v1 requirements: 19 total
+- Mapped to phases: 19/19 (Phase 0 is prototype — no v1 requirements; all 19 mapped to Phase 1-3)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-22*
-*Last updated: 2026-04-22 after initial definition*
+*Last updated: 2026-04-21 after roadmap creation*
