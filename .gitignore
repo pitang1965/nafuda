@@ -23,3 +23,9 @@ npm-debug.log*
 
 # Testing
 coverage/
+
+# PWA dev build
+dev-dist/
+
+# Temp files
+test_write.txt

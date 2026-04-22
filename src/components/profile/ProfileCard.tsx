@@ -33,6 +33,11 @@ export function ProfileCard({ profile, onQROpen }: ProfileCardProps) {
         </div>
       )}
 
+      {/* 自己紹介 */}
+      {profile.bio && (
+        <p className="text-sm text-gray-600 text-center leading-relaxed">{profile.bio}</p>
+      )}
+
       {/* SNSリンク */}
       <div className="w-full">
         <SnsLinkList links={profile.snsLinks} />

@@ -13,8 +13,7 @@ export function QRBottomSheet({ isOpen, onClose, url, title }: QRBottomSheetProp
     <Sheet
       isOpen={isOpen}
       onClose={onClose}
-      snapPoints={[0.5]}
-      initialSnap={0}
+      detent="content-height"
     >
       <Sheet.Container>
         <Sheet.Header />

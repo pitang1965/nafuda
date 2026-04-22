@@ -11,6 +11,7 @@ export interface MockProfile {
   oshiTags: string[]
   snsLinks: SnsLink[]
   profileUrl: string
+  bio?: string
 }
 
 export interface MockEvent {
@@ -31,6 +32,7 @@ export const MOCK_PROFILE: MockProfile = {
     { platform: 'instagram', url: 'https://instagram.com/sumire_example', handle: 'sumire_example' },
   ],
   profileUrl: 'https://nafuda.pages.dev/p/mock-user-001',
+  bio: 'Web アプリ・モバイル開発が得意です。個人開発でサービスを試作中。',
 }
 
 export const MOCK_PARTICIPANTS: MockProfile[] = [

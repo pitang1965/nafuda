@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 0 of 4 (プロトタイプ)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-04-22 — 00-02 モックUI画面実装完了
+Plan: 3 of 3 in current phase
+Status: Paused — awaiting Cloudflare API token for deploy
+Last activity: 2026-04-22 — 00-03 QRBottomSheet実装・PWAアイコン配置完了。Cloudflareデプロイ待ち
 
 Progress: [██░░░░░░░░] 20%
 
@@ -34,6 +34,7 @@ Progress: [██░░░░░░░░] 20%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 00-prototype P03 | 12 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -53,6 +54,8 @@ Recent decisions affecting current work:
 - [00-01]: react-router v7 から react-router パッケージのみ使用（react-router-dom 廃止）
 - [00-02]: verbatimModuleSyntax: true 設定のため型専用インポートはすべて import type を使用する
 - [00-02]: Phase 0 では URL パラメータを受け取るが MOCK データに固定表示する方針（DB なし）
+- [Phase 00-03]: react-modal-sheet v5.6.0 uses named export { Sheet } not default export
+- [Phase 00-03]: Cloudflare Pages deploy requires CLOUDFLARE_API_TOKEN env var in non-interactive shells
 
 ### Pending Todos
 
@@ -67,5 +70,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Completed 00-prototype/00-02-PLAN.md — モックUI画面実装（ProfileCard・ParticipantCard・LoginMockPage）
+Stopped at: 00-03 Task 2 deploy — awaiting CLOUDFLARE_API_TOKEN (wrangler pages deploy blocked in non-interactive shell)
 Resume file: None
