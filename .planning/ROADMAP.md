@@ -92,7 +92,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. プロトタイプ | 0/3 | Planned | - |
+| 0. プロトタイプ | 1/3 | In Progress|  |
 | 1. 認証・プロフィール基盤 | 0/4 | Not started | - |
 | 2. イベント・チェックイン | 0/2 | Not started | - |
 | 3. QR・コネクション・PWA | 0/3 | Not started | - |

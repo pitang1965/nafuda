@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 0 of 4 (プロトタイプ)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-04-21 — ロードマップ作成完了
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-04-22 — 00-01 プロジェクト初期設定完了
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - [Arch]: QR URLスキームはPhase 0で概念確立し、Phase 3で本番実装
 - [Auth]: Google / Facebook OAuthのみ。X OAuthは有料APIのため除外
 - [Auth]: iOS 7日間ストレージ失効問題はPhase 1実装時に対策が必要
+- [00-01]: vite-plugin-pwa 1.2.0 は Vite 8 未対応のため --legacy-peer-deps インストール。動作正常。
+- [00-01]: motion パッケージ使用（framer-motion は motion に統合済みのため不使用）
+- [00-01]: react-router v7 から react-router パッケージのみ使用（react-router-dom 廃止）
 
 ### Pending Todos
 
@@ -61,6 +64,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-21
-Stopped at: ROADMAP.md・STATE.md作成完了、REQUIREMENTS.mdトレーサビリティ更新完了
+Last session: 2026-04-22
+Stopped at: Completed 00-prototype/00-01-PLAN.md — プロジェクト初期設定（Vite + React + Tailwind v4 + PWA）
 Resume file: None
