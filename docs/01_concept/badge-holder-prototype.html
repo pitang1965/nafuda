@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>なふだ — 名札ケース装飾プロトタイプ</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #f5f0fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      gap: 32px;
+    }
+
+    h1 {
+      font-size: 13px;
+      color: #999;
+      letter-spacing: 0.15em;
+      text-align: center;
+    }
+
+    /* ===== テーマ選択 ===== */
+    .theme-picker {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .theme-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 8px;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+
+    .theme-btn:hover { background: rgba(0,0,0,0.05); }
+    .theme-btn.active { background: rgba(0,0,0,0.08); }
+
+    .theme-swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .theme-btn.active .theme-swatch {
+      border-color: #333;
+      transform: scale(1.1);
+    }
+
+    .theme-label {
+      font-size: 10px;
+      color: #666;
+    }
+
+    /* ===== ランヤードクリップ ===== */
+    .lanyard-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .clip {
+      width: 28px;
+      height: 36px;
+      position: relative;
+    }
+
+    .clip-body {
+      width: 18px;
+      height: 28px;
+      border: 3px solid #aaa;
+      border-radius: 3px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, #ddd 0%, #bbb 100%);
+      position: relative;
+    }
+
+    .clip-arm {
+      position: absolute;
+      right: -8px;
+      top: 4px;
+      width: 8px;
+      height: 16px;
+      border: 3px solid #aaa;
+      border-left: none;
+      border-radius: 0 4px 4px 0;
+      background: linear-gradient(180deg, #ddd 0%, #bbb 100%);
+    }
+
+    .clip-ring {
+      width: 10px;
+      height: 10px;
+      border: 3px solid #aaa;
+      border-radius: 50%;
+      margin: 0 auto;
+      background: #ccc;
+    }
+
+    /* ===== 名札ケース外枠 ===== */
+    .badge-outer {
+      position: relative;
+      width: 300px;
+      padding: 14px;
+      border-radius: 20px;
+      transition: all 0.4s ease;
+    }
+
+    /* レース風ボーダー */
+    .lace-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .lace-border::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 16px;
+      border: 3px solid rgba(255,255,255,0.8);
+    }
+
+    .lace-border::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background-image:
+        radial-gradient(circle at 8px 8px, rgba(255,255,255,0.6) 3px, transparent 3px),
+        radial-gradient(circle at 8px 8px, rgba(255,255,255,0.6) 3px, transparent 3px);
+      background-size: 16px 16px, 16px 16px;
+      background-position: 0 0, 8px 8px;
+      opacity: 0.5;
+    }
+
+    /* ===== デコレーション要素 ===== */
+    .deco-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* リボン */
+    .ribbon {
+      position: absolute;
+      top: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      z-index: 10;
+    }
+
+    .ribbon-bow {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .ribbon-wing {
+      width: 28px;
+      height: 18px;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      transition: background 0.4s;
+    }
+
+    .ribbon-wing.left { transform: rotate(-20deg) scaleX(-1); }
+    .ribbon-wing.right { transform: rotate(20deg); }
+
+    .ribbon-center {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.6);
+      transition: background 0.4s;
+      z-index: 1;
+    }
+
+    .ribbon-tail {
+      width: 3px;
+      height: 14px;
+      border-radius: 0 0 2px 2px;
+      transition: background 0.4s;
+    }
+
+    /* ハート・デコパーツ */
+    .deco-gem {
+      position: absolute;
+      font-size: 14px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      50% { transform: scale(1.15) rotate(5deg); opacity: 0.8; }
+    }
+
+    .deco-gem:nth-child(2) { animation-delay: 0.3s; }
+    .deco-gem:nth-child(3) { animation-delay: 0.6s; }
+    .deco-gem:nth-child(4) { animation-delay: 0.9s; }
+    .deco-gem:nth-child(5) { animation-delay: 1.2s; }
+    .deco-gem:nth-child(6) { animation-delay: 0.15s; }
+    .deco-gem:nth-child(7) { animation-delay: 0.45s; }
+
+    /* パール */
+    .pearl {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #e8e0f0 60%, #c0b0d0 100%);
+      box-shadow: inset -2px -2px 4px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    /* ===== プロフィールカード（内側） ===== */
+    .badge-card {
+      position: relative;
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 16px 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      transition: background 0.4s;
+    }
+
+    .card-name {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .card-handle {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .oshi-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 6px;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    .card-divider {
+      height: 1px;
+      background: #f0f0f0;
+      margin: 12px 0;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      background: #f5f0fa;
+      color: #666;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 10px;
+    }
+
+    .sns-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sns-btn {
+      flex: 1;
+      text-align: center;
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .sns-x { background: #000; }
+    .sns-ig { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+    .sns-dc { background: #5865f2; }
+
+    .card-footer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 9px;
+      color: #bbb;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== 「装飾なし」用スタイル ===== */
+    .badge-outer.plain {
+      padding: 4px;
+      background: #e8e8e8 !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+    }
+
+    .badge-outer.plain .lace-border,
+    .badge-outer.plain .deco-layer,
+    .badge-outer.plain .ribbon,
+    .badge-outer.plain .clip { display: none; }
+
+    /* ===== テーマ定義 ===== */
+
+    /* テーマ: さくら */
+    .theme-sakura .badge-outer {
+      background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 50%, #fce4ec 100%);
+      box-shadow: 0 8px 32px rgba(240,100,160,0.25), 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .theme-sakura .ribbon-wing,
+    .theme-sakura .ribbon-tail { background: #e91e8c; }
+    .theme-sakura .ribbon-center { background: #c2185b; }
+    .theme-sakura .avatar { background: #fce4ec; }
+    .theme-sakura .oshi-tag { background: #fce4ec; color: #c2185b; }
+    .theme-sakura .theme-swatch { background: linear-gradient(135deg, #f48fb1, #e91e8c); }
+
+    /* テーマ: スカイ */
+    .theme-sky .badge-outer {
+      background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #e3f2fd 100%);
+      box-shadow: 0 8px 32px rgba(30,136,229,0.2), 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .theme-sky .ribbon-wing,
+    .theme-sky .ribbon-tail { background: #1976d2; }
+    .theme-sky .ribbon-center { background: #1565c0; }
+    .theme-sky .avatar { background: #e3f2fd; }
+    .theme-sky .oshi-tag { background: #e3f2fd; color: #1565c0; }
+    .theme-sky .theme-swatch { background: linear-gradient(135deg, #64b5f6, #1976d2); }
+
+    /* テーマ: ラベンダー */
+    .theme-lavender .badge-outer {
+      background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 50%, #ede7f6 100%);
+      box-shadow: 0 8px 32px rgba(103,58,183,0.2), 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .theme-lavender .ribbon-wing,
+    .theme-lavender .ribbon-tail { background: #7b1fa2; }
+    .theme-lavender .ribbon-center { background: #6a1b9a; }
+    .theme-lavender .avatar { background: #ede7f6; }
+    .theme-lavender .oshi-tag { background: #ede7f6; color: #6a1b9a; }
+    .theme-lavender .theme-swatch { background: linear-gradient(135deg, #ce93d8, #7b1fa2); }
+
+    /* テーマ: ミント */
+    .theme-mint .badge-outer {
+      background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 50%, #e0f2f1 100%);
+      box-shadow: 0 8px 32px rgba(0,150,136,0.2), 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .theme-mint .ribbon-wing,
+    .theme-mint .ribbon-tail { background: #00796b; }
+    .theme-mint .ribbon-center { background: #00695c; }
+    .theme-mint .avatar { background: #e0f2f1; }
+    .theme-mint .oshi-tag { background: #e0f2f1; color: #00695c; }
+    .theme-mint .theme-swatch { background: linear-gradient(135deg, #80cbc4, #00796b); }
+
+    /* テーマ: なし */
+    .theme-plain .badge-outer { /* plainクラスで制御 */ }
+    .theme-plain .theme-swatch { background: linear-gradient(135deg, #ddd, #aaa); }
+
+    /* ===== 説明テキスト ===== */
+    .note {
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>なふだ — 名札ケース装飾プロトタイプ</h1>
+
+  <!-- テーマ選択 -->
+  <div class="theme-picker" id="themePicker">
+    <button class="theme-btn active" data-theme="sakura" onclick="setTheme('sakura', this)">
+      <div class="theme-swatch theme-sakura"></div>
+      <span class="theme-label">さくら</span>
+    </button>
+    <button class="theme-btn" data-theme="sky" onclick="setTheme('sky', this)">
+      <div class="theme-swatch theme-sky"></div>
+      <span class="theme-label">スカイ</span>
+    </button>
+    <button class="theme-btn" data-theme="lavender" onclick="setTheme('lavender', this)">
+      <div class="theme-swatch theme-lavender"></div>
+      <span class="theme-label">ラベンダー</span>
+    </button>
+    <button class="theme-btn" data-theme="mint" onclick="setTheme('mint', this)">
+      <div class="theme-swatch theme-mint"></div>
+      <span class="theme-label">ミント</span>
+    </button>
+    <button class="theme-btn" data-theme="plain" onclick="setTheme('plain', this)">
+      <div class="theme-swatch theme-plain"></div>
+      <span class="theme-label">装飾なし</span>
+    </button>
+  </div>
+
+  <!-- 名札全体 -->
+  <div id="root" class="theme-sakura">
+
+    <div class="lanyard-area">
+
+      <!-- クリップ -->
+      <div class="clip" id="clip">
+        <div class="clip-ring"></div>
+        <div class="clip-body"><div class="clip-arm"></div></div>
+      </div>
+
+      <!-- 名札ケース外枠 -->
+      <div class="badge-outer" id="badgeOuter">
+
+        <!-- レース枠 -->
+        <div class="lace-border"></div>
+
+        <!-- リボン装飾 -->
+        <div class="ribbon" id="ribbon">
+          <div class="ribbon-bow">
+            <div class="ribbon-wing left"></div>
+            <div class="ribbon-center"></div>
+            <div class="ribbon-wing right"></div>
+          </div>
+          <div class="ribbon-tail"></div>
+        </div>
+
+        <!-- デコパーツ -->
+        <div class="deco-layer" id="decoLayer">
+          <!-- ハート -->
+          <span class="deco-gem" style="top:18px; left:14px; font-size:16px;">🩷</span>
+          <span class="deco-gem" style="top:22px; right:12px; font-size:12px;">💜</span>
+          <span class="deco-gem" style="bottom:16px; left:10px; font-size:11px;">💎</span>
+          <span class="deco-gem" style="bottom:14px; right:10px; font-size:13px;">⭐</span>
+          <!-- パール -->
+          <div class="pearl" style="top:12px; left:36px;"></div>
+          <div class="pearl" style="top:12px; right:36px;"></div>
+          <div class="pearl" style="bottom:10px; left:50px;"></div>
+          <div class="pearl" style="bottom:10px; right:50px;"></div>
+        </div>
+
+        <!-- プロフィールカード（内側） -->
+        <div class="badge-card">
+
+          <div class="card-header">
+            <div class="avatar" id="avatar">🌸</div>
+            <div>
+              <div class="card-name">はるか</div>
+              <div class="card-handle">@haruka_oshi</div>
+              <div class="oshi-tag" id="oshiTag">推し: 星野 凛</div>
+            </div>
+          </div>
+
+          <div class="card-divider"></div>
+
+          <div class="card-tags">
+            <span class="tag">🎤 アイドル</span>
+            <span class="tag">✨ 2.5次元</span>
+            <span class="tag">🗺️ 聖地巡礼</span>
+            <span class="tag">✈️ 遠征組</span>
+          </div>
+
+          <div class="sns-links">
+            <a class="sns-btn sns-x" href="#">X</a>
+            <a class="sns-btn sns-ig" href="#">Instagram</a>
+            <a class="sns-btn sns-dc" href="#">Discord</a>
+          </div>
+
+          <div class="card-footer">なふだ — 出会いに、文脈を。</div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">
+    テーマを切り替えると、リボン・枠・アクセントカラーが変わります。<br>
+    実装時は「推しカラー」と連動する予定。
+  </p>
+
+  <script>
+    const themes = {
+      sakura:   { emoji: '🌸', gem1: '🩷', gem2: '💜', label: '推し: 星野 凛' },
+      sky:      { emoji: '💙', gem1: '💙', gem2: '🩵', label: '推し: 蒼井 碧' },
+      lavender: { emoji: '💜', gem1: '💜', gem2: '🌸', label: '推し: 紫原 みお' },
+      mint:     { emoji: '🌿', gem1: '💚', gem2: '🩵', label: '推し: 翠川 あお' },
+      plain:    { emoji: '😊', gem1: '🩷', gem2: '💜', label: '推し: ——' },
+    };
+
+    function setTheme(theme, btn) {
+      const root = document.getElementById('root');
+      const outer = document.getElementById('badgeOuter');
+      const clip = document.getElementById('clip');
+      const ribbon = document.getElementById('ribbon');
+      const decoLayer = document.getElementById('decoLayer');
+      const avatar = document.getElementById('avatar');
+      const oshiTag = document.getElementById('oshiTag');
+      const gems = decoLayer.querySelectorAll('.deco-gem');
+
+      // テーマクラス切り替え
+      root.className = 'theme-' + theme;
+
+      // plainの場合は装飾を非表示
+      if (theme === 'plain') {
+        outer.classList.add('plain');
+        clip.style.display = 'none';
+      } else {
+        outer.classList.remove('plain');
+        clip.style.display = '';
+      }
+
+      // 絵文字・テキスト更新
+      const t = themes[theme];
+      avatar.textContent = t.emoji;
+      oshiTag.textContent = t.label;
+      if (gems.length >= 2) {
+        gems[0].textContent = t.gem1;
+        gems[1].textContent = t.gem2;
+      }
+
+      // ボタンのactiveクラス
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+
+</body>
+</html>

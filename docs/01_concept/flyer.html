@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>なふだ — チラシ</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+    }
+
+    .flyer {
+      width: 100%;
+      max-width: 640px;
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(150, 100, 255, 0.3);
+    }
+
+    /* ヘッダー */
+    .header {
+      position: relative;
+      padding: 56px 40px 48px;
+      text-align: center;
+      background: linear-gradient(135deg, #6c3ff5 0%, #e040fb 100%);
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.15) 0%, transparent 60%);
+    }
+
+    .header-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+
+    .app-name {
+      font-size: clamp(56px, 14vw, 80px);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      line-height: 1;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .app-name-sub {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-top: 6px;
+      letter-spacing: 0.2em;
+    }
+
+    .tagline {
+      margin-top: 24px;
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .tagline-sub {
+      margin-top: 10px;
+      font-size: 13px;
+      opacity: 0.85;
+      line-height: 1.7;
+    }
+
+    /* ボディ */
+    .body {
+      padding: 40px 32px;
+    }
+
+    /* コンセプト */
+    .concept {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .concept p {
+      font-size: 14px;
+      line-height: 1.9;
+      color: #c0bfff;
+    }
+
+    .concept strong {
+      color: #e040fb;
+    }
+
+    /* セクションタイトル */
+    .section-title {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: #9b8ec4;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* 機能カード */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 20px 16px;
+      transition: background 0.2s;
+    }
+
+    .feature-card.highlight {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, rgba(108,63,245,0.3), rgba(224,64,251,0.2));
+      border-color: rgba(224,64,251,0.4);
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .feature-desc {
+      font-size: 11px;
+      color: #9b8ec4;
+      line-height: 1.6;
+    }
+
+    .feature-card.highlight .feature-title {
+      font-size: 15px;
+      color: #e040fb;
+    }
+
+    .feature-card.highlight .feature-desc {
+      font-size: 12px;
+      color: #c0bfff;
+    }
+
+    /* ユーザー原則 */
+    .principles {
+      margin-bottom: 40px;
+    }
+
+    .principle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .principle-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .principle-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c3ff5, #e040fb);
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    .principle-text {
+      font-size: 12px;
+      line-height: 1.7;
+      color: #c0bfff;
+    }
+
+    .principle-text strong {
+      color: #fff;
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    /* ユースケース */
+    .usecases {
+      margin-bottom: 40px;
+    }
+
+    .usecase-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      background: rgba(108,63,245,0.25);
+      border: 1px solid rgba(108,63,245,0.5);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: #c0bfff;
+    }
+
+    .tag.genre {
+      background: rgba(224,64,251,0.15);
+      border-color: rgba(224,64,251,0.4);
+    }
+
+    /* フッター */
+    .footer {
+      background: rgba(0,0,0,0.3);
+      padding: 28px 32px;
+      text-align: center;
+    }
+
+    .footer-name {
+      font-size: 32px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #6c3ff5, #e040fb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.1em;
+    }
+
+    .footer-tagline {
+      font-size: 12px;
+      color: #9b8ec4;
+      margin-top: 4px;
+      letter-spacing: 0.15em;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      font-size: 10px;
+      color: #5a5480;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="flyer">
+
+    <!-- ヘッダー -->
+    <div class="header">
+      <div class="header-badge">文脈型デジタル名刺アプリ</div>
+      <div class="app-name">なふだ</div>
+      <div class="app-name-sub">— 現代版の名札 —</div>
+      <div class="tagline">「出会いに、文脈を。」</div>
+      <div class="tagline-sub">
+        いつ・どこで・誰の現場で出会ったか——<br>
+        その記憶ごと残せる、ファンのための名刺アプリ
+      </div>
+    </div>
+
+    <!-- ボディ -->
+    <div class="body">
+
+      <!-- コンセプト -->
+      <div class="concept">
+        <p>
+          ライブ会場・聖地・オフ会で隣り合った人と、<br>
+          口頭でSNS IDを交換する手間なく<strong>ワンタッチでつながれる</strong>。<br>
+          匿名・ハンドルネーム前提だから、<br>
+          リアルの個人情報を晒さずに安心してつながれる。
+        </p>
+      </div>
+
+      <!-- 主な機能 -->
+      <div class="section-title">主な機能</div>
+      <div class="features">
+        <div class="feature-card highlight">
+          <span class="feature-icon">⚡</span>
+          <div class="feature-title">イベント一括つながり（差別化機能）</div>
+          <div class="feature-desc">現場にチェックインするだけで、同じ場にいた人と一括でつながれる。「あの時いましたよね？」をアプリが実現。</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">📇</span>
+          <div class="feature-title">QRワンタッチ交換</div>
+          <div class="feature-desc">口頭でのSNS ID交換を1タップに。ミスなし・気まずさなし。</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🏷️</span>
+          <div class="feature-title">推し・ジャンルタグ</div>
+          <div class="feature-desc">推しとジャンルをプロフィールに登録。会話のきっかけが自然に生まれる。</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">📍</span>
+          <div class="feature-title">聖地チェックイン</div>
+          <div class="feature-desc">ライブ・聖地巡礼先でチェックイン。出会いの文脈を記録。</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🎭</span>
+          <div class="feature-title">複数プロフィール</div>
+          <div class="feature-desc">推し活用・本業用・勉強会用をシーンで使い分け。</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🔗</span>
+          <div class="feature-title">SNSリンク一括共有</div>
+          <div class="feature-desc">X / Instagram / Discord / LINE オープンチャットをまとめて提示。</div>
+        </div>
+      </div>
+
+      <!-- 安心設計 -->
+      <div class="principles">
+        <div class="section-title">安心の設計原則</div>
+        <div class="principle-list">
+          <div class="principle-item">
+            <div class="principle-dot"></div>
+            <div class="principle-text">
+              <strong>匿名・ハンドル前提</strong>
+              本名・所属の入力は任意。ハンドルネーム／アバターで使えます。
+            </div>
+          </div>
+          <div class="principle-item">
+            <div class="principle-dot"></div>
+            <div class="principle-text">
+              <strong>同担拒否への配慮</strong>
+              同担拒否の意思を設定で明示。一覧から非表示にできます。
+            </div>
+          </div>
+          <div class="principle-item">
+            <div class="principle-dot"></div>
+            <div class="principle-text">
+              <strong>オプトイン制</strong>
+              「同じ現場にいた人」一覧は、見つけられたい人だけが表示。
+            </div>
+          </div>
+          <div class="principle-item">
+            <div class="principle-dot"></div>
+            <div class="principle-text">
+              <strong>公開範囲を自分で制御</strong>
+              名前・連絡先などフィールド単位で公開／非公開を選択。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- こんな現場で -->
+      <div class="usecases">
+        <div class="section-title">こんな現場で使える</div>
+        <div class="usecase-tags">
+          <span class="tag">🎤 ライブ・コンサート</span>
+          <span class="tag">✨ ファンミ・特典会</span>
+          <span class="tag">🗺️ 聖地巡礼</span>
+          <span class="tag">✈️ 遠征</span>
+          <span class="tag">🎉 オフ会</span>
+          <span class="tag">💻 勉強会・LT会</span>
+          <span class="tag">🤝 交流会</span>
+        </div>
+        <div style="margin-top: 14px;">
+          <div class="section-title" style="margin-bottom: 10px;">対応ジャンル</div>
+          <div class="usecase-tags">
+            <span class="tag genre">アイドル</span>
+            <span class="tag genre">アニメ・2.5次元</span>
+            <span class="tag genre">VTuber</span>
+            <span class="tag genre">俳優・声優</span>
+            <span class="tag genre">Kポップ</span>
+            <span class="tag genre">バンド</span>
+            <span class="tag genre">スポーツ</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- フッター -->
+    <div class="footer">
+      <div class="footer-name">なふだ</div>
+      <div class="footer-tagline">出会いに、文脈を。</div>
+      <div class="footer-note">
+        江戸時代の「名札（なふだ）」文化から。身元を示し、場でつながる札。<br>
+        Coming Soon
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

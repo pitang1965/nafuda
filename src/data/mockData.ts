@@ -20,6 +20,7 @@ export interface MockEvent {
   venue: string
   date: string
   participants: MockProfile[]
+  createdBy: string
 }
 
 export const MOCK_PROFILE: MockProfile = {
@@ -59,10 +60,32 @@ export const MOCK_PARTICIPANTS: MockProfile[] = [
   },
 ]
 
-export const MOCK_EVENT: MockEvent = {
-  id: 'event-001',
-  name: '星降る夜のライブ2026',
-  venue: '東京ドーム',
-  date: '2026-04-22',
-  participants: MOCK_PARTICIPANTS,
-}
+export const MOCK_EVENTS_INITIAL: MockEvent[] = [
+  {
+    id: 'event-001',
+    name: '星降る夜のライブ2026',
+    venue: '東京ドーム',
+    date: '2026-04-22',
+    participants: MOCK_PARTICIPANTS,
+    createdBy: 'mock-user-001',
+  },
+  {
+    id: 'event-002',
+    name: '田中推し オフ会 春',
+    venue: '渋谷カフェ',
+    date: '2026-05-10',
+    participants: [MOCK_PARTICIPANTS[0], MOCK_PARTICIPANTS[1]],
+    createdBy: 'mock-user-002',
+  },
+  {
+    id: 'event-003',
+    name: 'Aグループ握手会',
+    venue: '幕張メッセ',
+    date: '2026-06-01',
+    participants: [MOCK_PARTICIPANTS[0], MOCK_PARTICIPANTS[2]],
+    createdBy: 'mock-user-001',
+  },
+]
+
+// mock-user-001 が自分（ログイン中ユーザー）
+export const MY_USER_ID = 'mock-user-001'

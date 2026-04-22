@@ -9,7 +9,7 @@ const cards = [
     icon: '👤',
   },
   {
-    to: '/event/event-001',
+    to: '/events',
     label: 'イベント',
     description: 'イベントルームで参加者とつながる',
     icon: '🎪',
