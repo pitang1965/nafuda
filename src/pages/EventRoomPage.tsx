@@ -44,7 +44,7 @@ export function EventRoomPage() {
       <QRBottomSheet
         isOpen={isQROpen}
         onClose={() => setIsQROpen(false)}
-        url={MOCK_PROFILE.profileUrl}
+        url={`${window.location.origin}/p/${MOCK_PROFILE.id}`}
         title="自分のQRコード"
       />
     </div>

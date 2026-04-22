@@ -44,7 +44,7 @@ export function ProfilePage() {
       <QRBottomSheet
         isOpen={isQROpen}
         onClose={() => setIsQROpen(false)}
-        url={profile.profileUrl}
+        url={`${window.location.origin}/p/${profile.id}`}
         title="QRコードで共有"
       />
     </div>
