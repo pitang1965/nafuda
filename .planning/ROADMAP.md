@@ -29,12 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. ユーザーはモックQRコードを画面上で表示でき、モバイルのネイティブカメラで読み取ってURLに遷移できる
   4. ユーザーはモックログインボタンをタップするとログイン状態をシミュレートできる（DB・OAuth不使用）
   5. ユーザーはアプリをホーム画面に追加できる（Cloudflare Pages上でのPWAマニフェスト）
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 00-01: プロジェクト初期設定（React + Vite + Tailwind CSS + vite-plugin-pwa + Cloudflare Pages）
-- [ ] 00-02: モックプロフィールカード・イベントルーム画面実装
-- [ ] 00-03: モックQRコード表示・PWAマニフェスト・Cloudflare Pagesデプロイ
+- [ ] 00-01-PLAN.md — Vite+React+Tailwind v4+vite-plugin-pwa プロジェクト初期設定・mockData 型定義・ルーター骨格
+- [ ] 00-02-PLAN.md — ProfileCard・ParticipantCard（motion アニメーション）・モックログイン画面の実装
+- [ ] 00-03-PLAN.md — QRBottomSheet（react-modal-sheet）実装・PWA アイコン配置・Cloudflare Pages デプロイ
 
 ### Phase 1: 認証・プロフィール基盤
 **Goal**: 実ユーザーがGoogleまたはFacebookでログインし、ハンドルネームベースのプロフィールを作成・管理でき、推し設定と同担拒否フラグを設定できる
@@ -92,7 +92,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. プロトタイプ | 0/3 | Not started | - |
+| 0. プロトタイプ | 0/3 | Planned | - |
 | 1. 認証・プロフィール基盤 | 0/4 | Not started | - |
 | 2. イベント・チェックイン | 0/2 | Not started | - |
 | 3. QR・コネクション・PWA | 0/3 | Not started | - |
