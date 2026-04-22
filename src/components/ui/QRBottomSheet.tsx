@@ -13,7 +13,7 @@ export function QRBottomSheet({ isOpen, onClose, url, title }: QRBottomSheetProp
     <Sheet
       isOpen={isOpen}
       onClose={onClose}
-      detent="content-height"
+      detent="content"
     >
       <Sheet.Container>
         <Sheet.Header />
