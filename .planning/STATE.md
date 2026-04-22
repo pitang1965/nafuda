@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 0 of 4 (プロトタイプ)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-04-22 — 00-01 プロジェクト初期設定完了
+Last activity: 2026-04-22 — 00-02 モックUI画面実装完了
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - [00-01]: vite-plugin-pwa 1.2.0 は Vite 8 未対応のため --legacy-peer-deps インストール。動作正常。
 - [00-01]: motion パッケージ使用（framer-motion は motion に統合済みのため不使用）
 - [00-01]: react-router v7 から react-router パッケージのみ使用（react-router-dom 廃止）
+- [00-02]: verbatimModuleSyntax: true 設定のため型専用インポートはすべて import type を使用する
+- [00-02]: Phase 0 では URL パラメータを受け取るが MOCK データに固定表示する方針（DB なし）
 
 ### Pending Todos
 
@@ -65,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Completed 00-prototype/00-01-PLAN.md — プロジェクト初期設定（Vite + React + Tailwind v4 + PWA）
+Stopped at: Completed 00-prototype/00-02-PLAN.md — モックUI画面実装（ProfileCard・ParticipantCard・LoginMockPage）
 Resume file: None
