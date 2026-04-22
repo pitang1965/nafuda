@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { MOCK_PROFILE } from '../data/mockData'
+import { MOCK_PROFILE, MOCK_PROFILE_MAP, MY_USER_ID } from '../data/mockData'
 import { ProfileCard } from '../components/profile/ProfileCard'
 import { QRBottomSheet } from '../components/ui/QRBottomSheet'
 
 export function ProfilePage() {
   const { userId } = useParams()
-  const profile = MOCK_PROFILE
+  const profile = userId ? (MOCK_PROFILE_MAP[userId] ?? MOCK_PROFILE) : MOCK_PROFILE
+  const isOwnProfile = !userId || userId === MY_USER_ID
   const [isQROpen, setIsQROpen] = useState(false)
 
   return (
@@ -17,7 +18,7 @@ export function ProfilePage() {
           <span>戻る</span>
         </Link>
         <h1 className="absolute left-1/2 -translate-x-1/2 text-sm font-semibold text-gray-700">
-          マイプロフィール
+          {isOwnProfile ? 'マイプロフィール' : profile.handle}
         </h1>
       </header>
 
@@ -27,7 +28,7 @@ export function ProfilePage() {
           onQROpen={() => setIsQROpen(true)}
         />
 
-        {!userId && (
+        {isOwnProfile && (
           <Link
             to="/me/edit"
             className="w-full text-center py-2.5 border border-pink-300 text-pink-500 hover:bg-pink-50 rounded-full text-sm font-medium transition-colors"

@@ -89,3 +89,7 @@ export const MOCK_EVENTS_INITIAL: MockEvent[] = [
 
 // mock-user-001 が自分（ログイン中ユーザー）
 export const MY_USER_ID = 'mock-user-001'
+
+export const MOCK_PROFILE_MAP: Record<string, MockProfile> = Object.fromEntries(
+  MOCK_PARTICIPANTS.map((p) => [p.id, p])
+)
