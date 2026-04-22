@@ -1,4 +1,4 @@
-import { MockProfile } from '../../data/mockData'
+import type { MockProfile } from '../../data/mockData'
 import { SnsLinkList } from './SnsLinkList'
 
 interface ProfileCardProps {

@@ -1,4 +1,4 @@
-import { SnsLink } from '../../data/mockData'
+import type { SnsLink } from '../../data/mockData'
 
 const PLATFORM_LABELS: Record<SnsLink['platform'], string> = {
   x: 'X',
