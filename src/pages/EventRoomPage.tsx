@@ -1,23 +1,31 @@
+import { useState } from 'react'
 import { useParams } from 'react-router'
-import { MOCK_EVENT } from '../data/mockData'
+import { MOCK_EVENT, MOCK_PROFILE } from '../data/mockData'
 import { ParticipantList } from '../components/event/ParticipantList'
+import { QRBottomSheet } from '../components/ui/QRBottomSheet'
 
 export function EventRoomPage() {
   const { eventId } = useParams()
-  // Phase 0: eventId に関わらず MOCK_EVENT を表示する
   const event = MOCK_EVENT
+  const [isQROpen, setIsQROpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white pb-12">
-      {/* ヘッダー */}
-      <div className="bg-white shadow-sm px-4 py-4 sticky top-0 z-10">
-        <h1 className="text-base font-bold text-gray-900 truncate">{event.name}</h1>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {event.venue} · {event.date}
-        </p>
+      <div className="bg-white shadow-sm px-4 py-4 sticky top-0 z-10 flex items-center justify-between">
+        <div className="min-w-0">
+          <h1 className="text-base font-bold text-gray-900 truncate">{event.name}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {event.venue} · {event.date}
+          </p>
+        </div>
+        <button
+          onClick={() => setIsQROpen(true)}
+          className="flex-shrink-0 ml-3 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full text-sm font-medium transition-colors"
+        >
+          QRコード
+        </button>
       </div>
 
-      {/* 参加者一覧 */}
       <div className="px-4 pt-4">
         <h2 className="text-sm font-semibold text-gray-600 mb-3">
           参加者 {event.participants.length}人
@@ -25,10 +33,16 @@ export function EventRoomPage() {
         <ParticipantList participants={event.participants} />
       </div>
 
-      {/* イベントID表示（デバッグ用） */}
       <p className="text-center text-xs text-gray-300 mt-8">
         {eventId ? `イベントID: ${eventId}` : 'イベントルーム'}
       </p>
+
+      <QRBottomSheet
+        isOpen={isQROpen}
+        onClose={() => setIsQROpen(false)}
+        url={MOCK_PROFILE.profileUrl}
+        title="自分のQRコード"
+      />
     </div>
   )
 }
