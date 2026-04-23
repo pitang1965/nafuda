@@ -5,36 +5,36 @@
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** QRを読んだらその場でSNSリンクが見えてつながれる——口頭でID交換する手間・気まずさをゼロにする
-**Current focus:** Phase 0 — プロトタイプ
+**Current focus:** Phase 1 — 認証・プロフィール基盤
 
 ## Current Position
 
-Phase: 0 of 4 (プロトタイプ)
-Plan: 3 of 3 in current phase
-Status: Paused — awaiting Cloudflare API token for deploy
-Last activity: 2026-04-22 — 00-03 QRBottomSheet実装・PWAアイコン配置完了。Cloudflareデプロイ待ち
+Phase: 1 of 4 (認証・プロフィール基盤)
+Plan: 2 of 4 in current phase
+Status: In Progress — 01-01 complete; next: 01-02 Better Auth OAuth setup
+Last activity: 2026-04-24 — 01-01 TanStack Start migration + Drizzle schema complete
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 1
+- Average duration: 5 min
+- Total execution time: 5 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-auth-profile | 1/4 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans: 01-01 (5 min)
+- Trend: baseline
 
 *Updated after each plan completion*
-| Phase 00-prototype P03 | 12 | 2 tasks | 6 files |
+| Phase 01-auth-profile P01 | 5 min | 2 tasks | 35 files |
 
 ## Accumulated Context
 
@@ -56,19 +56,25 @@ Recent decisions affecting current work:
 - [00-02]: Phase 0 では URL パラメータを受け取るが MOCK データに固定表示する方針（DB なし）
 - [Phase 00-03]: react-modal-sheet v5.6.0 uses named export { Sheet } not default export
 - [Phase 00-03]: Cloudflare Pages deploy requires CLOUDFLARE_API_TOKEN env var in non-interactive shells
+- [01-01]: verbatimModuleSyntax removed from tsconfigs; isolatedModules used instead — required for TanStack Start server/client bundle isolation
+- [01-01]: Phase 0 code archived to src/legacy/ (excluded from TS compilation) — preserves reference implementation
+- [01-01]: router.tsx exports both createRouter and getRouter — TanStack Router Vite plugin auto-generates routeTree.gen.ts which imports getRouter
+- [01-01]: zod pinned to v3 not v4 — @hookform/resolvers v5 does not support zod v4
+- [01-01]: Hyperdrive commented out in wrangler.toml — requires Cloudflare Workers Paid plan; neon-http is dev/free-tier path
 
 ### Pending Todos
 
-None yet.
+- [01-01]: Run `pnpm db:migrate` after configuring Neon DATABASE_URL in .env.local
+- [01-02]: Run `pnpm auth:generate && pnpm db:migrate` after setting up Google/Facebook OAuth credentials
 
 ### Blockers/Concerns
 
-- [Phase 1]: Better Auth + TanStack Start の統合実装例が少ない → plan-phase時に詳細リサーチ推奨
-- [Phase 1]: vite-plugin-pwa が TanStack Start + SSR 環境で非互換あり → カスタムWorkboxスクリプトで対応
+- [01-01]: Neon DATABASE_URL not configured — `pnpm db:migrate` will fail with placeholder URL. User must create Neon project (ap-northeast-1) and set DATABASE_URL in .env.local before migrations can run.
+- [Phase 1]: vite-plugin-pwa が TanStack Start + SSR 環境で非互換あり → カスタムWorkboxスクリプトで対応 (Phase 3)
 - [Phase 3]: QRトークンはユーザーIDを直接露出しない設計にする（失効可能なスキームを検討）
 
 ## Session Continuity
 
-Last session: 2026-04-22
-Stopped at: 00-03 Task 2 deploy — awaiting CLOUDFLARE_API_TOKEN (wrangler pages deploy blocked in non-interactive shell)
+Last session: 2026-04-24
+Stopped at: Completed 01-01-PLAN.md (infrastructure bootstrap)
 Resume file: None

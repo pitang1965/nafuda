@@ -9,26 +9,26 @@
 
 ### Profile
 
-- [ ] **PROF-01**: ユーザーはハンドル名（表示名）でプロフィールを作成できる（本名入力は不要）
-- [ ] **PROF-02**: ユーザーはアバターを外部URL入力・自動生成の2方式で設定できる
-- [ ] **PROF-03**: ユーザーはSNSリンクを複数登録できる（X / Instagram / Discord / LINE オープンチャット / TikTok / YouTube 等）
-- [ ] **PROF-04**: ユーザーはプロフィールの各フィールドを項目単位で公開/非公開に設定できる
-- [ ] **PROF-05**: ユーザーは複数のプロフィール（ペルソナ）を作成し、シーンに応じて切り替えられる（推し活用・本業用など）
+- [x] **PROF-01**: ユーザーはハンドル名（表示名）でプロフィールを作成できる（本名入力は不要）
+- [x] **PROF-02**: ユーザーはアバターを外部URL入力・自動生成の2方式で設定できる
+- [x] **PROF-03**: ユーザーはSNSリンクを複数登録できる（X / Instagram / Discord / LINE オープンチャット / TikTok / YouTube 等）
+- [x] **PROF-04**: ユーザーはプロフィールの各フィールドを項目単位で公開/非公開に設定できる
+- [x] **PROF-05**: ユーザーは複数のプロフィール（ペルソナ）を作成し、シーンに応じて切り替えられる（推し活用・本業用など）
 
 ### 推し活
 
-- [ ] **OSHI-01**: ユーザーは推し・ジャンルタグを登録できる（自由記述 ＋ サジェスト形式）
-- [ ] **OSHI-02**: ユーザーは同担設定を行える（同担拒否フラグを立てると、同じ推しユーザーの一覧から非表示になる）
+- [x] **OSHI-01**: ユーザーは推し・ジャンルタグを登録できる（自由記述 ＋ サジェスト形式）
+- [x] **OSHI-02**: ユーザーは同担設定を行える（同担拒否フラグを立てると、同じ推しユーザーの一覧から非表示になる）
 - [ ] **OSHI-03**: ユーザーはイベントにチェックインできる（日付・会場名・イベント名・GPS座標を記録）
 - [ ] **OSHI-04**: ログインユーザーは同じイベントにチェックインしている参加者の一覧を閲覧できる（同担フィルタ適用済み）
 - [ ] **OSHI-05**: 未ログインユーザーはイベント参加者の一覧（ハンドル名・アバターのみ）を閲覧できるが、個別プロフィールは閲覧不可
 
 ### 認証
 
-- [ ] **AUTH-01**: ユーザーはGoogleアカウントでログインできる
-- [ ] **AUTH-02**: ユーザーはFacebookアカウントでログインできる
-- [ ] **AUTH-03**: 未ログインユーザーはQRコードからプロフィールURLへアクセスできる（プロフィール閲覧には認証不要）
-- [ ] **AUTH-04**: プロフィール閲覧・QR表示は認証なしで可能。コネクション記録・チェックインには認証が必要
+- [x] **AUTH-01**: ユーザーはGoogleアカウントでログインできる
+- [x] **AUTH-02**: ユーザーはFacebookアカウントでログインできる
+- [x] **AUTH-03**: 未ログインユーザーはQRコードからプロフィールURLへアクセスできる（プロフィール閲覧には認証不要）
+- [x] **AUTH-04**: プロフィール閲覧・QR表示は認証なしで可能。コネクション記録・チェックインには認証が必要
 
 ### QR・コネクション
 
@@ -79,17 +79,17 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| PROF-01 | Phase 1 | Pending |
-| PROF-02 | Phase 1 | Pending |
-| PROF-03 | Phase 1 | Pending |
-| PROF-04 | Phase 1 | Pending |
-| PROF-05 | Phase 1 | Pending |
-| OSHI-01 | Phase 1 | Pending |
-| OSHI-02 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| AUTH-04 | Phase 1 | Complete |
+| PROF-01 | Phase 1 | Complete |
+| PROF-02 | Phase 1 | Complete |
+| PROF-03 | Phase 1 | Complete |
+| PROF-04 | Phase 1 | Complete |
+| PROF-05 | Phase 1 | Complete |
+| OSHI-01 | Phase 1 | Complete |
+| OSHI-02 | Phase 1 | Complete |
 | OSHI-03 | Phase 2 | Pending |
 | OSHI-04 | Phase 2 | Pending |
 | OSHI-05 | Phase 2 | Pending |

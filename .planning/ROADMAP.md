@@ -49,7 +49,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — TanStack Start移行 + Neon Postgres + Drizzle ORM + Better Auth スキーマセットアップ
+- [x] 01-01-PLAN.md — TanStack Start移行 + Neon Postgres + Drizzle ORM + Better Auth スキーマセットアップ
 - [ ] 01-02-PLAN.md — Google / Facebook OAuth実装・セッション管理・ルート保護（iOS 7日間ストレージ失効対策含む）
 - [ ] 01-03-PLAN.md — プロフィールCRUD・初回ウィザード・複数ペルソナ・フィールド単位公開/非公開制御
 - [ ] 01-04-PLAN.md — 推し・ジャンルタグ登録（Emblor）・同担拒否フラグ実装
@@ -93,6 +93,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. プロトタイプ | 3/3 | Complete   | 2026-04-22 |
-| 1. 認証・プロフィール基盤 | 0/4 | Not started | - |
+| 1. 認証・プロフィール基盤 | 1/4 | In Progress | - |
 | 2. イベント・チェックイン | 0/2 | Not started | - |
 | 3. QR・コネクション・PWA | 0/3 | Not started | - |
