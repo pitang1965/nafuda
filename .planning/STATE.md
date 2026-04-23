@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 1 of 4 (認証・プロフィール基盤)
-Plan: 2 of 4 in current phase
-Status: In Progress — 01-01 complete; next: 01-02 Better Auth OAuth setup
-Last activity: 2026-04-24 — 01-01 TanStack Start migration + Drizzle schema complete
+Plan: 3 of 4 in current phase
+Status: In Progress — 01-02 auto tasks complete; awaiting checkpoint verification for OAuth flows
+Last activity: 2026-04-24 — 01-02 Better Auth OAuth setup + login page + protected routes
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -35,6 +35,7 @@ Progress: [███░░░░░░░] 30%
 
 *Updated after each plan completion*
 | Phase 01-auth-profile P01 | 5 min | 2 tasks | 35 files |
+| Phase 01-auth-profile P02 | 11 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work:
 - [01-01]: router.tsx exports both createRouter and getRouter — TanStack Router Vite plugin auto-generates routeTree.gen.ts which imports getRouter
 - [01-01]: zod pinned to v3 not v4 — @hookform/resolvers v5 does not support zod v4
 - [01-01]: Hyperdrive commented out in wrangler.toml — requires Cloudflare Workers Paid plan; neon-http is dev/free-tier path
+- [Phase 01-02]: createAPIFileRoute from @tanstack/react-start/api does not exist in v1.167 — used createFileRoute with server.handlers instead
+- [Phase 01-02]: createServerFn handler does not receive context.request — getRequest() from @tanstack/react-start/server is the correct API
+- [Phase 01-02]: No cookieCache in auth.ts — prevents Better Auth bug #4203 on Cloudflare Workers
 
 ### Pending Todos
 
@@ -76,5 +80,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Completed 01-01-PLAN.md (infrastructure bootstrap)
+Stopped at: Checkpoint 01-02 — awaiting human OAuth end-to-end verification (Task 3)
 Resume file: None
