@@ -13,8 +13,18 @@ export function EventRoomPage() {
   const navigate = useNavigate()
   const { getEvent } = useEvents()
   const { isLoggedIn, login } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isQROpen, setIsQROpen] = useState(searchParams.get('qr') === '1')
+
+  function openQR() {
+    setIsQROpen(true)
+    setSearchParams({ qr: '1' }, { replace: true })
+  }
+
+  function closeQR() {
+    setIsQROpen(false)
+    setSearchParams({}, { replace: true })
+  }
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const event = getEvent(eventId ?? '')
@@ -64,7 +74,7 @@ export function EventRoomPage() {
             </button>
           )}
           <button
-            onClick={() => setIsQROpen(true)}
+            onClick={openQR}
             className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full text-sm font-medium transition-colors"
           >
             QRコード
@@ -85,7 +95,7 @@ export function EventRoomPage() {
 
       <QRBottomSheet
         isOpen={isQROpen}
-        onClose={() => setIsQROpen(false)}
+        onClose={closeQR}
         url={`${window.location.origin}/event/${event.id}`}
         title="イベントQRコード"
       />
