@@ -85,8 +85,8 @@ export function EventRoomPage() {
       <QRBottomSheet
         isOpen={isQROpen}
         onClose={() => setIsQROpen(false)}
-        url={`${window.location.origin}/p/${MOCK_PROFILE.id}`}
-        title="自分のQRコード"
+        url={`${window.location.origin}/event/${event.id}`}
+        title="イベントQRコード"
       />
 
       {/* 未ログイン時のログイン案内 */}
