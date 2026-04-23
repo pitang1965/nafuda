@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Sheet } from 'react-modal-sheet'
 import { MY_USER_ID } from '../data/mockData'
 import type { MockProfile } from '../data/mockData'
@@ -13,7 +13,8 @@ export function EventRoomPage() {
   const navigate = useNavigate()
   const { getEvent } = useEvents()
   const { isLoggedIn, login } = useAuth()
-  const [isQROpen, setIsQROpen] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [isQROpen, setIsQROpen] = useState(searchParams.get('qr') === '1')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const event = getEvent(eventId ?? '')
