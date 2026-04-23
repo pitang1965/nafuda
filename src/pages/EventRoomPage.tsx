@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Sheet } from 'react-modal-sheet'
-import { MOCK_PROFILE, MY_USER_ID } from '../data/mockData'
+import { MY_USER_ID } from '../data/mockData'
 import type { MockProfile } from '../data/mockData'
 import { useEvents } from '../context/EventContext'
 import { useAuth } from '../context/AuthContext'
