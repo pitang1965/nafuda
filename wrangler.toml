@@ -1,0 +1,12 @@
+name = "nafuda"
+compatibility_date = "2026-04-23"
+compatibility_flags = [ "nodejs_compat" ]
+main = "@tanstack/react-start/server-entry"
+
+[observability]
+enabled = true
+
+# Uncomment and fill in if on Cloudflare Workers Paid plan with Hyperdrive:
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<your-hyperdrive-id>"
