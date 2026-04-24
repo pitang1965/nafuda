@@ -2,9 +2,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { getPublicProfile } from '../../server/functions/profile'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
 
-// No beforeLoad auth check — public route per AUTH-03 and AUTH-04
-export const Route = createFileRoute('/u/$urlId')({
-  loader: ({ params }) => getPublicProfile({ data: { urlId: params.urlId } }),
+// Specific persona by share token — public route, no auth required
+export const Route = createFileRoute('/u/$urlId/p/$token')({
+  loader: ({ params }) => getPublicProfile({ data: { shareToken: params.token } }),
   component: PublicProfilePage,
 })
 
