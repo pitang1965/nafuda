@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 1 of 4 (認証・プロフィール基盤)
-Plan: 3 of 4 in current phase
-Status: In Progress — 01-02 auto tasks complete; awaiting checkpoint verification for OAuth flows
-Last activity: 2026-04-24 — 01-02 Better Auth OAuth setup + login page + protected routes
+Plan: 4 of 4 in current phase
+Status: In Progress — 01-03 complete; profile system, wizard, edit, public routes all done
+Last activity: 2026-04-25 — 01-03 Profile system: wizard, persona switcher, edit, public routes
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [████░░░░░░] 40%
 *Updated after each plan completion*
 | Phase 01-auth-profile P01 | 5 min | 2 tasks | 35 files |
 | Phase 01-auth-profile P02 | 11 min | 2 tasks | 8 files |
+| Phase 01-auth-profile P03 | 16 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - [Phase 01-02]: createAPIFileRoute from @tanstack/react-start/api does not exist in v1.167 — used createFileRoute with server.handlers instead
 - [Phase 01-02]: createServerFn handler does not receive context.request — getRequest() from @tanstack/react-start/server is the correct API
 - [Phase 01-02]: No cookieCache in auth.ts — prevents Better Auth bug #4203 on Cloudflare Workers
+- [Phase 01-03]: createServerFn handlers use getRequest() from @tanstack/react-start/server — context.request.headers does not exist in TanStack Start v1.167 ServerFnCtx
+- [Phase 01-03]: useRef for debounce timers in React server function callbacks — useState creates stale closure in useCallback deps array
+- [Phase 01-03]: getPublicProfile filters private fields at SELECT/return level server-side — private data never fetched or returned in API response
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-24
-Stopped at: Checkpoint 01-02 — awaiting human OAuth end-to-end verification (Task 3)
+Last session: 2026-04-25
+Stopped at: Completed 01-auth-profile 01-03-PLAN.md
 Resume file: None
