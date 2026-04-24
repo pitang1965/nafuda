@@ -1,21 +1,22 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { urlIdSchema, checkUrlIdAvailability, createPersona } from '../../../server/functions/profile'
 import { InitialsAvatar } from '../../../components/InitialsAvatar'
+import { OshiTagInput } from '../../../components/OshiTagInput'
 
 export const Route = createFileRoute('/_protected/profile/wizard')({
   component: WizardPage,
 })
 
-// Step indicator at top (Claude's discretion — using numbered dots)
-// Steps: 1=URL-ID, 2=表示名, 3=アバター, 4=完了
+// Steps: 1=URL-ID, 2=表示名, 3=推しタグ, 4=アバター, 5=完了
 
 const WizardSchema = z.object({
   urlId: urlIdSchema,
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
+  oshiTags: z.array(z.string()).min(1, '推しタグを1個以上入力してください'),
   avatarUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   useAutoAvatar: z.boolean().default(true),
 })
@@ -29,14 +30,21 @@ function WizardPage() {
   const [checkingUrlId, setCheckingUrlId] = useState(false)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [oshiTagsError, setOshiTagsError] = useState<string | null>(null)
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<WizardForm>({
+  const methods = useForm<WizardForm>({
     resolver: zodResolver(WizardSchema),
-    defaultValues: { useAutoAvatar: true },
+    defaultValues: {
+      useAutoAvatar: true,
+      oshiTags: [],
+    },
   })
+
+  const { register, handleSubmit, watch, formState: { errors } } = methods
 
   const displayName = watch('displayName') ?? ''
   const useAutoAvatar = watch('useAutoAvatar')
+  const oshiTags = watch('oshiTags') ?? []
 
   const handleUrlIdChange = useCallback((value: string) => {
     setUrlIdAvailable(null)
@@ -54,6 +62,15 @@ function WizardPage() {
     }, 400)
   }, [])
 
+  const handleProceedFromOshi = () => {
+    if (oshiTags.length === 0) {
+      setOshiTagsError('推しタグを1個以上入力してください')
+      return
+    }
+    setOshiTagsError(null)
+    setStep(4)
+  }
+
   const onSubmit = async (values: WizardForm) => {
     setSubmitError(null)
     try {
@@ -63,6 +80,7 @@ function WizardPage() {
           displayName: values.displayName,
           avatarUrl: values.useAutoAvatar ? null : (values.avatarUrl || null),
           isDefault: true,
+          oshiTags: values.oshiTags,
         },
       })
       navigate({ to: '/home' })
@@ -76,8 +94,8 @@ function WizardPage() {
     }
   }
 
-  // Step indicator (numbered dots — Claude's discretion)
-  const steps = ['URL-ID', '表示名', 'アバター', '完了']
+  // Step labels — 5 steps now
+  const steps = ['URL-ID', '表示名', '推しタグ', 'アバター', '完了']
 
   return (
     <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
@@ -94,114 +112,144 @@ function WizardPage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
 
-        {/* Step 1: URL-ID */}
-        {step === 1 && (
-          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold">URL-IDを決めましょう</h2>
-            <p className="text-sm text-gray-500">
-              あなたのプロフィールURLになります。<br />
-              <strong>英数字のみ・一度設定したら変更できません。</strong>
-            </p>
-            <div>
-              <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-black">
-                <span className="px-3 py-3 text-sm text-gray-400 bg-gray-50 border-r">/u/</span>
-                <input
-                  {...register('urlId')}
-                  onChange={(e) => {
-                    void register('urlId').onChange(e)
-                    handleUrlIdChange(e.target.value)
-                  }}
-                  placeholder="yourname"
-                  className="flex-1 px-3 py-3 text-sm outline-none"
-                />
-              </div>
-              {checkingUrlId && <p className="text-xs text-gray-400 mt-1">確認中...</p>}
-              {!checkingUrlId && urlIdAvailable === true && (
-                <p className="text-xs text-green-600 mt-1">使用できます</p>
-              )}
-              {!checkingUrlId && urlIdAvailable === false && (
-                <p className="text-xs text-red-600 mt-1">このURL-IDはすでに使用されています</p>
-              )}
-              {errors.urlId && <p className="text-xs text-red-600 mt-1">{errors.urlId.message}</p>}
-            </div>
-            <button
-              type="button"
-              onClick={() => { if (urlIdAvailable) setStep(2) }}
-              disabled={!urlIdAvailable}
-              className="w-full py-3 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-40"
-            >
-              次へ
-            </button>
-          </div>
-        )}
-
-        {/* Step 2: Display name */}
-        {step === 2 && (
-          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold">表示名を決めましょう</h2>
-            <p className="text-sm text-gray-500">本名は不要です。ハンドル名・ニックネームでOK。絵文字も使えます。</p>
-            <div>
-              <input
-                {...register('displayName')}
-                placeholder="ぴたんこ🐾"
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
-              />
-              {errors.displayName && <p className="text-xs text-red-600 mt-1">{errors.displayName.message}</p>}
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
-              <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Avatar */}
-        {step === 3 && (
-          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold">アバターを設定しましょう</h2>
-            <div className="flex justify-center">
-              <InitialsAvatar name={displayName || '?'} size={80} />
-            </div>
-            <div className="flex flex-col gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" {...register('useAutoAvatar')} className="rounded" />
-                <span className="text-sm">イニシャルアバターを使う（表示名の頭文字＋カラー）</span>
-              </label>
-              {!useAutoAvatar && (
-                <div>
+          {/* Step 1: URL-ID */}
+          {step === 1 && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-bold">URL-IDを決めましょう</h2>
+              <p className="text-sm text-gray-500">
+                あなたのプロフィールURLになります。<br />
+                <strong>英数字のみ・一度設定したら変更できません。</strong>
+              </p>
+              <div>
+                <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-black">
+                  <span className="px-3 py-3 text-sm text-gray-400 bg-gray-50 border-r">/u/</span>
                   <input
-                    {...register('avatarUrl')}
-                    placeholder="https://example.com/avatar.png"
-                    className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                    {...register('urlId')}
+                    onChange={(e) => {
+                      void register('urlId').onChange(e)
+                      handleUrlIdChange(e.target.value)
+                    }}
+                    placeholder="yourname"
+                    className="flex-1 px-3 py-3 text-sm outline-none"
                   />
-                  {errors.avatarUrl && <p className="text-xs text-red-600 mt-1">{errors.avatarUrl.message}</p>}
                 </div>
-              )}
+                {checkingUrlId && <p className="text-xs text-gray-400 mt-1">確認中...</p>}
+                {!checkingUrlId && urlIdAvailable === true && (
+                  <p className="text-xs text-green-600 mt-1">使用できます</p>
+                )}
+                {!checkingUrlId && urlIdAvailable === false && (
+                  <p className="text-xs text-red-600 mt-1">このURL-IDはすでに使用されています</p>
+                )}
+                {errors.urlId && <p className="text-xs text-red-600 mt-1">{errors.urlId.message}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => { if (urlIdAvailable) setStep(2) }}
+                disabled={!urlIdAvailable}
+                className="w-full py-3 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-40"
+              >
+                次へ
+              </button>
             </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(2)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
-              <button type="button" onClick={() => setStep(4)} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 4: Confirm + submit */}
-        {step === 4 && (
-          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold">設定完了！</h2>
-            <p className="text-sm text-gray-500">プロフィールを作成して始めましょう。</p>
-            {submitError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{submitError}</div>
-            )}
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
-              <button type="submit" className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">プロフィールを作成</button>
+          {/* Step 2: Display name */}
+          {step === 2 && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-bold">表示名を決めましょう</h2>
+              <p className="text-sm text-gray-500">本名は不要です。ハンドル名・ニックネームでOK。絵文字も使えます。</p>
+              <div>
+                <input
+                  {...register('displayName')}
+                  placeholder="ぴたんこ🐾"
+                  className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                />
+                {errors.displayName && <p className="text-xs text-red-600 mt-1">{errors.displayName.message}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
+                <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
+              </div>
             </div>
-          </div>
-        )}
-      </form>
+          )}
+
+          {/* Step 3: Oshi tags */}
+          {step === 3 && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-bold">推しを教えてください</h2>
+              <p className="text-sm text-gray-500">
+                タグは自由記述です。推しの名前・グループ名・ジャンルなど何でも入力できます
+              </p>
+              <OshiTagInput name="oshiTags" />
+              {oshiTagsError && (
+                <p className="text-xs text-red-600">{oshiTagsError}</p>
+              )}
+              {errors.oshiTags && (
+                <p className="text-xs text-red-600">{errors.oshiTags.message}</p>
+              )}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setStep(2)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
+                <button type="button" onClick={handleProceedFromOshi} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setOshiTagsError(null); setStep(4) }}
+                className="text-xs text-gray-400 text-center underline"
+              >
+                スキップ
+              </button>
+            </div>
+          )}
+
+          {/* Step 4: Avatar */}
+          {step === 4 && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-bold">アバターを設定しましょう</h2>
+              <div className="flex justify-center">
+                <InitialsAvatar name={displayName || '?'} size={80} />
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" {...register('useAutoAvatar')} className="rounded" />
+                  <span className="text-sm">イニシャルアバターを使う（表示名の頭文字＋カラー）</span>
+                </label>
+                {!useAutoAvatar && (
+                  <div>
+                    <input
+                      {...register('avatarUrl')}
+                      placeholder="https://example.com/avatar.png"
+                      className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                    />
+                    {errors.avatarUrl && <p className="text-xs text-red-600 mt-1">{errors.avatarUrl.message}</p>}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
+                <button type="button" onClick={() => setStep(5)} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Confirm + submit */}
+          {step === 5 && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-bold">設定完了！</h2>
+              <p className="text-sm text-gray-500">プロフィールを作成して始めましょう。</p>
+              {submitError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{submitError}</div>
+              )}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setStep(4)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
+                <button type="submit" className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">プロフィールを作成</button>
+              </div>
+            </div>
+          )}
+        </form>
+      </FormProvider>
     </div>
   )
 }

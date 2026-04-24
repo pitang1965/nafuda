@@ -53,6 +53,7 @@ export const createPersona = createServerFn({ method: 'POST' })
     displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
     avatarUrl: z.string().url().optional().nullable(),
     isDefault: z.boolean().default(false),
+    oshiTags: z.array(z.string()).default([]),
   }))
   .handler(async ({ data }) => {
     const request = getRequest()
@@ -93,6 +94,7 @@ export const createPersona = createServerFn({ method: 'POST' })
       shareToken,
       avatarUrl: data.avatarUrl ?? null,
       isDefault: data.isDefault,
+      oshiTags: data.oshiTags,
     }).returning()
 
     return persona
