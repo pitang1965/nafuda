@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getOwnProfile } from '../../server/functions/profile'
+import { authClient } from '../../lib/auth-client'
 import { PersonaSwitcher } from '../../components/PersonaSwitcher'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
 import { SnsLinkButton } from '../../components/SnsLinkButton'
@@ -12,10 +13,16 @@ export const Route = createFileRoute('/_protected/home')({
 
 function HomePage() {
   const { urlId, personas } = Route.useLoaderData()
+  const navigate = useNavigate()
   const [currentPersonaId, setCurrentPersonaId] = useState(
     personas.find(p => p.isDefault)?.id ?? personas[0]?.id ?? ''
   )
   const currentPersona = personas.find(p => p.id === currentPersonaId)
+
+  const handleLogout = async () => {
+    await authClient.signOut()
+    await navigate({ to: '/login' })
+  }
 
   // No persona yet → redirect to wizard
   if (!personas.length || !urlId) {
@@ -30,9 +37,17 @@ function HomePage() {
           personas={personas}
           currentPersonaId={currentPersonaId}
           onSwitch={setCurrentPersonaId}
-          onCreateNew={() => {/* navigate to wizard for new persona */}}
+          onCreateNew={() => navigate({ to: '/profile/wizard' })}
         />
-        <Link to="/profile/edit" className="text-sm text-gray-500 underline">編集</Link>
+        <div className="flex items-center gap-3">
+          <Link to="/profile/edit" className="text-sm text-gray-500 underline">編集</Link>
+          <button
+            onClick={handleLogout}
+            className="text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            ログアウト
+          </button>
+        </div>
       </div>
 
       {/* Profile display */}
