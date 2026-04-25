@@ -2,12 +2,13 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from './db/client'
+import * as schema from './db/schema'
 
 export const auth = betterAuth({
   // CRITICAL: prevents redirect_uri_mismatch in OAuth flows
   baseURL: process.env.BETTER_AUTH_URL!,
   secret: process.env.BETTER_AUTH_SECRET!,
-  database: drizzleAdapter(db, { provider: 'pg' }),
+  database: drizzleAdapter(db, { provider: 'pg', schema }),
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,

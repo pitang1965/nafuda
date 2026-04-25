@@ -9,38 +9,151 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UUrlIdRouteImport } from './routes/u/$urlId'
+import { Route as ProtectedHomeRouteImport } from './routes/_protected/home'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
+import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
+import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedRoute = ProtectedRouteImport.update({
+  id: '/_protected',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UUrlIdRoute = UUrlIdRouteImport.update({
+  id: '/u/$urlId',
+  path: '/u/$urlId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedHomeRoute = ProtectedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedProfileWizardRoute = ProtectedProfileWizardRouteImport.update({
+  id: '/profile/wizard',
+  path: '/profile/wizard',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedProfileEditRoute = ProtectedProfileEditRouteImport.update({
+  id: '/profile/edit',
+  path: '/profile/edit',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
+  id: '/p/$token',
+  path: '/p/$token',
+  getParentRoute: () => UUrlIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/home': typeof ProtectedHomeRoute
+  '/u/$urlId': typeof UUrlIdRouteWithChildren
+  '/profile/edit': typeof ProtectedProfileEditRoute
+  '/profile/wizard': typeof ProtectedProfileWizardRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/home': typeof ProtectedHomeRoute
+  '/u/$urlId': typeof UUrlIdRouteWithChildren
+  '/profile/edit': typeof ProtectedProfileEditRoute
+  '/profile/wizard': typeof ProtectedProfileWizardRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_protected': typeof ProtectedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_protected/home': typeof ProtectedHomeRoute
+  '/u/$urlId': typeof UUrlIdRouteWithChildren
+  '/_protected/profile/edit': typeof ProtectedProfileEditRoute
+  '/_protected/profile/wizard': typeof ProtectedProfileWizardRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/home'
+    | '/u/$urlId'
+    | '/profile/edit'
+    | '/profile/wizard'
+    | '/api/auth/$'
+    | '/u/$urlId/p/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/home'
+    | '/u/$urlId'
+    | '/profile/edit'
+    | '/profile/wizard'
+    | '/api/auth/$'
+    | '/u/$urlId/p/$token'
+  id:
+    | '__root__'
+    | '/'
+    | '/_protected'
+    | '/login'
+    | '/_protected/home'
+    | '/u/$urlId'
+    | '/_protected/profile/edit'
+    | '/_protected/profile/wizard'
+    | '/api/auth/$'
+    | '/u/$urlId/p/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProtectedRoute: typeof ProtectedRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  UUrlIdRoute: typeof UUrlIdRouteWithChildren
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +161,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$urlId': {
+      id: '/u/$urlId'
+      path: '/u/$urlId'
+      fullPath: '/u/$urlId'
+      preLoaderRoute: typeof UUrlIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_protected/home': {
+      id: '/_protected/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof ProtectedHomeRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_protected/profile/wizard': {
+      id: '/_protected/profile/wizard'
+      path: '/profile/wizard'
+      fullPath: '/profile/wizard'
+      preLoaderRoute: typeof ProtectedProfileWizardRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/profile/edit': {
+      id: '/_protected/profile/edit'
+      path: '/profile/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProtectedProfileEditRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/u/$urlId/p/$token': {
+      id: '/u/$urlId/p/$token'
+      path: '/p/$token'
+      fullPath: '/u/$urlId/p/$token'
+      preLoaderRoute: typeof UUrlIdPTokenRouteImport
+      parentRoute: typeof UUrlIdRoute
+    }
   }
 }
 
+interface ProtectedRouteChildren {
+  ProtectedHomeRoute: typeof ProtectedHomeRoute
+  ProtectedProfileEditRoute: typeof ProtectedProfileEditRoute
+  ProtectedProfileWizardRoute: typeof ProtectedProfileWizardRoute
+}
+
+const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedHomeRoute: ProtectedHomeRoute,
+  ProtectedProfileEditRoute: ProtectedProfileEditRoute,
+  ProtectedProfileWizardRoute: ProtectedProfileWizardRoute,
+}
+
+const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
+  ProtectedRouteChildren,
+)
+
+interface UUrlIdRouteChildren {
+  UUrlIdPTokenRoute: typeof UUrlIdPTokenRoute
+}
+
+const UUrlIdRouteChildren: UUrlIdRouteChildren = {
+  UUrlIdPTokenRoute: UUrlIdPTokenRoute,
+}
+
+const UUrlIdRouteWithChildren =
+  UUrlIdRoute._addFileChildren(UUrlIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProtectedRoute: ProtectedRouteWithChildren,
+  LoginRoute: LoginRoute,
+  UUrlIdRoute: UUrlIdRouteWithChildren,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
