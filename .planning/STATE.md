@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 1 of 4 (認証・プロフィール基盤)
-Plan: 4 of 4 in current phase
-Status: Complete — all 4 plans done, awaiting phase verification
-Last activity: 2026-04-25 — 01-04 Oshi tags, dojin_reject, bio, SnsLinkButton, SNS hybrid input
+Plan: 5 of 5 in current phase (gap-closure plan 01-05 added)
+Status: Complete — all 5 plans done, all UAT gaps resolved, ready for phase re-verification
+Last activity: 2026-04-25 — 01-05 Gap-closure: login link fix, logout button, wizard nav, staleTime: 0
 
 Progress: [████████░░] 80%
 
@@ -38,6 +38,7 @@ Progress: [████████░░] 80%
 | Phase 01-auth-profile P02 | 11 min | 2 tasks | 8 files |
 | Phase 01-auth-profile P03 | 16 | 2 tasks | 8 files |
 | Phase 01-auth-profile P04 | 60 | 3 tasks | 12 files |
+| Phase 01-auth-profile P05 | 10 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 01-03]: createServerFn handlers use getRequest() from @tanstack/react-start/server — context.request.headers does not exist in TanStack Start v1.167 ServerFnCtx
 - [Phase 01-03]: useRef for debounce timers in React server function callbacks — useState creates stale closure in useCallback deps array
 - [Phase 01-03]: getPublicProfile filters private fields at SELECT/return level server-side — private data never fetched or returned in API response
+- [Phase 01-auth-profile]: Redirect 'ログインせずに見る' to / — demo persona does not exist in DB
+- [Phase 01-auth-profile]: staleTime: 0 on /profile/edit route — ensures fieldVisibility is always fresh after SPA navigation
 
 ### Pending Todos
 
@@ -85,5 +88,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-25
-Stopped at: Completed 01-auth-profile 01-03-PLAN.md
+Stopped at: Completed 01-auth-profile 01-05-PLAN.md (gap-closure complete)
 Resume file: None
