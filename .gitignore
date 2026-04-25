@@ -29,3 +29,9 @@ dev-dist/
 
 # Temp files
 test_write.txt
+
+# TanStack generated
+.tanstack/
+
+# Cloudflare Wrangler local state
+.wrangler/

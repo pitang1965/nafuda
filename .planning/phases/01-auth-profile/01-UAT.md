@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-auth-profile
 source: [01-01-SUMMARY.md, 01-02-SUMMARY.md, 01-03-SUMMARY.md, 01-04-SUMMARY.md]
 started: 2026-04-25T00:00:00Z
@@ -85,9 +85,12 @@ skipped: 0
   reason: "User reported: 「ログインせずに見る →」が /u/demo に遷移するが「プロフィールが見つかりません」と表示される。demoペルソナが存在しないためリンク先が機能しない。"
   severity: major
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "login.tsx 42行目で /u/demo にハードコードされているが、demoペルソナがDBに存在しないためgetPublicProfileがnullを返す"
+  artifacts:
+    - path: "src/routes/login.tsx"
+      issue: "href='/u/demo' にハードコード（42行目）"
+  missing:
+    - "リンク先を / に変更するか、demoペルソナのseedデータを作成する"
   debug_session: ""
 
 - truth: "/home にログアウトボタンが存在する"
@@ -95,9 +98,12 @@ skipped: 0
   reason: "User reported: ログアウトボタンがない。"
   severity: major
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "home.tsx に signOut のインポートも呼び出しもなく、ログアウトUIが未実装。auth-client.ts の signOut は利用可能"
+  artifacts:
+    - path: "src/routes/_protected/home.tsx"
+      issue: "signOut インポートなし、ログアウトボタンUI未実装"
+  missing:
+    - "signOut インポート追加 + Top bar にログアウトボタン追加"
   debug_session: ""
 
 - truth: "プロフィール編集ページで保存後、再度編集画面を開いたときに保存済みの公開/非公開設定が正しく反映されている"
@@ -105,17 +111,23 @@ skipped: 0
   reason: "User reported: SNSリンクを鍵アイコンにして「保存する」→「編集する」で編集画面に戻るとSNSリンクが目アイコンに戻っている。ブラウザリロード後は正しく鍵アイコンになる。"
   severity: major
   test: 9
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "TanStack RouterがSPA遷移時に /profile/edit のloaderキャッシュを再利用しgetOwnProfile()を再実行しないため、古いfieldVisibilityがフォームdefaultValuesに渡される"
+  artifacts:
+    - path: "src/routes/_protected/profile/edit.tsx"
+      issue: "loaderに staleTime: 0 がなく、SPA遷移時にキャッシュが再利用される"
+  missing:
+    - "edit.tsx のルート定義に staleTime: 0 を追加する"
+  debug_session: ".planning/debug/sns-visibility-stale-on-edit.md"
 
 - truth: "PersonaSwitcherの「新しいペルソナを作成」をクリックするとウィザードへ遷移する"
   status: failed
   reason: "User reported: 「新しいペルソナを作成」をクリックしても何も起きない。メニューが閉じるだけ。"
   severity: major
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "home.tsx 33行目の onCreateNew ハンドラがコメントのみの空実装で、/profile/wizard へのナビゲーションが実装されていない"
+  artifacts:
+    - path: "src/routes/_protected/home.tsx"
+      issue: "onCreateNew={() => {/* navigate to wizard for new persona */}} — 空実装（33行目）"
+  missing:
+    - "useNavigate を追加し onCreateNew={() => navigate({ to: '/profile/wizard' })} を実装"
   debug_session: ""

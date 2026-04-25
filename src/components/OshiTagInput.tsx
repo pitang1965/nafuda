@@ -70,7 +70,7 @@ export function OshiTagInput({ name = 'oshiTags' }: OshiTagInputProps) {
           closeButton: 'py-1 pl-1 pr-1 h-full hover:bg-transparent',
         },
         autoComplete: {
-          popoverContent: 'z-50',
+          popoverContent: 'z-50 bg-white border border-gray-200 rounded-lg shadow-lg',
         },
       }}
     />

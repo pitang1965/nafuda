@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { getPublicProfile } from '../../server/functions/profile'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
 import { SnsLinkButton } from '../../components/SnsLinkButton'
@@ -38,6 +38,9 @@ function PublicProfilePage() {
           ))}
         </div>
       )}
+      <Link to="/" className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2">
+        なふだとは？
+      </Link>
     </div>
   )
 }

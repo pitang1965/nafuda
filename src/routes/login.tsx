@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { authClient } from '../lib/auth-client'
 
 export const Route = createFileRoute('/login')({
@@ -37,13 +37,12 @@ function LoginPage() {
         </button>
       </div>
 
-      {/* CRITICAL per CONTEXT.md: always visible, prominent position */}
-      <a
-        href="/"
+      <Link
+        to="/"
         className="text-sm text-gray-500 underline underline-offset-2 hover:text-gray-700"
       >
-        ログインせずに見る →
-      </a>
+        ← トップに戻る
+      </Link>
 
       <OAuthErrorMessage />
     </div>
