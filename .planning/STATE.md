@@ -92,5 +92,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-25
-Stopped at: Completed 02-event-checkin 02-01-PLAN.md (DB schema + server functions)
+Stopped at: Paused at 02-03 Task 3 checkpoint:human-verify — ParticipantCard + /e/$slug complete, awaiting manual verification
 Resume file: None
