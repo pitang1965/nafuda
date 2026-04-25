@@ -39,7 +39,7 @@ function LoginPage() {
 
       {/* CRITICAL per CONTEXT.md: always visible, prominent position */}
       <a
-        href="/u/demo"
+        href="/"
         className="text-sm text-gray-500 underline underline-offset-2 hover:text-gray-700"
       >
         ログインせずに見る →
