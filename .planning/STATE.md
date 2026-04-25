@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** QRを読んだらその場でSNSリンクが見えてつながれる——口頭でID交換する手間・気まずさをゼロにする
-**Current focus:** Phase 1 — 認証・プロフィール基盤
+**Current focus:** Phase 2 — イベント・チェックイン
 
 ## Current Position
 
-Phase: 1 of 4 (認証・プロフィール基盤)
-Plan: 5 of 5 in current phase (gap-closure plan 01-05 added)
-Status: Complete — all 5 plans done, all UAT gaps resolved, ready for phase re-verification
-Last activity: 2026-04-25 — 01-05 Gap-closure: login link fix, logout button, wizard nav, staleTime: 0
+Phase: 2 of 4 (イベント・チェックイン)
+Plan: 1 of 3 in current phase
+Status: In Progress — 02-01 complete (DB schema + server functions), 02-02 and 02-03 pending
+Last activity: 2026-04-25 — 02-01: events + event_checkins tables, 4 server functions
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -73,6 +73,10 @@ Recent decisions affecting current work:
 - [Phase 01-03]: getPublicProfile filters private fields at SELECT/return level server-side — private data never fetched or returned in API response
 - [Phase 01-auth-profile]: Redirect 'ログインせずに見る' to / — demo persona does not exist in DB
 - [Phase 01-auth-profile]: staleTime: 0 on /profile/edit route — ensures fieldVisibility is always fresh after SPA navigation
+- [Phase 02-01]: events.slug UNIQUE — checkinToEvent uses SELECT-then-INSERT with 23505 unique_violation fallback (same pattern as URL-ID)
+- [Phase 02-01]: auto-checkout on checkin — existing NULL checkedOutAt rows updated before INSERT to enforce one-active-checkin per persona
+- [Phase 02-01]: getEventParticipants is public endpoint — returns only displayName, avatarUrl, shareToken, urlId; SNS links and fieldVisibility never exposed
+- [Phase 02-01]: point({ mode: 'xy' }) for GPS storage — x=longitude, y=latitude; no PostGIS needed for Phase 2
 
 ### Pending Todos
 
@@ -88,5 +92,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-25
-Stopped at: Completed 01-auth-profile 01-05-PLAN.md (gap-closure complete)
+Stopped at: Completed 02-event-checkin 02-01-PLAN.md (DB schema + server functions)
 Resume file: None
