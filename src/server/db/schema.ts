@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, jsonb, smallint } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, timestamp, uuid, jsonb, smallint, point } from 'drizzle-orm/pg-core'
 
 // --- Better Auth required tables ---
 export const user = pgTable('user', {
@@ -82,4 +82,27 @@ export const snsLinks = pgTable('sns_links', {
   url: text('url').notNull(),
   displayOrder: smallint('display_order').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// Events table: self-created by first check-in (no admin management)
+export const events = pgTable('events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull().unique(),         // URL-safe identifier 例: "animejapan-20260405"
+  name: text('name').notNull(),                  // イベント名（表示用）
+  venueName: text('venue_name').notNull(),        // 会場名
+  eventDate: timestamp('event_date', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// Event check-ins table: one per persona per event (active = checkedOutAt IS NULL)
+export const eventCheckins = pgTable('event_checkins', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id),
+  personaId: uuid('persona_id').notNull().references(() => personas.id),
+  userId: text('user_id').notNull(),             // Better Auth user.id（認証チェック用）
+  // GPS: point mode 'xy' → { x: longitude, y: latitude }。ユーザーが拒否した場合 null
+  gpsCoordinates: point('gps_coordinates', { mode: 'xy' }),
+  checkedInAt: timestamp('checked_in_at', { withTimezone: true }).defaultNow().notNull(),
+  checkedOutAt: timestamp('checked_out_at', { withTimezone: true }),  // NULL = チェックイン中
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
