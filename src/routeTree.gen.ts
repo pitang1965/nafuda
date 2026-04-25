@@ -13,7 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUrlIdRouteImport } from './routes/u/$urlId'
+import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ProtectedHomeRouteImport } from './routes/_protected/home'
+import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
 import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
@@ -38,9 +40,19 @@ const UUrlIdRoute = UUrlIdRouteImport.update({
   path: '/u/$urlId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ESlugRoute = ESlugRouteImport.update({
+  id: '/e/$slug',
+  path: '/e/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedHomeRoute = ProtectedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedEventsIndexRoute = ProtectedEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -68,20 +80,24 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/home': typeof ProtectedHomeRoute
+  '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/events/': typeof ProtectedEventsIndexRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/home': typeof ProtectedHomeRoute
+  '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/events': typeof ProtectedEventsIndexRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRoutesById {
@@ -90,10 +106,12 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/_protected/home': typeof ProtectedHomeRoute
+  '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/_protected/profile/edit': typeof ProtectedProfileEditRoute
   '/_protected/profile/wizard': typeof ProtectedProfileWizardRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_protected/events/': typeof ProtectedEventsIndexRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRouteTypes {
@@ -102,20 +120,24 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/home'
+    | '/e/$slug'
     | '/u/$urlId'
     | '/profile/edit'
     | '/profile/wizard'
     | '/api/auth/$'
+    | '/events/'
     | '/u/$urlId/p/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/home'
+    | '/e/$slug'
     | '/u/$urlId'
     | '/profile/edit'
     | '/profile/wizard'
     | '/api/auth/$'
+    | '/events'
     | '/u/$urlId/p/$token'
   id:
     | '__root__'
@@ -123,10 +145,12 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/login'
     | '/_protected/home'
+    | '/e/$slug'
     | '/u/$urlId'
     | '/_protected/profile/edit'
     | '/_protected/profile/wizard'
     | '/api/auth/$'
+    | '/_protected/events/'
     | '/u/$urlId/p/$token'
   fileRoutesById: FileRoutesById
 }
@@ -134,6 +158,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ESlugRoute: typeof ESlugRoute
   UUrlIdRoute: typeof UUrlIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -168,11 +193,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUrlIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/e/$slug': {
+      id: '/e/$slug'
+      path: '/e/$slug'
+      fullPath: '/e/$slug'
+      preLoaderRoute: typeof ESlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected/home': {
       id: '/_protected/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof ProtectedHomeRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/events/': {
+      id: '/_protected/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof ProtectedEventsIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/api/auth/$': {
@@ -210,12 +249,14 @@ interface ProtectedRouteChildren {
   ProtectedHomeRoute: typeof ProtectedHomeRoute
   ProtectedProfileEditRoute: typeof ProtectedProfileEditRoute
   ProtectedProfileWizardRoute: typeof ProtectedProfileWizardRoute
+  ProtectedEventsIndexRoute: typeof ProtectedEventsIndexRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedHomeRoute: ProtectedHomeRoute,
   ProtectedProfileEditRoute: ProtectedProfileEditRoute,
   ProtectedProfileWizardRoute: ProtectedProfileWizardRoute,
+  ProtectedEventsIndexRoute: ProtectedEventsIndexRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
@@ -237,6 +278,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ESlugRoute: ESlugRoute,
   UUrlIdRoute: UUrlIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
