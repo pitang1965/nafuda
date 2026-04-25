@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 
 Phase: 1 of 4 (認証・プロフィール基盤)
 Plan: 4 of 4 in current phase
-Status: In Progress — 01-03 complete; profile system, wizard, edit, public routes all done
-Last activity: 2026-04-25 — 01-03 Profile system: wizard, persona switcher, edit, public routes
+Status: Complete — all 4 plans done, awaiting phase verification
+Last activity: 2026-04-25 — 01-04 Oshi tags, dojin_reject, bio, SnsLinkButton, SNS hybrid input
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -37,6 +37,7 @@ Progress: [██████░░░░] 60%
 | Phase 01-auth-profile P01 | 5 min | 2 tasks | 35 files |
 | Phase 01-auth-profile P02 | 11 min | 2 tasks | 8 files |
 | Phase 01-auth-profile P03 | 16 | 2 tasks | 8 files |
+| Phase 01-auth-profile P04 | 60 | 3 tasks | 12 files |
 
 ## Accumulated Context
 
