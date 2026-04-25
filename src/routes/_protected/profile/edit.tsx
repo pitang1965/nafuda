@@ -10,6 +10,7 @@ import { OshiTagInput } from '../../../components/OshiTagInput'
 
 export const Route = createFileRoute('/_protected/profile/edit')({
   loader: () => getOwnProfile(),
+  staleTime: 0,
   component: EditPage,
 })
 
