@@ -27,6 +27,29 @@ const PLATFORMS = [
 
 type Platform = typeof PLATFORMS[number]['value']
 
+// Platforms where a bare username can be entered (no https:// required)
+const USERNAME_BASE: Partial<Record<Platform, string>> = {
+  x: 'https://x.com/',
+  instagram: 'https://instagram.com/',
+  tiktok: 'https://tiktok.com/@',
+  youtube: 'https://youtube.com/@',
+  github: 'https://github.com/',
+}
+
+function normalizeUrl(platform: Platform, input: string): string {
+  const trimmed = input.trim()
+  if (!trimmed || trimmed.startsWith('http')) return trimmed
+  const base = USERNAME_BASE[platform]
+  return base ? `${base}${trimmed}` : trimmed
+}
+
+function getSnsPlaceholder(platform: Platform): string {
+  if (platform in USERNAME_BASE) return 'ユーザー名 または https://...'
+  if (platform === 'discord') return 'https://discord.gg/...'
+  if (platform === 'line_openchat') return 'https://line.me/ti/g2/...'
+  return 'https://...'
+}
+
 interface SnsLinkState {
   id?: string
   platform: Platform
@@ -37,9 +60,11 @@ interface SnsLinkState {
 
 const EditSchema = z.object({
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
+  bio: z.string().max(200, '200文字以下').optional().or(z.literal('')),
   avatarUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   useAutoAvatar: z.boolean(),
   displayNameVisibility: z.enum(['public', 'private']),
+  bioVisibility: z.enum(['public', 'private']),
   avatarVisibility: z.enum(['public', 'private']),
   snsLinksVisibility: z.enum(['public', 'private']),
   oshiTagsVisibility: z.enum(['public', 'private']),
@@ -97,13 +122,16 @@ function EditPage() {
     <EditForm
       personaId={defaultPersona.id}
       initialDisplayName={defaultPersona.displayName}
+      initialBio={defaultPersona.bio ?? ''}
       initialAvatarUrl={defaultPersona.avatarUrl ?? ''}
       initialDisplayNameVisibility={(visibility.display_name as 'public' | 'private') ?? 'public'}
+      initialBioVisibility={(visibility.bio as 'public' | 'private') ?? 'public'}
       initialAvatarVisibility={(visibility.avatar_url as 'public' | 'private') ?? 'public'}
       initialSnsLinksVisibility={(visibility.sns_links as 'public' | 'private') ?? 'public'}
       initialOshiTagsVisibility={(visibility.oshi_tags as 'public' | 'private') ?? 'public'}
       initialOshiTags={defaultPersona.oshiTags}
       initialDojinReject={defaultPersona.dojinReject}
+      initialSnsLinks={defaultPersona.snsLinks}
     />
   )
 }
@@ -111,28 +139,42 @@ function EditPage() {
 function EditForm({
   personaId,
   initialDisplayName,
+  initialBio,
   initialAvatarUrl,
   initialDisplayNameVisibility,
+  initialBioVisibility,
   initialAvatarVisibility,
   initialSnsLinksVisibility,
   initialOshiTagsVisibility,
   initialOshiTags,
   initialDojinReject,
+  initialSnsLinks,
 }: {
   personaId: string
   initialDisplayName: string
+  initialBio: string
   initialAvatarUrl: string
   initialDisplayNameVisibility: 'public' | 'private'
+  initialBioVisibility: 'public' | 'private'
   initialAvatarVisibility: 'public' | 'private'
   initialSnsLinksVisibility: 'public' | 'private'
   initialOshiTagsVisibility: 'public' | 'private'
   initialOshiTags: string[]
   initialDojinReject: boolean
+  initialSnsLinks: { id: string; platform: string; url: string; displayOrder: number }[]
 }) {
   const navigate = useNavigate()
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [snsLinks, setSnsLinks] = useState<SnsLinkState[]>([])
+  const [snsLinks, setSnsLinks] = useState<SnsLinkState[]>(() =>
+    initialSnsLinks.map(l => ({
+      id: l.id,
+      platform: l.platform as Platform,
+      url: l.url,
+      displayOrder: l.displayOrder,
+      isNew: false,
+    }))
+  )
   const [deletedLinkIds, setDeletedLinkIds] = useState<string[]>([])
   const [oshiSaving, setOshiSaving] = useState(false)
   const [oshiSaveError, setOshiSaveError] = useState<string | null>(null)
@@ -142,9 +184,11 @@ function EditForm({
     resolver: zodResolver(EditSchema),
     defaultValues: {
       displayName: initialDisplayName,
+      bio: initialBio,
       avatarUrl: initialAvatarUrl,
       useAutoAvatar: !initialAvatarUrl,
       displayNameVisibility: initialDisplayNameVisibility,
+      bioVisibility: initialBioVisibility,
       avatarVisibility: initialAvatarVisibility,
       snsLinksVisibility: initialSnsLinksVisibility,
       oshiTagsVisibility: initialOshiTagsVisibility,
@@ -156,8 +200,10 @@ function EditForm({
   const { register, handleSubmit, watch, setValue, formState: { errors } } = methods
 
   const displayName = watch('displayName') ?? ''
+  const bio = watch('bio') ?? ''
   const useAutoAvatar = watch('useAutoAvatar')
   const displayNameVisibility = watch('displayNameVisibility')
+  const bioVisibility = watch('bioVisibility')
   const avatarVisibility = watch('avatarVisibility')
   const snsLinksVisibility = watch('snsLinksVisibility')
   const oshiTagsVisibility = watch('oshiTagsVisibility')
@@ -229,9 +275,11 @@ function EditForm({
         data: {
           personaId,
           displayName: values.displayName,
+          bio: values.bio || null,
           avatarUrl: values.useAutoAvatar ? null : (values.avatarUrl || null),
           fieldVisibility: {
             display_name: values.displayNameVisibility,
+            bio: values.bioVisibility,
             avatar_url: values.avatarVisibility,
             sns_links: values.snsLinksVisibility,
             oshi_tags: values.oshiTagsVisibility,
@@ -244,7 +292,7 @@ function EditForm({
         await deleteSnsLink({ data: { linkId } })
       }
 
-      // Upsert SNS links
+      // Upsert SNS links (normalize username inputs to full URLs before saving)
       for (const link of snsLinks) {
         if (!link.url.trim()) continue
         await upsertSnsLink({
@@ -252,7 +300,7 @@ function EditForm({
             personaId,
             linkId: link.isNew ? undefined : link.id,
             platform: link.platform,
-            url: link.url,
+            url: normalizeUrl(link.platform, link.url),
             displayOrder: link.displayOrder,
           },
         })
@@ -303,6 +351,28 @@ function EditForm({
             {errors.displayName && <p className="text-xs text-red-600">{errors.displayName.message}</p>}
           </div>
 
+          {/* Bio */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">自己紹介</label>
+              <VisibilityToggle
+                value={bioVisibility}
+                onChange={(v) => setValue('bioVisibility', v)}
+              />
+            </div>
+            <div className="relative">
+              <textarea
+                {...register('bio')}
+                rows={3}
+                maxLength={200}
+                placeholder="推し活のきっかけや活動スタイルなど、自由に書いてください"
+                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+              />
+              <span className="absolute bottom-2 right-3 text-xs text-gray-400">{bio.length}/200</span>
+            </div>
+            {errors.bio && <p className="text-xs text-red-600">{errors.bio.message}</p>}
+          </div>
+
           {/* Avatar */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -334,13 +404,15 @@ function EditForm({
           {/* Oshi tags */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">推しタグ</label>
+              <label className="text-sm font-medium">推し / 趣味タグ</label>
               <VisibilityToggle
                 value={oshiTagsVisibility}
                 onChange={(v) => setValue('oshiTagsVisibility', v)}
               />
             </div>
-            <p className="text-xs text-gray-500">推しの名前・ジャンルを登録しましょう</p>
+            <p className="text-xs text-gray-500">
+              推しの名前・グループ名・ジャンルなど自由に入力できます。入力して <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">Enter</kbd> で追加、×で削除。
+            </p>
             <OshiTagInput name="oshiTags" />
             {oshiSaveError && <p className="text-xs text-red-600">{oshiSaveError}</p>}
             <button
@@ -349,7 +421,7 @@ function EditForm({
               disabled={oshiSaving}
               className="self-start px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
             >
-              {oshiSaving ? '保存中...' : oshiSaved ? '保存しました' : '推しタグを保存'}
+              {oshiSaving ? '保存中...' : oshiSaved ? '保存しました' : '推し / 趣味タグを保存'}
             </button>
           </div>
 
@@ -436,7 +508,7 @@ function EditForm({
                   <input
                     value={link.url}
                     onChange={(e) => updateSnsLinkField(index, 'url', e.target.value)}
-                    placeholder="https://..."
+                    placeholder={getSnsPlaceholder(link.platform)}
                     className="w-full px-2 py-1.5 border rounded text-sm bg-white outline-none"
                   />
                 </div>

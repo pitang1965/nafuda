@@ -179,9 +179,10 @@ function WizardPage() {
           {/* Step 3: Oshi tags */}
           {step === 3 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">推しを教えてください</h2>
+              <h2 className="text-xl font-bold">推し・趣味・ジャンルを教えてください</h2>
               <p className="text-sm text-gray-500">
-                タグは自由記述です。推しの名前・グループ名・ジャンルなど何でも入力できます
+                推しの名前・グループ名・ジャンルなど自由に入力できます。<br />
+                入力して <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">Enter</kbd> で追加、×で削除。複数登録OK。
               </p>
               <OshiTagInput name="oshiTags" />
               {oshiTagsError && (

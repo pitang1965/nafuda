@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { getOwnProfile } from '../../server/functions/profile'
 import { PersonaSwitcher } from '../../components/PersonaSwitcher'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
+import { SnsLinkButton } from '../../components/SnsLinkButton'
 
 export const Route = createFileRoute('/_protected/home')({
   loader: () => getOwnProfile(),
@@ -43,10 +44,20 @@ function HomePage() {
         )}
         <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
         {urlId && <p className="text-xs text-gray-400">/u/{urlId}</p>}
+        {currentPersona?.bio && (
+          <p className="text-sm text-gray-600 text-center whitespace-pre-wrap max-w-xs">{currentPersona.bio}</p>
+        )}
         {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
           <div className="flex flex-wrap gap-1 justify-center">
             {currentPersona.oshiTags.map(tag => (
               <span key={tag} className="px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs">{tag}</span>
+            ))}
+          </div>
+        )}
+        {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {currentPersona.snsLinks.map(link => (
+              <SnsLinkButton key={link.id} platform={link.platform} url={link.url} />
             ))}
           </div>
         )}

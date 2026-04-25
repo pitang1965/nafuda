@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import { db } from '../db/client'
 import { personas, urlIds, snsLinks } from '../db/schema'
 import { auth } from '../auth'
@@ -40,9 +40,20 @@ export const getOwnProfile = createServerFn({ method: 'GET' })
       .where(eq(urlIds.userId, session.user.id))
       .limit(1)
 
+    const personaIds = myPersonas.map(p => p.id)
+    const allLinks = personaIds.length > 0
+      ? await db.select().from(snsLinks)
+          .where(inArray(snsLinks.personaId, personaIds))
+          .orderBy(snsLinks.displayOrder)
+      : []
+    const linksByPersona = allLinks.reduce<Record<string, typeof allLinks>>((acc, link) => {
+      ;(acc[link.personaId] ??= []).push(link)
+      return acc
+    }, {})
+
     return {
       urlId: urlIdRow[0]?.urlId ?? null,
-      personas: myPersonas,
+      personas: myPersonas.map(p => ({ ...p, snsLinks: linksByPersona[p.id] ?? [] })),
     }
   })
 
@@ -51,6 +62,7 @@ export const createPersona = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     urlId: urlIdSchema.optional(), // only on first persona creation
     displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
+    bio: z.string().max(200).optional().nullable(),
     avatarUrl: z.string().url().optional().nullable(),
     isDefault: z.boolean().default(false),
     oshiTags: z.array(z.string()).default([]),
@@ -91,6 +103,7 @@ export const createPersona = createServerFn({ method: 'POST' })
     const [persona] = await db.insert(personas).values({
       userId: session.user.id,
       displayName: data.displayName,
+      bio: data.bio ?? null,
       shareToken,
       avatarUrl: data.avatarUrl ?? null,
       isDefault: data.isDefault,
@@ -105,6 +118,7 @@ export const updatePersona = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     personaId: z.string().uuid(),
     displayName: z.string().min(1).max(50).optional(),
+    bio: z.string().max(200).optional().nullable(),
     avatarUrl: z.string().url().optional().nullable(),
     fieldVisibility: z.record(z.string(), z.enum(['public', 'private'])).optional(),
   }))
@@ -115,6 +129,7 @@ export const updatePersona = createServerFn({ method: 'POST' })
 
     const updates: Partial<typeof personas.$inferInsert> = { updatedAt: new Date() }
     if (data.displayName !== undefined) updates.displayName = data.displayName
+    if (data.bio !== undefined) updates.bio = data.bio
     if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl
     if (data.fieldVisibility !== undefined) updates.fieldVisibility = data.fieldVisibility
 
@@ -164,6 +179,7 @@ export const getPublicProfile = createServerFn({ method: 'GET' })
 
     return {
       displayName: persona.displayName,
+      bio: visibility.bio === 'private' ? null : persona.bio,
       avatarUrl: visibility.avatar_url === 'private' ? null : persona.avatarUrl,
       oshiTags: visibility.oshi_tags === 'private' ? [] : persona.oshiTags,
       dojinReject: persona.dojinReject, // always exposed (Phase 2 event filtering needs this)

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { getPublicProfile } from '../../server/functions/profile'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
+import { SnsLinkButton } from '../../components/SnsLinkButton'
 
 // No beforeLoad auth check — public route per AUTH-03 and AUTH-04
 export const Route = createFileRoute('/u/$urlId')({
@@ -20,6 +21,9 @@ function PublicProfilePage() {
         <InitialsAvatar name={profile.displayName} size={80} />
       )}
       <h1 className="text-2xl font-bold">{profile.displayName}</h1>
+      {profile.bio && (
+        <p className="text-sm text-gray-600 text-center whitespace-pre-wrap max-w-sm">{profile.bio}</p>
+      )}
       {profile.oshiTags.length > 0 && (
         <div className="flex flex-wrap gap-1 justify-center">
           {profile.oshiTags.map(tag => (
@@ -30,11 +34,7 @@ function PublicProfilePage() {
       {profile.snsLinks.length > 0 && (
         <div className="w-full max-w-sm flex flex-col gap-2">
           {profile.snsLinks.map(link => (
-            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-3 border rounded-lg text-sm hover:bg-gray-50">
-              <span className="font-medium capitalize">{link.platform}</span>
-              <span className="text-gray-400 text-xs truncate">{link.url}</span>
-            </a>
+            <SnsLinkButton key={link.id} platform={link.platform} url={link.url} />
           ))}
         </div>
       )}

@@ -58,15 +58,19 @@ export function OshiTagInput({ name = 'oshiTags' }: OshiTagInputProps) {
       setTags={handleSetTags}
       activeTagIndex={activeTagIndex}
       setActiveTagIndex={setActiveTagIndex}
-      enableAutocomplete
+      enableAutocomplete={suggestions.length > 0}
       autocompleteOptions={suggestions}
       onInputChange={handleInputChange}
-      placeholder="推し名・ジャンルを入力..."
+      placeholder="推し名・ジャンルを入力して Enter"
       maxTags={20}
       className="w-full"
       styleClasses={{
         tag: {
-          body: 'bg-pink-100 text-pink-700 border-pink-200',
+          body: 'bg-pink-100 text-pink-700 border-pink-200 pl-3',
+          closeButton: 'py-1 pl-1 pr-1 h-full hover:bg-transparent',
+        },
+        autoComplete: {
+          popoverContent: 'z-50',
         },
       }}
     />
