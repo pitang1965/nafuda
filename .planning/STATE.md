@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 2 of 4 (イベント・チェックイン)
-Plan: 2 of 3 in current phase
-Status: In Progress — 02-01 and 02-02 complete, 02-03 pending
-Last activity: 2026-04-25 — 02-02: EventCheckinCard component + /_protected/events/ checkin route
+Plan: 3 of 3 in current phase
+Status: Complete — Phase 02 all 3 plans done
+Last activity: 2026-04-26 — 02-03: /e/$slug event page with QR code, checkin button, all participants
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 02-01]: auto-checkout on checkin — existing NULL checkedOutAt rows updated before INSERT to enforce one-active-checkin per persona
 - [Phase 02-01]: getEventParticipants is public endpoint — returns only displayName, avatarUrl, shareToken, urlId; SNS links and fieldVisibility never exposed
 - [Phase 02-01]: point({ mode: 'xy' }) for GPS storage — x=longitude, y=latitude; no PostGIS needed for Phase 2
+- [Phase 02-03]: checkinToEvent refactored to slug+personaId only (event must exist); createEventAndCheckin added for form-based event creation
+- [Phase 02-03]: getEventParticipants removes isNull(checkedOutAt) filter — new design shows all participants (not just active)
+- [Phase 02-03]: QRCodeSVG requires mounted state guard (useEffect + useState) for SSR safety; window.location.href also fetched only after mount
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-25
-Stopped at: Paused at 02-03 Task 3 checkpoint:human-verify — ParticipantCard + /e/$slug complete, awaiting manual verification
+Last session: 2026-04-26
+Stopped at: Completed 02-03-PLAN.md — Phase 02 complete
 Resume file: None
