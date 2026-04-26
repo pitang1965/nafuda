@@ -6,6 +6,7 @@ import { PersonaSwitcher } from '../../components/PersonaSwitcher'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
 import { SnsLinkButton } from '../../components/SnsLinkButton'
 import { QRBottomSheet } from '../../components/QRBottomSheet'
+import { PwaInstallBanner } from '../../components/PwaInstallBanner'
 
 export const Route = createFileRoute('/_protected/me')({
   loader: () => getOwnProfile(),
@@ -122,6 +123,8 @@ function MePage() {
           </Link>
         </div>
       </div>
+
+      <PwaInstallBanner />
 
       {currentPersona && urlId && (
         <QRBottomSheet

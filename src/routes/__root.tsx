@@ -1,8 +1,19 @@
 import { createRootRoute, Outlet, HeadContent, Scripts } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { useEffect } from 'react'
 import '../index.css'
 
 function RootDocument({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then((reg) => console.log('[SW] Registered:', reg.scope))
+          .catch((err) => console.warn('[SW] Registration failed:', err))
+      })
+    }
+  }, [])
+
   return (
     <html lang="ja">
       <head>
