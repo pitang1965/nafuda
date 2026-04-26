@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** QRを読んだらその場でSNSリンクが見えてつながれる——口頭でID交換する手間・気まずさをゼロにする
-**Current focus:** Phase 2 — イベント・チェックイン
+**Current focus:** Phase 3 — QR・コネクション・PWA
 
 ## Current Position
 
-Phase: 2 of 4 (イベント・チェックイン)
-Plan: 4 of 4 in current phase (including 02-04 E2E verification)
-Status: Complete — Phase 02 all plans done, E2E human verification approved
-Last activity: 2026-04-26 — 02-04: Phase 2 E2E human-verify approved (all 4 flows passed)
+Phase: 3 of 4 (QR・コネクション・PWA)
+Plan: 2 of 5 in current phase
+Status: In Progress — 03-02 connections schema and server functions complete
+Last activity: 2026-04-26 — 03-02: connections テーブル定義 + createConnection/getMyConnections 実装完了
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Progress: [██████████] 100%
 | Phase 01-auth-profile P03 | 16 | 2 tasks | 8 files |
 | Phase 01-auth-profile P04 | 60 | 3 tasks | 12 files |
 | Phase 01-auth-profile P05 | 10 | 3 tasks | 3 files |
+| Phase 03-qr-pwa P02 | 10 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 02-03]: getEventParticipants removes isNull(checkedOutAt) filter — new design shows all participants (not just active)
 - [Phase 02-03]: QRCodeSVG requires mounted state guard (useEffect + useState) for SSR safety; window.location.href also fetched only after mount
 - [Phase 02-04]: dojinReject saves via onChange (immediate) AND onSubmit (guaranteed fallback); silent catch replaced with error display
+- [Phase 03-02]: connections table uses one-way design (fromPersonaId+toPersonaId UNIQUE) — bidirectional connections require two rows
+- [Phase 03-02]: event context denormalized in connections table (eventName, venueName, eventDate columns) — avoids JOIN overhead at display time
+- [Phase 03-02]: 23505 UNIQUE violation in createConnection returns alreadyConnected:true (not an error) — same pattern as checkinToEvent
 
 ### Pending Todos
 
@@ -96,5 +100,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-26
-Stopped at: Completed 02-04 E2E human-verify — Phase 02 fully complete
+Stopped at: Completed 03-02-PLAN.md — connections schema + server functions implemented
 Resume file: None

@@ -101,4 +101,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | 0. プロトタイプ | 3/3 | Complete   | 2026-04-22 |
 | 1. 認証・プロフィール基盤 | 5/5 | Complete   | 2026-04-25 |
 | 2. イベント・チェックイン | 4/4 | Complete   | 2026-04-26 |
-| 3. QR・コネクション・PWA | 0/5 | Not started | - |
+| 3. QR・コネクション・PWA | 1/5 | In Progress|  |
