@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, jsonb, smallint, point } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, timestamp, uuid, jsonb, smallint, point, unique } from 'drizzle-orm/pg-core'
 
 // --- Better Auth required tables ---
 export const user = pgTable('user', {
@@ -107,3 +107,22 @@ export const eventCheckins = pgTable('event_checkins', {
   checkedOutAt: timestamp('checked_out_at', { withTimezone: true }),  // NULL = チェックイン中
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// Connections table: one-way "connect" action from viewer to profile owner
+export const connections = pgTable('connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // fromPersonaId: コネクションを記録した側（「つながる」を押した人のペルソナ）
+  fromPersonaId: uuid('from_persona_id').notNull().references(() => personas.id),
+  // toPersonaId: QRを見せた側（つながられた人のペルソナ）
+  toPersonaId: uuid('to_persona_id').notNull().references(() => personas.id),
+  fromUserId: text('from_user_id').notNull(),  // Better Auth user.id（認証チェック用）
+  // イベントコンテキスト（チェックイン中でない場合は null）
+  eventId: uuid('event_id').references(() => events.id),
+  eventName: text('event_name'),    // 非正規化: JOIN不要で表示できるよう保存
+  venueName: text('venue_name'),    // 非正規化
+  eventDate: timestamp('event_date', { withTimezone: true }),
+  connectedAt: timestamp('connected_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  // 同一ペルソナペアのコネクション重複防止（一方通行なのでfrom/to両方でユニーク）
+  uniqueConn: unique().on(table.fromPersonaId, table.toPersonaId),
+}))
