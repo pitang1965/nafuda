@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 2 of 4 (イベント・チェックイン)
-Plan: 3 of 3 in current phase
-Status: Complete — Phase 02 all 3 plans done
-Last activity: 2026-04-26 — 02-03: /e/$slug event page with QR code, checkin button, all participants
+Plan: 4 of 4 in current phase (including 02-04 E2E verification)
+Status: Complete — Phase 02 all plans done, E2E human verification approved
+Last activity: 2026-04-26 — 02-04: Phase 2 E2E human-verify approved (all 4 flows passed)
 
 Progress: [██████████] 100%
 
@@ -80,6 +80,7 @@ Recent decisions affecting current work:
 - [Phase 02-03]: checkinToEvent refactored to slug+personaId only (event must exist); createEventAndCheckin added for form-based event creation
 - [Phase 02-03]: getEventParticipants removes isNull(checkedOutAt) filter — new design shows all participants (not just active)
 - [Phase 02-03]: QRCodeSVG requires mounted state guard (useEffect + useState) for SSR safety; window.location.href also fetched only after mount
+- [Phase 02-04]: dojinReject saves via onChange (immediate) AND onSubmit (guaranteed fallback); silent catch replaced with error display
 
 ### Pending Todos
 
@@ -95,5 +96,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-26
-Stopped at: Completed 02-03-PLAN.md — Phase 02 complete
+Stopped at: Completed 02-04 E2E human-verify — Phase 02 fully complete
 Resume file: None

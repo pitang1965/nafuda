@@ -263,7 +263,7 @@ function EditForm({
     try {
       await updateDojinReject({ data: { personaId, dojinReject: value === 'true' } })
     } catch {
-      // Silent fail — user can retry via main save
+      setSaveError('同担設定の保存に失敗しました。「保存する」ボタンで再試行してください。')
     }
   }
 
@@ -287,6 +287,9 @@ function EditForm({
           },
         },
       })
+
+      // Save dojinReject (guaranteed save — fallback if immediate onChange save failed)
+      await updateDojinReject({ data: { personaId, dojinReject: values.dojinReject === 'true' } })
 
       // Delete removed SNS links
       for (const linkId of deletedLinkIds) {

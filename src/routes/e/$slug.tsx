@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { auth } from '../../server/auth'
 import { getEventParticipants } from '../../server/functions/event'
 import { getOwnProfile } from '../../server/functions/profile'
-import { checkinToEvent } from '../../server/functions/event'
+import { checkinToEvent, getMyCheckinStatus } from '../../server/functions/event'
 import { ParticipantCard } from '../../components/ParticipantCard'
 import { QRCodeSVG } from 'qrcode.react'
 
@@ -24,14 +24,18 @@ export const Route = createFileRoute('/e/$slug')({
       getOptionalSession(),
     ])
     let defaultPersonaId: string | null = null
+    let isCheckedIn = false
     if (session?.user) {
       const profile = await getOwnProfile()
       defaultPersonaId =
         profile?.personas?.find((p) => p.isDefault)?.id
         ?? profile?.personas?.[0]?.id
         ?? null
+      if (defaultPersonaId) {
+        isCheckedIn = await getMyCheckinStatus({ data: { slug: params.slug, personaId: defaultPersonaId } })
+      }
     }
-    return { data, isLoggedIn: !!session?.user, defaultPersonaId }
+    return { data, isLoggedIn: !!session?.user, defaultPersonaId, isCheckedIn }
   },
   component: EventPage,
 })
@@ -52,27 +56,26 @@ function QRCodeDisplay({ url }: { url: string }) {
 }
 
 function EventPage() {
-  const { data, isLoggedIn, defaultPersonaId } = Route.useLoaderData()
+  const { data, isLoggedIn, defaultPersonaId, isCheckedIn } = Route.useLoaderData()
   const router = useRouter()
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [checkinError, setCheckinError] = useState<string | null>(null)
-  // currentUrl は useEffect 後のみ取得（window.location.href はブラウザ専用）
   const [currentUrl, setCurrentUrl] = useState('')
   useEffect(() => { setCurrentUrl(window.location.href) }, [])
 
   const handleCheckin = useCallback(async () => {
-    if (!defaultPersonaId || !data) return
+    if (!defaultPersonaId || !data || isCheckedIn) return
     setIsCheckingIn(true)
     setCheckinError(null)
     try {
       await checkinToEvent({ data: { slug: data.event.slug, personaId: defaultPersonaId } })
-      await router.invalidate()
+      await router.navigate({ to: '/e/$slug', params: { slug: data.event.slug }, replace: true })
     } catch (err) {
       setCheckinError(err instanceof Error ? err.message : 'チェックインに失敗しました')
     } finally {
       setIsCheckingIn(false)
     }
-  }, [defaultPersonaId, data, router])
+  }, [defaultPersonaId, data, isCheckedIn, router])
 
   if (!data) {
     return (
@@ -105,13 +108,19 @@ function EventPage() {
       {isLoggedIn ? (
         defaultPersonaId ? (
           <div className="flex flex-col gap-2">
-            <button
-              onClick={handleCheckin}
-              disabled={isCheckingIn}
-              className="w-full py-3 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isCheckingIn ? '参加中...' : '参加する'}
-            </button>
+            {isCheckedIn ? (
+              <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">
+                参加済み
+              </div>
+            ) : (
+              <button
+                onClick={handleCheckin}
+                disabled={isCheckingIn}
+                className="w-full py-3 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isCheckingIn ? '参加中...' : '参加する'}
+              </button>
+            )}
             {checkinError && <p className="text-xs text-red-500 text-center">{checkinError}</p>}
           </div>
         ) : (
@@ -153,7 +162,7 @@ function EventPage() {
               displayName={p.displayName}
               avatarUrl={p.avatarUrl}
               // OSHI-05: ログイン済みの場合のみ profileHref を渡す
-              profileHref={isLoggedIn ? `/u/${p.urlId}/p/${p.shareToken}` : undefined}
+              profileHref={isLoggedIn && p.urlId ? `/u/${p.urlId}/p/${p.shareToken}` : undefined}
             />
           ))}
         </div>

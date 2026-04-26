@@ -19,6 +19,7 @@ import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/ev
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
 import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
+import { Route as ProtectedEventsNewRouteImport } from './routes/_protected/events/new'
 import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
 
 const LoginRoute = LoginRouteImport.update({
@@ -70,6 +71,11 @@ const ProtectedProfileEditRoute = ProtectedProfileEditRouteImport.update({
   path: '/profile/edit',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedEventsNewRoute = ProtectedEventsNewRouteImport.update({
+  id: '/events/new',
+  path: '/events/new',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
   id: '/p/$token',
   path: '/p/$token',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof ProtectedHomeRoute
   '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
+  '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/home': typeof ProtectedHomeRoute
   '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
+  '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/_protected/home': typeof ProtectedHomeRoute
   '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
+  '/_protected/events/new': typeof ProtectedEventsNewRoute
   '/_protected/profile/edit': typeof ProtectedProfileEditRoute
   '/_protected/profile/wizard': typeof ProtectedProfileWizardRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/e/$slug'
     | '/u/$urlId'
+    | '/events/new'
     | '/profile/edit'
     | '/profile/wizard'
     | '/api/auth/$'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/e/$slug'
     | '/u/$urlId'
+    | '/events/new'
     | '/profile/edit'
     | '/profile/wizard'
     | '/api/auth/$'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/_protected/home'
     | '/e/$slug'
     | '/u/$urlId'
+    | '/_protected/events/new'
     | '/_protected/profile/edit'
     | '/_protected/profile/wizard'
     | '/api/auth/$'
@@ -235,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileEditRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/events/new': {
+      id: '/_protected/events/new'
+      path: '/events/new'
+      fullPath: '/events/new'
+      preLoaderRoute: typeof ProtectedEventsNewRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/u/$urlId/p/$token': {
       id: '/u/$urlId/p/$token'
       path: '/p/$token'
@@ -247,6 +266,7 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedRouteChildren {
   ProtectedHomeRoute: typeof ProtectedHomeRoute
+  ProtectedEventsNewRoute: typeof ProtectedEventsNewRoute
   ProtectedProfileEditRoute: typeof ProtectedProfileEditRoute
   ProtectedProfileWizardRoute: typeof ProtectedProfileWizardRoute
   ProtectedEventsIndexRoute: typeof ProtectedEventsIndexRoute
@@ -254,6 +274,7 @@ interface ProtectedRouteChildren {
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedHomeRoute: ProtectedHomeRoute,
+  ProtectedEventsNewRoute: ProtectedEventsNewRoute,
   ProtectedProfileEditRoute: ProtectedProfileEditRoute,
   ProtectedProfileWizardRoute: ProtectedProfileWizardRoute,
   ProtectedEventsIndexRoute: ProtectedEventsIndexRoute,

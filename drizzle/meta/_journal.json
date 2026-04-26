@@ -29,6 +29,13 @@
       "when": 1777122141813,
       "tag": "0003_dry_zeigeist",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777170456869,
+      "tag": "0004_amusing_demogoblin",
+      "breakpoints": true
     }
   ]
 }

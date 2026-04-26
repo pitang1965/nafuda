@@ -36,7 +36,7 @@ requirements-completed:
   - OSHI-05
 
 # Metrics
-duration: pending-human-verify
+duration: ~30min (E2E human verification)
 completed: 2026-04-26
 ---
 
@@ -46,48 +46,57 @@ completed: 2026-04-26
 
 ## Performance
 
-- **Duration:** pending (awaiting human verification)
+- **Duration:** ~30min (E2E human verification + bug fix)
 - **Started:** 2026-04-26T00:53:53Z
-- **Completed:** pending
-- **Tasks:** 0/1 (awaiting checkpoint:human-verify)
-- **Files modified:** 0
+- **Completed:** 2026-04-26
+- **Tasks:** 1/1 (checkpoint:human-verify — approved)
+- **Files modified:** 2
 
 ## Accomplishments
 
-- このプランはエンドツーエンド確認専用の checkpoint:human-verify で構成される
-- Phase 2 の実装（02-01〜02-03）が完了しており、ユーザーによる手動確認が必要
+- フロー A（イベント作成 → QR表示）: 確認済み
+- フロー B（参加フロー）: 確認済み
+- フロー C（未ログインアクセス OSHI-05）: 確認済み — ハンドル名・アバター表示、「ログインして参加する」リンク表示、プロフィールリンク無効
+- フロー D（一覧確認 OSHI-04）: 確認済み — ログイン時に参加者カードからプロフィールページへ遷移
+- 同担拒否 DB 未保存バグを修正: `handleDojinRejectChange` の silent catch を廃止し、`onSubmit` にも `updateDojinReject` 呼び出しを追加
+- Migration 0004（`events.host_user_id`）適用済み
 
 ## Task Commits
 
-このプランにはコード変更がないため、タスクコミットはありません。
-
-**Plan metadata:** (pending final commit after human approval)
+**Plan metadata:** (checkpoint approved by user — all 4 flows passed)
 
 ## Files Created/Modified
 
-なし — このプランは確認専用です
+- `src/routes/_protected/profile/edit.tsx` — dojinReject 未保存バグ修正（2箇所）
 
 ## Decisions Made
 
-None - 確認チェックポイントのみのプランのため
+- dojinReject は即時保存（onChange）＋メインセーブ（onSubmit）の両方で保存する二重保存方式に変更
+- 即時保存失敗時はエラーメッセージを表示してユーザーに通知する
 
 ## Deviations from Plan
 
-None - plan executed exactly as written (checkpoint reached, awaiting human verification)
+### Auto-fixed Bug
+
+**1. 同担拒否 DB 未保存バグ**
+- **Found during:** Phase 2 E2E フロー確認中
+- **Issue:** `handleDojinRejectChange` の catch が silent で DB 未更新が検知不可、かつ `onSubmit` でも `updateDojinReject` を呼んでいなかった
+- **Fix:** silent catch をエラー表示に変更、`onSubmit` に `updateDojinReject` 呼び出しを追加
+- **Files modified:** `src/routes/_protected/profile/edit.tsx`
 
 ## Issues Encountered
 
-None
+- 同担拒否 DB 未保存バグ（上記 Auto-fixed Bug 参照）
 
 ## User Setup Required
 
-None - no external service configuration required.
+None — migration 0004 は `pnpm db:migrate` で適用済み。
 
 ## Next Phase Readiness
 
-- Phase 2 実装（02-01〜02-03）は完了済み
-- ユーザーによる全フロー確認が完了した後、Phase 3 に進む
-- 確認中に問題が発見された場合は該当プランを修正して再実行する
+- Phase 2 全機能（OSHI-03, OSHI-04, OSHI-05）の E2E 確認完了
+- Phase 3（QR・コネクション・PWA）に進む準備完了
+- dojinReject バグ修正済み、イベントフィルタリングが正しく動作
 
 ---
 *Phase: 02-event-checkin*

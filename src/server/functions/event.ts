@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, ne, desc, inArray } from 'drizzle-orm'
 import { db } from '../db/client'
 import { events, eventCheckins, personas, urlIds } from '../db/schema'
 import { auth } from '../auth'
@@ -103,6 +103,7 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
             name: data.eventName,
             venueName: data.venueName,
             eventDate: new Date(data.eventDate),
+            hostUserId: session.user.id,
           })
           .returning()
         eventRow = inserted
@@ -200,7 +201,7 @@ export const getActiveCheckin = createServerFn({ method: 'GET' })
 // Get event participants — public endpoint (no auth required)
 // CRITICAL: dojinReject filter MUST be in SQL WHERE clause (never client-side)
 // Returns ALL checkin records (no checkedOutAt filter) — shows everyone who ever participated
-export const getEventParticipants = createServerFn({ method: 'GET' })
+export const getEventParticipants = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ slug: z.string() }))
   .handler(async ({ data }) => {
     // 1. slug で events を SELECT — 存在しなければ null を返す
@@ -210,12 +211,11 @@ export const getEventParticipants = createServerFn({ method: 'GET' })
       .limit(1)
     if (!eventRow[0]) return null
 
-    // 2-4. JOIN: event_checkins → personas → urlIds
-    //      WHERE: eventId = ? AND dojinReject = false AND isPublic = true
-    //      checkedOutAt フィルタなし — 全参加者（チェックアウト済みも含む）を表示
-    //      SELECT のみ: checkinId, personaId, displayName, avatarUrl, urlId, shareToken
-    //      （SNSリンク・fieldVisibility は絶対含めない）
-    const participants = await db
+    // leftJoin で urlIds が未設定のユーザーも表示対象に含める
+    // dojinReject=true のペルソナのみ除外（OSHI-04 要件）
+    // isPublic フィルタは外す — チェックインはイベント参加の意思表示であり公開を前提とする
+    // checkedInAt DESC でソートし、アプリ層で personaId 重複を除去（再チェックイン対策）
+    const rows = await db
       .select({
         checkinId: eventCheckins.id,
         personaId: personas.id,
@@ -226,12 +226,80 @@ export const getEventParticipants = createServerFn({ method: 'GET' })
       })
       .from(eventCheckins)
       .innerJoin(personas, eq(eventCheckins.personaId, personas.id))
-      .innerJoin(urlIds, eq(personas.userId, urlIds.userId))
+      .leftJoin(urlIds, eq(personas.userId, urlIds.userId))
       .where(and(
         eq(eventCheckins.eventId, eventRow[0].id),
         eq(personas.dojinReject, false),
-        eq(personas.isPublic, true)
       ))
+      .orderBy(desc(eventCheckins.checkedInAt))
+
+    // 同一ペルソナの重複を除去（最新チェックインを代表として採用）
+    const seen = new Set<string>()
+    const participants = rows.filter((r) => {
+      if (seen.has(r.personaId)) return false
+      seen.add(r.personaId)
+      return true
+    })
 
     return { event: eventRow[0], participants }
+  })
+
+// Check if the current user's persona has any checkin for this event (ignores dojinReject)
+export const getMyCheckinStatus = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ slug: z.string(), personaId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) return false
+
+    const eventRow = await db.select({ id: events.id })
+      .from(events)
+      .where(eq(events.slug, data.slug))
+      .limit(1)
+    if (!eventRow[0]) return false
+
+    const checkin = await db.select({ id: eventCheckins.id })
+      .from(eventCheckins)
+      .where(and(
+        eq(eventCheckins.eventId, eventRow[0].id),
+        eq(eventCheckins.personaId, data.personaId),
+      ))
+      .limit(1)
+    return checkin.length > 0
+  })
+
+// Get events created by or participated in by the current user
+export const getMyEvents = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) throw new Error('Unauthorized')
+
+    const userId = session.user.id
+
+    // Events created by this user
+    const hostedEvents = await db.select()
+      .from(events)
+      .where(eq(events.hostUserId, userId))
+
+    // Events participated in but not hosted (deduplicated by event)
+    const participatedRows = await db
+      .selectDistinctOn([events.id], {
+        id: events.id,
+        slug: events.slug,
+        name: events.name,
+        venueName: events.venueName,
+        eventDate: events.eventDate,
+        hostUserId: events.hostUserId,
+        createdAt: events.createdAt,
+        checkedInAt: eventCheckins.checkedInAt,
+      })
+      .from(eventCheckins)
+      .innerJoin(events, eq(eventCheckins.eventId, events.id))
+      .where(and(
+        eq(eventCheckins.userId, userId),
+        ne(events.hostUserId, userId)
+      ))
+
+    return { hostedEvents, participatedEvents: participatedRows }
   })

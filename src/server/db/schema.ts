@@ -91,6 +91,7 @@ export const events = pgTable('events', {
   name: text('name').notNull(),                  // イベント名（表示用）
   venueName: text('venue_name').notNull(),        // 会場名
   eventDate: timestamp('event_date', { withTimezone: true }).notNull(),
+  hostUserId: text('host_user_id'),              // Better Auth user.id of creator (nullable for legacy rows)
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
