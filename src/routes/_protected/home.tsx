@@ -103,6 +103,15 @@ function HomePage() {
             {isPrivate('sns_links') && <p className="text-xs text-gray-400 text-center">🔒 非公開</p>}
           </div>
         )}
+
+        <div className="w-full max-w-xs pt-2">
+          <Link
+            to="/events"
+            className="block w-full text-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+          >
+            イベントにチェックイン
+          </Link>
+        </div>
       </div>
     </div>
   )
