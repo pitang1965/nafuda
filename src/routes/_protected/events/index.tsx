@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +9,6 @@ import {
   checkoutFromEvent,
   getActiveCheckin,
 } from '../../../server/functions/event'
-import { EventCheckinCard } from '../../../components/EventCheckinCard'
 
 // ------------------------------------------------------------------
 // GPS ヘルパー（ボタン押下時のみ呼ぶ — ページロード時は禁止）
@@ -69,6 +68,70 @@ export const Route = createFileRoute('/_protected/events/')({
   },
   component: EventsPage,
 })
+
+// ------------------------------------------------------------------
+// アクティブチェックインカード（インライン実装）
+// ------------------------------------------------------------------
+interface ActiveCheckinCardProps {
+  eventName: string
+  venueName: string
+  eventDate: Date | string
+  checkedInAt: Date | string
+  eventSlug: string
+  onCheckout: () => void
+  isCheckingOut: boolean
+}
+
+function ActiveCheckinCard({
+  eventName,
+  venueName,
+  eventDate,
+  checkedInAt,
+  eventSlug,
+  onCheckout,
+  isCheckingOut,
+}: ActiveCheckinCardProps) {
+  const formattedDate = new Date(eventDate).toLocaleDateString('ja-JP')
+  const formattedTime = new Date(checkedInAt).toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return (
+    <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          参加中
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-bold leading-snug">{eventName}</h2>
+        <p className="text-sm text-muted-foreground">{venueName}</p>
+        <p className="text-xs text-muted-foreground">{formattedDate}</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        参加時刻: <span className="font-medium text-foreground">{formattedTime}</span>
+      </p>
+      <div className="flex flex-col gap-2 pt-1">
+        <Link
+          to="/e/$slug"
+          params={{ slug: eventSlug }}
+          className="block w-full py-2.5 rounded-xl bg-black text-white text-sm font-semibold text-center hover:bg-gray-800 transition-colors"
+        >
+          イベントページを見る
+        </Link>
+        <button
+          onClick={onCheckout}
+          disabled={isCheckingOut}
+          className="w-full py-2.5 rounded-lg border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isCheckingOut ? 'キャンセル中...' : '参加をキャンセル'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // ------------------------------------------------------------------
 // コンポーネント
@@ -143,21 +206,13 @@ function EventsPage() {
       </div>
 
       <div className="flex-1 p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
-        {/* アクティブチェックイン中 */}
+        {/* アクティブ参加中 */}
         {activeCheckin ? (
-          <EventCheckinCard
+          <ActiveCheckinCard
             eventName={activeCheckin.eventName}
             venueName={activeCheckin.venueName}
-            eventDate={
-              activeCheckin.eventDate instanceof Date
-                ? activeCheckin.eventDate.toISOString()
-                : String(activeCheckin.eventDate)
-            }
-            checkedInAt={
-              activeCheckin.checkedInAt instanceof Date
-                ? activeCheckin.checkedInAt.toISOString()
-                : String(activeCheckin.checkedInAt)
-            }
+            eventDate={activeCheckin.eventDate}
+            checkedInAt={activeCheckin.checkedInAt}
             eventSlug={activeCheckin.eventSlug}
             onCheckout={handleCheckout}
             isCheckingOut={isCheckingOut}
