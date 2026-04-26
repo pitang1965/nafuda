@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { getOwnProfile } from '../../../server/functions/profile'
 import {
-  checkinToEvent,
+  createEventAndCheckin,
   checkoutFromEvent,
   getActiveCheckin,
 } from '../../../server/functions/event'
@@ -101,7 +101,7 @@ function EventsPage() {
       // GPS 取得はボタン押下時のみ（ページロード時の useEffect 呼び出し禁止）
       const gps = await getGpsCoords()
       const slug = generateSlug(formData.eventName, formData.eventDate)
-      await checkinToEvent({
+      await createEventAndCheckin({
         data: {
           slug,
           eventName: formData.eventName,

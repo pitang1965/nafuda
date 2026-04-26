@@ -6,8 +6,59 @@ import { db } from '../db/client'
 import { events, eventCheckins, personas, urlIds } from '../db/schema'
 import { auth } from '../auth'
 
-// Check in to an event (creates event if slug doesn't exist, auto-checkouts from previous active checkin)
+// Check in to an event by slug (event must already exist)
+// Auto-checkouts from previous active checkin for the persona
 export const checkinToEvent = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({
+    slug: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-]+$/, 'スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます'),
+    personaId: z.string().uuid(),
+  }))
+  .handler(async ({ data }) => {
+    // 1. 認証チェック
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) throw new Error('Unauthorized')
+
+    // 2. personaId の owner が session.user.id か確認（他人のペルソナへのチェックイン防止）
+    const persona = await db.select({ id: personas.id, userId: personas.userId })
+      .from(personas)
+      .where(eq(personas.id, data.personaId))
+      .limit(1)
+    if (!persona[0]) throw new Error('Persona not found')
+    if (persona[0].userId !== session.user.id) throw new Error('Forbidden: persona does not belong to current user')
+
+    // 3. 既存アクティブチェックイン（checkedOutAt IS NULL）があれば auto-checkout
+    await db.update(eventCheckins)
+      .set({ checkedOutAt: new Date() })
+      .where(and(
+        eq(eventCheckins.personaId, data.personaId),
+        isNull(eventCheckins.checkedOutAt)
+      ))
+
+    // 4. slug で events を SELECT — 存在しなければエラー
+    const eventRow = await db.select()
+      .from(events)
+      .where(eq(events.slug, data.slug))
+      .limit(1)
+
+    if (!eventRow[0]) throw new Error('Event not found')
+
+    // 5. event_checkins に INSERT して新レコードを返す
+    const newCheckin = await db.insert(eventCheckins)
+      .values({
+        eventId: eventRow[0].id,
+        personaId: data.personaId,
+        userId: session.user.id,
+        gpsCoordinates: null,
+      })
+      .returning()
+
+    return { checkin: newCheckin[0], event: eventRow[0] }
+  })
+
+// Create event and check in (used from the event creation form)
+// Slug is auto-generated from eventName + eventDate
+export const createEventAndCheckin = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     slug: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-]+$/, 'スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます'),
     eventName: z.string().min(1).max(100),
@@ -148,6 +199,7 @@ export const getActiveCheckin = createServerFn({ method: 'GET' })
 
 // Get event participants — public endpoint (no auth required)
 // CRITICAL: dojinReject filter MUST be in SQL WHERE clause (never client-side)
+// Returns ALL checkin records (no checkedOutAt filter) — shows everyone who ever participated
 export const getEventParticipants = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ slug: z.string() }))
   .handler(async ({ data }) => {
@@ -159,7 +211,8 @@ export const getEventParticipants = createServerFn({ method: 'GET' })
     if (!eventRow[0]) return null
 
     // 2-4. JOIN: event_checkins → personas → urlIds
-    //      WHERE: eventId = ? AND checkedOutAt IS NULL AND dojinReject = false AND isPublic = true
+    //      WHERE: eventId = ? AND dojinReject = false AND isPublic = true
+    //      checkedOutAt フィルタなし — 全参加者（チェックアウト済みも含む）を表示
     //      SELECT のみ: checkinId, personaId, displayName, avatarUrl, urlId, shareToken
     //      （SNSリンク・fieldVisibility は絶対含めない）
     const participants = await db
@@ -176,7 +229,6 @@ export const getEventParticipants = createServerFn({ method: 'GET' })
       .innerJoin(urlIds, eq(personas.userId, urlIds.userId))
       .where(and(
         eq(eventCheckins.eventId, eventRow[0].id),
-        isNull(eventCheckins.checkedOutAt),
         eq(personas.dojinReject, false),
         eq(personas.isPublic, true)
       ))

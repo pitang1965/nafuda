@@ -1,9 +1,13 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
+import { useState, useEffect, useCallback } from 'react'
 import { auth } from '../../server/auth'
 import { getEventParticipants } from '../../server/functions/event'
+import { getOwnProfile } from '../../server/functions/profile'
+import { checkinToEvent } from '../../server/functions/event'
 import { ParticipantCard } from '../../components/ParticipantCard'
+import { QRCodeSVG } from 'qrcode.react'
 
 // Public route — no auth required (OSHI-04, OSHI-05)
 // Returns null when not authenticated instead of throwing redirect
@@ -19,13 +23,56 @@ export const Route = createFileRoute('/e/$slug')({
       getEventParticipants({ data: { slug: params.slug } }),
       getOptionalSession(),
     ])
-    return { data, isLoggedIn: !!session?.user }
+    let defaultPersonaId: string | null = null
+    if (session?.user) {
+      const profile = await getOwnProfile()
+      defaultPersonaId =
+        profile?.personas?.find((p) => p.isDefault)?.id
+        ?? profile?.personas?.[0]?.id
+        ?? null
+    }
+    return { data, isLoggedIn: !!session?.user, defaultPersonaId }
   },
   component: EventPage,
 })
 
+// QRCodeDisplay コンポーネント — qrcode.react は SSR 非対応のため mounted state で必ずガード
+function QRCodeDisplay({ url }: { url: string }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted) return <div className="w-48 h-48 bg-gray-100 rounded-lg animate-pulse" />
+  return (
+    <QRCodeSVG
+      value={url}
+      size={192}
+      level="M"
+      marginSize={4}
+    />
+  )
+}
+
 function EventPage() {
-  const { data, isLoggedIn } = Route.useLoaderData()
+  const { data, isLoggedIn, defaultPersonaId } = Route.useLoaderData()
+  const router = useRouter()
+  const [isCheckingIn, setIsCheckingIn] = useState(false)
+  const [checkinError, setCheckinError] = useState<string | null>(null)
+  // currentUrl は useEffect 後のみ取得（window.location.href はブラウザ専用）
+  const [currentUrl, setCurrentUrl] = useState('')
+  useEffect(() => { setCurrentUrl(window.location.href) }, [])
+
+  const handleCheckin = useCallback(async () => {
+    if (!defaultPersonaId || !data) return
+    setIsCheckingIn(true)
+    setCheckinError(null)
+    try {
+      await checkinToEvent({ data: { slug: data.event.slug, personaId: defaultPersonaId } })
+      await router.invalidate()
+    } catch (err) {
+      setCheckinError(err instanceof Error ? err.message : 'チェックインに失敗しました')
+    } finally {
+      setIsCheckingIn(false)
+    }
+  }, [defaultPersonaId, data, router])
 
   if (!data) {
     return (
@@ -38,7 +85,7 @@ function EventPage() {
   }
 
   return (
-    <div className="min-h-screen p-6 max-w-2xl mx-auto flex flex-col gap-5">
+    <div className="min-h-screen p-6 max-w-2xl mx-auto flex flex-col gap-6">
       {/* イベント情報ヘッダー */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-gray-900">{data.event.name}</h1>
@@ -48,13 +95,49 @@ function EventPage() {
         </p>
       </div>
 
+      {/* QRコード */}
+      <div className="flex flex-col items-center gap-2">
+        <QRCodeDisplay url={currentUrl} />
+        <p className="text-xs text-gray-400">このページのQRコード</p>
+      </div>
+
+      {/* 参加ボタン / ログイン誘導 */}
+      {isLoggedIn ? (
+        defaultPersonaId ? (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleCheckin}
+              disabled={isCheckingIn}
+              className="w-full py-3 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isCheckingIn ? '参加中...' : '参加する'}
+            </button>
+            {checkinError && <p className="text-xs text-red-500 text-center">{checkinError}</p>}
+          </div>
+        ) : (
+          <Link
+            to="/_protected/profile"
+            className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
+          >
+            プロフィールを設定して参加する
+          </Link>
+        )
+      ) : (
+        <Link
+          to="/login"
+          className="block w-full py-3 rounded-xl bg-black text-white text-center text-sm font-semibold hover:bg-gray-800 transition-colors"
+        >
+          ログインして参加する
+        </Link>
+      )}
+
       {/* 参加者カウント */}
       <p className="text-sm text-gray-600 font-medium">
-        {data.participants.length}人がチェックイン中
+        {data.participants.length}人が参加
       </p>
 
       {/* 未ログイン時の注意書き（OSHI-05） */}
-      {!isLoggedIn && (
+      {!isLoggedIn && data.participants.length > 0 && (
         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
           <Link to="/login" className="font-semibold underline">ログイン</Link>
           するとプロフィールを閲覧できます
@@ -76,7 +159,7 @@ function EventPage() {
         </div>
       ) : (
         <p className="text-sm text-gray-400 text-center py-8">
-          現在チェックイン中の参加者はいません
+          まだ参加者はいません
         </p>
       )}
     </div>
