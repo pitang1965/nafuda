@@ -14,7 +14,7 @@ import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUrlIdRouteImport } from './routes/u/$urlId'
 import { Route as ESlugRouteImport } from './routes/e/$slug'
-import { Route as ProtectedHomeRouteImport } from './routes/_protected/home'
+import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
 import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
@@ -46,9 +46,9 @@ const ESlugRoute = ESlugRouteImport.update({
   path: '/e/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProtectedHomeRoute = ProtectedHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
+const ProtectedMeRoute = ProtectedMeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedEventsIndexRoute = ProtectedEventsIndexRouteImport.update({
@@ -85,7 +85,7 @@ const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/home': typeof ProtectedHomeRoute
+  '/me': typeof ProtectedMeRoute
   '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/events/new': typeof ProtectedEventsNewRoute
@@ -98,7 +98,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/home': typeof ProtectedHomeRoute
+  '/me': typeof ProtectedMeRoute
   '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/events/new': typeof ProtectedEventsNewRoute
@@ -113,7 +113,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
-  '/_protected/home': typeof ProtectedHomeRoute
+  '/_protected/me': typeof ProtectedMeRoute
   '/e/$slug': typeof ESlugRoute
   '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/_protected/events/new': typeof ProtectedEventsNewRoute
@@ -128,7 +128,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/home'
+    | '/me'
     | '/e/$slug'
     | '/u/$urlId'
     | '/events/new'
@@ -141,7 +141,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/home'
+    | '/me'
     | '/e/$slug'
     | '/u/$urlId'
     | '/events/new'
@@ -155,7 +155,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_protected'
     | '/login'
-    | '/_protected/home'
+    | '/_protected/me'
     | '/e/$slug'
     | '/u/$urlId'
     | '/_protected/events/new'
@@ -212,11 +212,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ESlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected/home': {
-      id: '/_protected/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof ProtectedHomeRouteImport
+    '/_protected/me': {
+      id: '/_protected/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof ProtectedMeRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/events/': {
@@ -265,7 +265,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface ProtectedRouteChildren {
-  ProtectedHomeRoute: typeof ProtectedHomeRoute
+  ProtectedMeRoute: typeof ProtectedMeRoute
   ProtectedEventsNewRoute: typeof ProtectedEventsNewRoute
   ProtectedProfileEditRoute: typeof ProtectedProfileEditRoute
   ProtectedProfileWizardRoute: typeof ProtectedProfileWizardRoute
@@ -273,7 +273,7 @@ interface ProtectedRouteChildren {
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
-  ProtectedHomeRoute: ProtectedHomeRoute,
+  ProtectedMeRoute: ProtectedMeRoute,
   ProtectedEventsNewRoute: ProtectedEventsNewRoute,
   ProtectedProfileEditRoute: ProtectedProfileEditRoute,
   ProtectedProfileWizardRoute: ProtectedProfileWizardRoute,

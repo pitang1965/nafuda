@@ -5,23 +5,25 @@ import { authClient } from '../../lib/auth-client'
 import { PersonaSwitcher } from '../../components/PersonaSwitcher'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
 import { SnsLinkButton } from '../../components/SnsLinkButton'
+import { QRBottomSheet } from '../../components/QRBottomSheet'
 
-export const Route = createFileRoute('/_protected/home')({
+export const Route = createFileRoute('/_protected/me')({
   loader: () => getOwnProfile(),
-  component: HomePage,
+  component: MePage,
 })
 
 function PrivateBadge() {
   return <span className="text-xs text-gray-400 ml-1">🔒</span>
 }
 
-function HomePage() {
+function MePage() {
   const { urlId, personas } = Route.useLoaderData()
   const navigate = useNavigate()
   const [currentPersonaId, setCurrentPersonaId] = useState(
     personas.find(p => p.isDefault)?.id ?? personas[0]?.id ?? ''
   )
   const currentPersona = personas.find(p => p.id === currentPersonaId)
+  const [qrOpen, setQrOpen] = useState(false)
 
   const handleLogout = async () => {
     await authClient.signOut()
@@ -48,6 +50,7 @@ function HomePage() {
         />
         <div className="flex items-center gap-3">
           <Link to="/profile/edit" className="text-sm text-gray-500 underline">編集</Link>
+          <Link to="/events" className="text-sm text-gray-500 underline">イベント</Link>
           <button
             onClick={handleLogout}
             className="text-sm text-gray-500 underline hover:text-gray-700"
@@ -104,15 +107,31 @@ function HomePage() {
           </div>
         )}
 
-        <div className="w-full max-w-xs pt-2">
-          <Link
-            to="/events"
+        <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
+          <button
+            onClick={() => setQrOpen(true)}
             className="block w-full text-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
           >
-            イベントにチェックイン
+            QRコードを表示
+          </button>
+          <Link
+            to="/connections"
+            className="block w-full text-center px-6 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            つながりを見る
           </Link>
         </div>
       </div>
+
+      {currentPersona && urlId && (
+        <QRBottomSheet
+          isOpen={qrOpen}
+          onClose={() => setQrOpen(false)}
+          urlId={urlId}
+          shareToken={currentPersona.shareToken}
+          displayName={currentPersona.displayName}
+        />
+      )}
     </div>
   )
 }
