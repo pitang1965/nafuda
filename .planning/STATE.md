@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 2 of 4 (イベント・チェックイン)
-Plan: 1 of 3 in current phase
-Status: In Progress — 02-01 complete (DB schema + server functions), 02-02 and 02-03 pending
-Last activity: 2026-04-25 — 02-01: events + event_checkins tables, 4 server functions
+Plan: 2 of 3 in current phase
+Status: In Progress — 02-01 and 02-02 complete, 02-03 pending
+Last activity: 2026-04-25 — 02-02: EventCheckinCard component + /_protected/events/ checkin route
 
 Progress: [█████████░] 90%
 
