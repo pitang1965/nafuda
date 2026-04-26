@@ -82,12 +82,14 @@ Plans:
   3. チェックイン中に「つながる」が実行されると、コネクション記録にイベント名・日付・会場のコンテキストが付与される
   4. アプリをインストールして機内モードにしても、自分のQRコードが表示できる（Service Workerキャッシュ）
   5. ユーザーはアプリをホーム画面に追加（PWAインストール）でき、ネイティブアプリのように起動できる
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: QRコード表示実装（クライアントサイド生成・URLスキーム確定）
-- [ ] 03-02: コネクション記録（「つながる」明示ボタン・イベントコンテキスト付与）
-- [ ] 03-03: PWA Service Workerキャッシュ（QRオフライン表示・ホーム画面インストール）
+- [ ] 03-01-PLAN.md — /me ルート（/home リネーム）+ QRBottomSheet コンポーネント（react-modal-sheet）
+- [ ] 03-02-PLAN.md — connections スキーマ + createConnection / getMyConnections サーバー関数
+- [ ] 03-03-PLAN.md — DBマイグレーション実行 + /u/$urlId 「つながる」ボタン実装
+- [ ] 03-04-PLAN.md — /connections コネクション一覧ページ
+- [ ] 03-05-PLAN.md — PWA Service Worker（カスタム Workbox プラグイン）+ インストールバナー
 
 ## Progress
 
@@ -99,4 +101,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | 0. プロトタイプ | 3/3 | Complete   | 2026-04-22 |
 | 1. 認証・プロフィール基盤 | 5/5 | Complete   | 2026-04-25 |
 | 2. イベント・チェックイン | 4/4 | Complete   | 2026-04-26 |
-| 3. QR・コネクション・PWA | 0/3 | Not started | - |
+| 3. QR・コネクション・PWA | 0/5 | Not started | - |
