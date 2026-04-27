@@ -1,4 +1,4 @@
 name = "nafuda"
-main = "dist/server/server.js"
+main = "worker-entry.js"
 compatibility_date = "2026-04-23"
 compatibility_flags = [ "nodejs_compat" ]

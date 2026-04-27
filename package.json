@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && wrangler deploy --config wrangler-bundle.toml --dry-run --outdir dist/bundle && node -e \"const fs=require('fs');fs.copyFileSync('dist/bundle/server.js','dist/client/_worker.js');fs.rmSync('dist/client/wrangler.json',{force:true});fs.rmSync('.wrangler/deploy/config.json',{force:true});\"",
+    "build": "tsc -b && vite build && wrangler deploy --config wrangler-bundle.toml --dry-run --outdir dist/bundle && node -e \"const fs=require('fs');fs.copyFileSync('dist/bundle/worker-entry.js','dist/client/_worker.js');fs.rmSync('dist/client/wrangler.json',{force:true});fs.rmSync('.wrangler/deploy/config.json',{force:true});\"",
     "lint": "eslint .",
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
