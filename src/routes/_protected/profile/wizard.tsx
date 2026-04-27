@@ -83,7 +83,7 @@ function WizardPage() {
           oshiTags: values.oshiTags,
         },
       })
-      navigate({ to: '/home' })
+      navigate({ to: '/me' })
     } catch (err) {
       if (err instanceof Error && err.message === 'URL_ID_TAKEN') {
         setSubmitError('このURL-IDはすでに使用されています。別のIDを入力してください。')

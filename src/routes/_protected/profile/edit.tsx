@@ -310,7 +310,7 @@ function EditForm({
         })
       }
 
-      navigate({ to: '/home' })
+      navigate({ to: '/me' })
     } catch {
       setSaveError('保存に失敗しました。もう一度お試しください。')
     } finally {
@@ -326,7 +326,7 @@ function EditForm({
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold">プロフィールを編集</h1>
           <button
-            onClick={() => navigate({ to: '/home' })}
+            onClick={() => navigate({ to: '/me' })}
             className="text-sm text-gray-500"
           >
             ✕ 閉じる
