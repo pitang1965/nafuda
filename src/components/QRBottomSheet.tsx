@@ -5,21 +5,13 @@ import { useState, useEffect } from 'react'
 interface QRBottomSheetProps {
   isOpen: boolean
   onClose: () => void
-  urlId: string
-  shareToken: string
-  displayName: string
+  url: string
+  label: string
 }
 
-export function QRBottomSheet({ isOpen, onClose, urlId, shareToken, displayName }: QRBottomSheetProps) {
+export function QRBottomSheet({ isOpen, onClose, url, label }: QRBottomSheetProps) {
   const [mounted, setMounted] = useState(false)
-  const [origin, setOrigin] = useState('')
-
-  useEffect(() => {
-    setMounted(true)
-    setOrigin(window.location.origin)
-  }, [])
-
-  const qrUrl = origin ? `${origin}/u/${urlId}/p/${shareToken}` : ''
+  useEffect(() => { setMounted(true) }, [])
 
   return (
     <Sheet isOpen={isOpen} onClose={onClose} detent="content">
@@ -27,13 +19,13 @@ export function QRBottomSheet({ isOpen, onClose, urlId, shareToken, displayName 
         <Sheet.Header />
         <Sheet.Content>
           <div className="flex flex-col items-center gap-4 p-6 pb-10">
-            <p className="text-sm text-gray-500">{displayName} のQRコード</p>
-            {!mounted || !qrUrl ? (
+            <p className="text-sm text-gray-500">{label}</p>
+            {!mounted || !url ? (
               <div className="w-[220px] h-[220px] bg-gray-100 rounded-lg animate-pulse" />
             ) : (
-              <QRCodeSVG value={qrUrl} size={220} level="M" marginSize={4} bgColor="#FFFFFF" fgColor="#000000" />
+              <QRCodeSVG value={url} size={220} level="M" marginSize={4} bgColor="#FFFFFF" fgColor="#000000" />
             )}
-            <p className="text-xs text-gray-400 break-all text-center max-w-[240px]">{qrUrl}</p>
+            <p className="text-xs text-gray-400 break-all text-center max-w-[240px]">{url}</p>
           </div>
         </Sheet.Content>
       </Sheet.Container>

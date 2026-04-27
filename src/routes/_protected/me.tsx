@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getOwnProfile } from '../../server/functions/profile'
 import { authClient } from '../../lib/auth-client'
 import { PersonaSwitcher } from '../../components/PersonaSwitcher'
@@ -25,6 +25,8 @@ function MePage() {
   )
   const currentPersona = personas.find(p => p.id === currentPersonaId)
   const [qrOpen, setQrOpen] = useState(false)
+  const [origin, setOrigin] = useState('')
+  useEffect(() => { setOrigin(window.location.origin) }, [])
 
   const handleLogout = async () => {
     await authClient.signOut()
@@ -130,9 +132,8 @@ function MePage() {
         <QRBottomSheet
           isOpen={qrOpen}
           onClose={() => setQrOpen(false)}
-          urlId={urlId}
-          shareToken={currentPersona.shareToken}
-          displayName={currentPersona.displayName}
+          url={origin ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}` : ''}
+          label={`${currentPersona.displayName} のQRコード`}
         />
       )}
     </div>

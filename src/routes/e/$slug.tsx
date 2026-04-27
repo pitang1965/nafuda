@@ -7,7 +7,7 @@ import { getEventParticipants } from '../../server/functions/event'
 import { getOwnProfile } from '../../server/functions/profile'
 import { checkinToEvent, getMyCheckinStatus } from '../../server/functions/event'
 import { ParticipantCard } from '../../components/ParticipantCard'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRBottomSheet } from '../../components/QRBottomSheet'
 
 // Public route — no auth required (OSHI-04, OSHI-05)
 // Returns null when not authenticated instead of throwing redirect
@@ -40,26 +40,12 @@ export const Route = createFileRoute('/e/$slug')({
   component: EventPage,
 })
 
-// QRCodeDisplay コンポーネント — qrcode.react は SSR 非対応のため mounted state で必ずガード
-function QRCodeDisplay({ url }: { url: string }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
-  if (!mounted) return <div className="w-48 h-48 bg-gray-100 rounded-lg animate-pulse" />
-  return (
-    <QRCodeSVG
-      value={url}
-      size={192}
-      level="M"
-      marginSize={4}
-    />
-  )
-}
-
 function EventPage() {
   const { data, isLoggedIn, defaultPersonaId, isCheckedIn } = Route.useLoaderData()
   const router = useRouter()
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [checkinError, setCheckinError] = useState<string | null>(null)
+  const [qrOpen, setQrOpen] = useState(false)
   const [currentUrl, setCurrentUrl] = useState('')
   useEffect(() => { setCurrentUrl(window.location.href) }, [])
 
@@ -99,10 +85,12 @@ function EventPage() {
       </div>
 
       {/* QRコード */}
-      <div className="flex flex-col items-center gap-2">
-        <QRCodeDisplay url={currentUrl} />
-        <p className="text-xs text-gray-400">このページのQRコード</p>
-      </div>
+      <button
+        onClick={() => setQrOpen(true)}
+        className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+      >
+        QRコードを表示
+      </button>
 
       {/* 参加ボタン / ログイン誘導 */}
       {isLoggedIn ? (
@@ -171,6 +159,13 @@ function EventPage() {
           まだ参加者はいません
         </p>
       )}
+
+      <QRBottomSheet
+        isOpen={qrOpen}
+        onClose={() => setQrOpen(false)}
+        url={currentUrl}
+        label={`${data.event.name} のQRコード`}
+      />
     </div>
   )
 }

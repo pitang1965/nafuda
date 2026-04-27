@@ -7,10 +7,10 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const handleGoogle = async () => {
-    await authClient.signIn.social({ provider: 'google', callbackURL: '/home' })
+    await authClient.signIn.social({ provider: 'google', callbackURL: '/me' })
   }
   const handleFacebook = async () => {
-    await authClient.signIn.social({ provider: 'facebook', callbackURL: '/home' })
+    await authClient.signIn.social({ provider: 'facebook', callbackURL: '/me' })
   }
 
   return (
