@@ -1,7 +1,4 @@
 name = "nafuda"
-pages_build_output_dir = "dist/client"
+main = "dist/server/server.js"
 compatibility_date = "2026-04-23"
 compatibility_flags = [ "nodejs_compat" ]
-
-[observability]
-enabled = true
