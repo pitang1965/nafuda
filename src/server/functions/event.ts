@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
-import { eq, and, isNull, ne, desc, inArray } from 'drizzle-orm'
+import { eq, and, isNull, ne, desc } from 'drizzle-orm'
 import { db } from '../db/client'
 import { events, eventCheckins, personas, urlIds } from '../db/schema'
 import { auth } from '../auth'

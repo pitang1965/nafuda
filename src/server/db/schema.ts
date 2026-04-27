@@ -67,7 +67,7 @@ export const personas = pgTable('personas', {
   dojinReject: boolean('dojin_reject').notNull().default(false),
   // fieldVisibility: { sns_links: 'public'|'private', oshi_tags: 'public'|'private', avatar_url: 'public'|'private' }
   // Default {} = all public (QRを渡す行為自体が公開の意思表示)
-  fieldVisibility: jsonb('field_visibility').notNull().default({}),
+  fieldVisibility: jsonb('field_visibility').$type<Record<string, string>>().notNull().default({}),
   isPublic: boolean('is_public').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

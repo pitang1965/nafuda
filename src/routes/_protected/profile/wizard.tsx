@@ -18,7 +18,7 @@ const WizardSchema = z.object({
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
   oshiTags: z.array(z.string()).min(1, '推しタグを1個以上入力してください'),
   avatarUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
-  useAutoAvatar: z.boolean().default(true),
+  useAutoAvatar: z.boolean(),
 })
 
 type WizardForm = z.infer<typeof WizardSchema>

@@ -70,9 +70,9 @@ const EditSchema = z.object({
   snsLinksVisibility: z.enum(['public', 'private']),
   oshiTagsVisibility: z.enum(['public', 'private']),
   // oshiTags managed via OshiTagInput (FormProvider context) — RHF field
-  oshiTags: z.array(z.string()).default([]),
+  oshiTags: z.array(z.string()),
   // dojinReject stored as string in radio input, converted to boolean on save
-  dojinReject: z.enum(['false', 'true']).default('false'),
+  dojinReject: z.enum(['false', 'true']),
 })
 
 type EditForm = z.infer<typeof EditSchema>

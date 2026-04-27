@@ -113,7 +113,7 @@ function EventPage() {
           </div>
         ) : (
           <Link
-            to="/_protected/profile"
+            to="/profile/wizard"
             className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
           >
             プロフィールを設定して参加する
