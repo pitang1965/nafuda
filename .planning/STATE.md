@@ -41,6 +41,7 @@ Progress: [████████░░] 80%
 | Phase 01-auth-profile P05 | 10 | 3 tasks | 3 files |
 | Phase 03-qr-pwa P02 | 10 min | 2 tasks | 2 files |
 | Phase 03-qr-pwa P04 | 3 min | 1 task | 1 file |
+| Phase 03-qr-pwa P06 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,7 @@ Recent decisions affecting current work:
 - [Phase 03-02]: 23505 UNIQUE violation in createConnection returns alreadyConnected:true (not an error) — same pattern as checkinToEvent
 - [Phase 03-04]: /connections is under _protected layout — auth is automatically guaranteed without explicit redirect logic
 - [Phase 03-04]: Connection type inferred via Awaited<ReturnType<typeof getMyConnections>>[number] — no manual type definition needed
+- [Phase 03-qr-pwa]: shareToken はプロフィール取得のみに使用し、コネクション記録には urlId を使用 — urlId が公開識別子で shareToken は参照検証用
 
 ### Pending Todos
 
