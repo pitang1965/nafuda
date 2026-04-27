@@ -4,6 +4,21 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from './db/client'
 import * as schema from './db/schema'
 
+const requiredEnvVars = [
+  'BETTER_AUTH_URL',
+  'BETTER_AUTH_SECRET',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'FACEBOOK_CLIENT_ID',
+  'FACEBOOK_CLIENT_SECRET',
+] as const
+
+const missing = requiredEnvVars.filter((key) => !process.env[key])
+if (missing.length > 0) {
+  console.error(`[FATAL] Missing environment variables: ${missing.join(', ')}`)
+  throw new Error(`Missing environment variables: ${missing.join(', ')}`)
+}
+
 export const auth = betterAuth({
   // CRITICAL: prevents redirect_uri_mismatch in OAuth flows
   baseURL: process.env.BETTER_AUTH_URL!,
