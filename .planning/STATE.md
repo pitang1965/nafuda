@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 3 of 4 (QR・コネクション・PWA)
-Plan: 2 of 5 in current phase
-Status: In Progress — 03-02 connections schema and server functions complete
-Last activity: 2026-04-26 — 03-02: connections テーブル定義 + createConnection/getMyConnections 実装完了
+Plan: 4 of 5 in current phase
+Status: In Progress — 03-04 /connections page implemented
+Last activity: 2026-04-27 — 03-04: /connections ページ（コネクション一覧カード）実装完了
 
 Progress: [████████░░] 80%
 
@@ -40,6 +40,7 @@ Progress: [████████░░] 80%
 | Phase 01-auth-profile P04 | 60 | 3 tasks | 12 files |
 | Phase 01-auth-profile P05 | 10 | 3 tasks | 3 files |
 | Phase 03-qr-pwa P02 | 10 min | 2 tasks | 2 files |
+| Phase 03-qr-pwa P04 | 3 min | 1 task | 1 file |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 03-02]: connections table uses one-way design (fromPersonaId+toPersonaId UNIQUE) — bidirectional connections require two rows
 - [Phase 03-02]: event context denormalized in connections table (eventName, venueName, eventDate columns) — avoids JOIN overhead at display time
 - [Phase 03-02]: 23505 UNIQUE violation in createConnection returns alreadyConnected:true (not an error) — same pattern as checkinToEvent
+- [Phase 03-04]: /connections is under _protected layout — auth is automatically guaranteed without explicit redirect logic
+- [Phase 03-04]: Connection type inferred via Awaited<ReturnType<typeof getMyConnections>>[number] — no manual type definition needed
 
 ### Pending Todos
 
@@ -100,5 +103,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-26
-Stopped at: Completed 03-02-PLAN.md — connections schema + server functions implemented
+Stopped at: Completed 03-04-PLAN.md — /connections page implemented
 Resume file: None

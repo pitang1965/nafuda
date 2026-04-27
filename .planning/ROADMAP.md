@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 0: プロトタイプ** - DB・認証なしのフロントエンドのみでコアUXを検証する (completed 2026-04-22)
 - [x] **Phase 1: 認証・プロフィール基盤** - 実ユーザーデータを扱うフルスタック基盤と推し設定・同担拒否を構築する (completed 2026-04-25)
 - [x] **Phase 2: イベント・チェックイン** - イベントチェックインと同じ現場にいた人一覧を実装する (completed 2026-04-26)
-- [ ] **Phase 3: QR・コネクション・PWA** - QRコード表示・コネクション記録・PWAオフライン対応を完成させる
+- [x] **Phase 3: QR・コネクション・PWA** - QRコード表示・コネクション記録・PWAオフライン対応を完成させる (completed 2026-04-27)
 
 ## Phase Details
 
@@ -101,4 +101,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | 0. プロトタイプ | 3/3 | Complete   | 2026-04-22 |
 | 1. 認証・プロフィール基盤 | 5/5 | Complete   | 2026-04-25 |
 | 2. イベント・チェックイン | 4/4 | Complete   | 2026-04-26 |
-| 3. QR・コネクション・PWA | 1/5 | In Progress|  |
+| 3. QR・コネクション・PWA | 5/5 | Complete   | 2026-04-27 |
