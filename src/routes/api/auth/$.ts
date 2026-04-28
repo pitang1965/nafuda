@@ -1,14 +1,31 @@
 // Catch-all route for all /api/auth/* requests — proxies to Better Auth handler
-// Uses createFileRoute with server.handlers (TanStack Start v1 server routes API)
-// Note: createAPIFileRoute from @tanstack/react-start/api is NOT available in v1.167
 import { createFileRoute } from '@tanstack/react-router'
-import { auth } from '../../../server/auth'
+
+async function getAuthHandler(request: Request): Promise<Response> {
+  // Dynamic import so module-level throws (missing env vars, DB init) are catchable
+  const { auth } = await import('../../../server/auth')
+  return auth.handler(request)
+}
 
 export const Route = createFileRoute('/api/auth/$')({
   server: {
     handlers: {
-      GET: ({ request }) => auth.handler(request),
-      POST: ({ request }) => auth.handler(request),
+      GET: async ({ request }) => {
+        try {
+          return await getAuthHandler(request)
+        } catch (e) {
+          console.error('[/api/auth] GET error:', e)
+          return new Response(String(e), { status: 500 })
+        }
+      },
+      POST: async ({ request }) => {
+        try {
+          return await getAuthHandler(request)
+        } catch (e) {
+          console.error('[/api/auth] POST error:', e)
+          return new Response(String(e), { status: 500 })
+        }
+      },
     },
   },
 })
