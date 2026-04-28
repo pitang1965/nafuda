@@ -7,10 +7,18 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const handleGoogle = async () => {
-    await authClient.signIn.social({ provider: 'google', callbackURL: '/me' })
+    const { error } = await authClient.signIn.social({ provider: 'google', callbackURL: '/me' })
+    if (error) {
+      console.error('[login] Google sign-in error:', error)
+      alert(`ログインエラー: ${error.message ?? JSON.stringify(error)}`)
+    }
   }
   const handleFacebook = async () => {
-    await authClient.signIn.social({ provider: 'facebook', callbackURL: '/me' })
+    const { error } = await authClient.signIn.social({ provider: 'facebook', callbackURL: '/me' })
+    if (error) {
+      console.error('[login] Facebook sign-in error:', error)
+      alert(`ログインエラー: ${error.message ?? JSON.stringify(error)}`)
+    }
   }
 
   return (
