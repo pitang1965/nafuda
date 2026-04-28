@@ -21,7 +21,7 @@ function nafudaPwaPlugin(): Plugin {
           swSrc,
           swDest,
           globDirectory,
-          globPatterns: ['**/*.{js,css,html,png,svg,webmanifest,ico}'],
+          globPatterns: ['**/*.{js,css,png,svg,webmanifest,ico}'],
         })
         console.log(`[nafuda-pwa] SW generated: ${count} files (${Math.round(size / 1024)}KB)`)
         if (warnings.length) console.warn('[nafuda-pwa] Warnings:', warnings)
