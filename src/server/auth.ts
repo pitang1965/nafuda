@@ -1,6 +1,5 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from './db/client'
 import * as schema from './db/schema'
 
@@ -45,7 +44,5 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,   // 30 days (iOS ITP mitigation — users open app ~monthly)
     updateAge: 60 * 60 * 24,          // Refresh session token after 1 day of activity
   },
-  plugins: [
-    tanstackStartCookies(), // MUST be last plugin — TanStack Start cookie handling
-  ],
+  plugins: [],
 })
