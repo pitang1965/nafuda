@@ -8,6 +8,8 @@ dist/
 .env
 .env.local
 .env.production
+.dev.vars
+.dev.vars.*
 
 # Editor
 .vscode/

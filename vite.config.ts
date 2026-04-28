@@ -33,9 +33,14 @@ function nafudaPwaPlugin(): Plugin {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    cloudflare({
+      // Dev uses a Workers-style wrangler config (with `main`) so the plugin
+      // installs request middleware.  Build uses the Pages config as-is.
+      configPath: command === 'serve' ? 'wrangler-dev.toml' : undefined,
+      viteEnvironment: { name: 'ssr' },
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),
@@ -44,4 +49,4 @@ export default defineConfig({
   ssr: {
     noExternal: ['emblor'],
   },
-})
+}))
