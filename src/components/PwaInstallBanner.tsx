@@ -8,7 +8,7 @@ export function PwaInstallBanner() {
   if (isIos) {
     return (
       <div className="mx-4 mb-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700 text-center">
-        Safari のシェアボタン（↑）→「ホーム画面に追加」でオフライン表示できます
+        Safari の共有ボタン（↑）→「ホーム画面に追加」でオフライン表示できます
       </div>
     )
   }
