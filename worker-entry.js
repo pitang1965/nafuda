@@ -5,6 +5,13 @@ const STATIC_EXTENSIONS =
 
 export default {
   async fetch(request, env, ctx) {
+    // Cloudflare Workers with nodejs_compat does not expose env bindings via
+    // process.env automatically.  Inject string vars so server code that uses
+    // process.env (auth.ts, db/client.ts) can read them.
+    for (const [key, val] of Object.entries(env)) {
+      if (typeof val === 'string') process.env[key] = val
+    }
+
     if (env.ASSETS) {
       const { pathname } = new URL(request.url);
       // Only proxy clearly static files to ASSETS — never HTML pages.
