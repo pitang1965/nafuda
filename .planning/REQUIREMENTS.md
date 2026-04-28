@@ -32,14 +32,14 @@
 
 ### QR・コネクション
 
-- [ ] **CONN-01**: ユーザーは自分のプロフィールQRコードを表示できる（オフラインでも表示可能）
+- [x] **CONN-01**: ユーザーは自分のプロフィールQRコードを表示できる（オフラインでも表示可能）
 - [x] **CONN-02**: QRを読み取ってプロフィールを閲覧した後、明示的に「つながる」を選択した場合のみコネクションが記録される（スキャン自動記録なし）
 - [x] **CONN-03**: コネクション記録にはイベント・日付・会場のコンテキストが付与される（チェックイン中の場合）
 
 ### PWA
 
-- [ ] **PWA-01**: ユーザーはアプリをホーム画面に追加できる（PWAインストール）
-- [ ] **PWA-02**: QRコード表示はオフラインでも動作する（Service Workerキャッシュ）
+- [x] **PWA-01**: ユーザーはアプリをホーム画面に追加できる（PWAインストール）
+- [x] **PWA-02**: QRコード表示はオフラインでも動作する（Service Workerキャッシュ）
 
 ---
 
@@ -93,11 +93,11 @@
 | OSHI-03 | Phase 2 | Complete |
 | OSHI-04 | Phase 2 | Complete |
 | OSHI-05 | Phase 2 | Complete |
-| CONN-01 | Phase 3 | Pending |
+| CONN-01 | Phase 3 | Complete |
 | CONN-02 | Phase 3 | Complete |
 | CONN-03 | Phase 3 | Complete |
-| PWA-01 | Phase 3 | Pending |
-| PWA-02 | Phase 3 | Pending |
+| PWA-01 | Phase 3 | Complete |
+| PWA-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 19 total
