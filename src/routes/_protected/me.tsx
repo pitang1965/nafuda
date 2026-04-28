@@ -63,6 +63,8 @@ function MePage() {
         </div>
       </div>
 
+      <PwaInstallBanner />
+
       {/* Profile display */}
       <div className="flex-1 p-6 flex flex-col items-center gap-4">
         <div className={`relative ${isPrivate('avatar_url') ? 'opacity-50' : ''}`}>
@@ -125,8 +127,6 @@ function MePage() {
           </Link>
         </div>
       </div>
-
-      <PwaInstallBanner />
 
       {currentPersona && urlId && (
         <QRBottomSheet
