@@ -20,6 +20,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>なふだ</title>
+        <link rel="manifest" href="/manifest.webmanifest" />
         <HeadContent />
       </head>
       <body>
