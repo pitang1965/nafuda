@@ -1,46 +1,42 @@
 # 技術選定
 
-## 方針
+## 確定スタック（v1.0時点）
 
-- プロトタイプ → 初期リリース → 拡張 の段階に合わせて選定
-- プロトタイプの資産を本番へ可能な限りそのまま持ち込める構成を優先
-- オーバーエンジニアリングを避け、シンプルな構成から始める
-
----
-
-## プロトタイプ（Phase 0）
-
-| 項目 | 選定 | 理由 |
+| 項目 | 選定 | 備考 |
 |------|------|------|
-| フレームワーク | React + Vite | 軽量・高速な開発サイクル。本番候補（TanStack Start）もViteベースで資産を移行しやすい |
-| パッケージマネージャー | pnpm | ディスク効率、高速インストール |
-| PWA | vite-plugin-pwa | Viteとの統合がシンプル。manifest・Service Workerを自動生成 |
-| スタイリング | なし（最小限のCSS） | プロトはUX確認が目的。スタイリングは Phase 1 で Tailwind CSS を導入 |
-| 状態管理 | React Context（useContext） | プロトはこれで十分。ログイン状態などのモック管理に使用 |
-| QRコード | ネイティブカメラアプリで読み取り | プロトにQRスキャン機能は実装しない。QRコードはURLエンコードし静的画像として生成 |
-| データ | モックデータ（TS定数） | DB不使用。`src/mock/data.ts` にハードコード |
-| ルーティング | React Router v7 | シンプルなSPAルーティング |
-| デプロイ | Cloudflare Pages | 静的サイトのホスティング。プロトはSSR不要なので Pages で十分 |
+| フレームワーク | TanStack Start v1 | React SSR・型安全なルーティング・Server Functions |
+| パッケージマネージャー | pnpm | |
+| デプロイ | Cloudflare Pages（Workers ランタイム） | SSR は Workers で動作。`wrangler.toml` は Pages設定、dev時は `wrangler-dev.toml`（Workers設定）を使う |
+| DB | Neon Postgres + Drizzle ORM | HTTP モード。`point({ mode: 'xy' })` でGPS保存（x=経度, y=緯度） |
+| 認証 | Better Auth | Google / Facebook OAuth。X OAuth は有料APIのため除外 |
+| スタイリング | Tailwind CSS + shadcn/ui | |
+| PWA | バニラJS Service Worker | `vite-plugin-pwa` は Workbox バンドル問題があったため不採用 |
+| QRコード生成 | qrcode.react | フロントで生成。スキャンはデバイスのネイティブカメラを使用 |
+| タグ入力 | emblor | |
+| ボトムシート | react-modal-sheet | |
+| バリデーション | Zod v4 | better-auth の要件 |
+| フォーム | react-hook-form + @hookform/resolvers | Zod v4 対応済み |
 
 ---
 
-## 本番（Phase 1〜）候補
+## 重要な実装上の制約
 
-| 項目 | 選定候補 | 備考 |
-|------|----------|------|
-| フレームワーク | **TanStack Start** | Viteベース・型安全なルーティング（TanStack Router）・Server Functions対応。Next.jsより軽い。ただし2024〜のため成熟度は要注視 |
-| 代替案 | Next.js | 成熟しているが重め。本番で採用した場合はプロトからの移行コストあり |
-| スタイリング | **Tailwind CSS** | Phase 1 で確定。コンポーネントライブラリ（shadcn/ui 等）との組み合わせも検討 |
-| 認証 | 未定（Better Auth / Clerk / Auth.js 等） | X OAuth を優先対応。ハンドルネーム前提のため本名をUIに露出しない設計が必要 |
-| DB | 未定 | ユーザー・イベント・コネクション管理が必要。Postgres（Supabase / Neon）が有力 |
-| QRスキャン | 未定（`qr-scanner` 等） | Phase 1で要検討。デバイスのネイティブカメラで十分な場合は不要 |
-| デプロイ | **Cloudflare Workers** | TanStack Start は Cloudflare Vite プラグイン経由で Workers へのデプロイを公式サポート（2025年10月〜）。Pages は統合方向につき Workers を推奨 |
+**Cloudflare Workers / Pages**
+- `nodejs_compat` フラグだけでは Cloudflare ダッシュボードの環境変数が `process.env` に入らない。`worker-entry.js` の fetch ハンドラ先頭で手動注入が必要。
+
+**TanStack Start v1**
+- `createAPIFileRoute` は存在しない。`createFileRoute` + `server.handlers` を使う。
+- catch-all ルート（`$.ts`）では `server.handlers` が実行されない（`isExactMatch=false`）。`/api/auth/*` は `src/server.tsx` でインターセプトして `auth.handler()` に直接渡す。
+
+**Better Auth**
+- `tanstackStartCookies()` プラグインは TanStack Start コンテキスト外では使用不可。`server.tsx` から直接 `auth.handler()` を呼ぶ場合は `plugins: []` にする。
+- `BETTER_AUTH_URL` には `https://` プレフィックスが必須。
+- cookieCache は使用しない（Better Auth bug #4203 回避）。
 
 ---
 
-## 保留・未決事項
+## 今後の検討事項
 
-- 本番フレームワークの最終決定（TanStack Start の安定性を見て判断）
-- 認証ライブラリの選定
-- DBの選定（Supabase / Neon / その他）
-- QRスキャン機能を Phase 1 でアプリ内実装するか、ネイティブカメラ継続とするか
+- アプリ内 QR スキャン（現在はネイティブカメラ任せ）
+- Cloudflare Hyperdrive（Workers 有料プラン時の DB 接続最適化）
+- リアルタイム参加者更新（現在はポーリングまたは手動リロード）

@@ -1,170 +1,134 @@
-# 機能要件 ラフスコープ
+# 機能要件・スコープ
 
-> プロトタイプ（Phase 0）で検証した UX を元に、本実装に向けての大雑把な機能要件素案。
-> 優先度・工数は未確定。詳細化は別途行う。
-
----
-
-## 現状（プロトタイプ Phase 0）との差分
-
-| プロトでモックしている箇所 | 本実装で必要なもの |
-|---|---|
-| ログインはタップで状態切り替え | X OAuth 等の実際の認証（推し活ユーザーの主利用 SNS に合わせ X を優先） |
-| プロフィールはモックデータ固定 | DB + ユーザー登録・編集フロー |
-| イベントID は `demo` 固定 | イベント作成・一覧・入室管理 |
-| QRスキャンはネイティブカメラ任せ | アプリ内カメラ or WebRTC QR読み取り（Phase 2 以降） |
-| つながり追加ボタンは見た目のみ | つながりの保存・一覧表示 |
-| 全データはフロントのみで完結 | バックエンド API + DB |
-| 推し・ジャンルタグはモック表示のみ | タグ登録・編集・検索への反映 |
-| 同担ポリシーはアイコン表示のみ | ポリシー設定・フィルタリングへの反映 |
-| 参加現場はモック固定 | チェックイン機能・履歴保存 |
+> v1.0 実装済み内容と今後の拡張候補を整理したもの。
 
 ---
 
-## 機能一覧（ラフ）
+## v1.0 実装済み機能
 
-### 1. 認証・アカウント（およびセッション管理）
+### 認証・アカウント
+- Google / Facebook OAuth（Better Auth）
+- セッション: DB保存、30日有効、1日ごと更新
+- 初回ログイン後のプロフィール作成ウィザード（`/profile/wizard`）
 
-Auth0 等の外部サービス活用を前提とする。推し活ユーザーの主利用 SNS である X（旧 Twitter）を優先ログイン手段として検討。
+### なふだ（ペルソナ）管理
+- なふだ作成・編集（`/profile/edit`）
+- フィールド: 表示名・アバターURL・bio・推しタグ・SNSリンク・同担拒否フラグ
+- フィールド単位の公開/非公開設定（`fieldVisibility`）
+- 複数ペルソナの作成（切り替えUIは `PersonaSwitcher` コンポーネント）
 
-- [ ] ソーシャルログイン実装
-  - X / Google / Apple 等のユニバーサルログイン画面への統合。X を優先。
-  - ハンドルネーム・アバター運用を前提とするため、ソーシャルアカウントの本名は UI に露出させない。
-- [ ] サイレント認証 / トークンリフレッシュ
-  - 現場でのつながり中にセッション切れを起こさないよう、リフレッシュトークンを用いた自動更新を実装。
-- [ ] カスタムセッション管理（アプリ側）
-  - 「現在どのなふだ（推し活用／本業用）を選択中か」のステート保持（LocalStorage または DB 保存）。
-  - ログイン済みだがなふだ未作成のユーザーを /onboarding へ強制リダイレクトするガードの実装。
-- [ ] ログアウト
-- [ ] アカウント削除（将来対応）
-  - 法的要件（GDPR/Apple 等）に基づくデータ削除フローの検討。
+### QR・プロフィール共有
+- QRコード生成（`/me` 画面のボタンから表示）
+- QR URL形式: `/u/{urlId}/p/{shareToken}`
+- スキャンはデバイスのネイティブカメラで行いURLに遷移
 
-### 2. なふだ（プロフィール）管理
+### イベント・チェックイン
+- イベント作成（`/events/new`）: スラッグ・名前・会場名・日付
+- チェックイン: 1ペルソナ・同時に1イベントのみアクティブ
+- 参加者一覧（`/e/$slug`）: アクティブ・過去のチェックイン両方を表示。同担拒否ユーザーは非表示
 
-- [ ] なふだ作成・編集
-  - ハンドルネーム（必須）・アバター絵文字・推しタグ・ジャンルタグ・同担ポリシー・自己紹介・SNS リンク
-  - 本名・役職・会社名は任意項目（プロトでは UI に露出しない）
-- [ ] 推しタグ・ジャンルタグの登録
-  - 自由記述＋サジェスト付き。複数登録可。
-- [ ] 同担ポリシー設定
-  - 同担歓迎 / 同担拒否 / 未設定 の 3 択
-- [ ] 複数なふだの作成・切り替え
-  - 現在「推し活用」か「本業用」どちらを選択中かの状態をアプリ内で保持・復元する。
-- [ ] なふだ ID の採番（[nanoid](https://zelark.github.io/nano-id-cc/) 8文字）
-- [ ] QRコードの生成・表示・シェア（`/p/:id`）
+### コネクション
+- 「つながる」ボタンで一方向コネクションを記録
+- チェックイン中に「つながる」するとイベントコンテキスト（名前・会場・日付）が付与される
+- コネクション一覧（`/connections`）: つながった日時・現場名・ハンドルネーム表示
+- 同一ペルソナペアの重複防止（UNIQUE制約、`alreadyConnected: true` で返す）
 
-### 3. イベント・現場管理
-
-- [ ] イベント作成（名前・日時・会場名・イベント種別 / 大文字英数字6文字 ID）
-  - イベント種別: `live` / `seichi` / `fanmeeting` / `general`
-- [ ] イベント入室と状態維持
-  - QRスキャン時に「どのなふだで参加するか」を確定させ、`EventAttendee` に記録。リロードしてもそのイベントに参加中の状態を維持する。
-- [ ] 参加者一覧の表示（「同じ現場にいた人」機能、リアルタイム更新）
-- [ ] チェックイン履歴の保存（なふだに「参加した現場」として記録）
-
-### 4. QRコード
-
-- [ ] イベントQR・なふだQR の生成（フロント側、qrcode.react 等）
-- [ ] アプリ内 QRスキャン（`/scan` 等の専用画面 or モーダル）— Phase 2 以降
-  - モバイルブラウザの制約を考慮（WebRTC / `jsQR` 等）
-
-### 5. つながり管理
-
-- [ ] 「つながりに追加」の実装（イベント経由 or なふだ詳細から）
-- [ ] つながり一覧の表示（マイなふだ内 or 専用タブ）
-- [ ] 検索・フィルター（ハンドルネーム / 推し / ジャンル / 現場経由 / 直接）
-- [ ] つながり先のなふだ変更を追従するか検討（ID 参照 vs スナップショット）
-
-### 6. 通知（将来対応）
-
-- [ ] 新しいつながりが追加された際の通知
-- [ ] 同じ現場に参加者が増えた際の通知
+### PWA
+- `/me` ルートを Service Worker でキャッシュ（NetworkFirst）
+- 静的アセットは CacheFirst
+- Android Chrome: `beforeinstallprompt` でインストールバナー表示
+- iOS Safari: `standalone` 検出でテキスト案内表示
 
 ---
 
-## データモデル（ラフ）
+## データモデル（実装済み）
 
 ```
-User
-  id            (UUID)
-  provider      (x / google / apple)
-  provider_id
-  created_at
+user                    ← Better Auth管理
+  id                    text (PK)
+  email                 text UNIQUE
+  name                  text
 
-Profile  ← "なふだ"
-  id            (nanoid 8文字)
-  user_id       → User
-  handle        (ハンドルネーム、必須)
-  avatar        (絵文字 or 画像URL)
-  bio
-  oshi_tags     (JSON配列: 推し名)
-  genre_tags    (JSON配列: ジャンル名)
-  same_oshi_policy  ('welcome' | 'refuse' | 'neutral')
-  links         (JSON配列: { label, url, visible })
-  is_default    (複数なふだ対応)
-  created_at
-  updated_at
+url_ids                 ← ユーザーの公開識別子（変更不可、1ユーザー1件）
+  url_id                text (PK)
+  user_id               → user.id UNIQUE
 
-Event
-  id            (大文字英数字6文字)
-  name
-  venue
-  date
-  kind          ('live' | 'seichi' | 'fanmeeting' | 'general')
-  host_user_id  → User
-  created_at
+personas                ← "なふだ"
+  id                    uuid (PK)
+  user_id               → user.id
+  display_name          text
+  share_token           text UNIQUE     ← QR URL に埋め込む
+  is_default            boolean
+  avatar_url            text
+  bio                   text
+  oshi_tags             text[]
+  dojin_reject          boolean
+  field_visibility      jsonb           ← { sns_links: 'public'|'private', ... }
+  is_public             boolean
 
-EventAttendee
-  event_id      → Event
-  profile_id    → Profile
-  joined_at
+sns_links               ← ペルソナごとの SNS リンク
+  id                    uuid (PK)
+  persona_id            → personas.id
+  platform              text            ← 'x'|'instagram'|'tiktok'|'youtube'|'discord'|'line_openchat'|'github'|'spotify'|'other'
+  url                   text
+  display_order         smallint
 
-Connection
-  id
-  from_profile_id  → Profile
-  to_profile_id    → Profile
-  event_id         → Event (どの現場で出会ったか)
-  memo             (自分だけが見えるメモ)
-  created_at
+events
+  id                    uuid (PK)
+  slug                  text UNIQUE     ← URL識別子（例: "animejapan-20260405"）
+  name                  text
+  venue_name            text
+  event_date            timestamp
+  host_user_id          → user.id
+
+event_checkins
+  id                    uuid (PK)
+  event_id              → events.id
+  persona_id            → personas.id
+  user_id               → user.id
+  gps_coordinates       point           ← nullable。x=経度, y=緯度
+  checked_in_at         timestamp
+  checked_out_at        timestamp       ← NULL = チェックイン中
+
+connections             ← 一方向。双方向 = 2行
+  id                    uuid (PK)
+  from_persona_id       → personas.id  ← 「つながる」を押した側
+  to_persona_id         → personas.id  ← QRを見せた側
+  from_user_id          → user.id
+  event_id              → events.id    ← nullable
+  event_name            text            ← 非正規化（JOIN不要で表示）
+  venue_name            text            ← 非正規化
+  event_date            timestamp       ← 非正規化
+  connected_at          timestamp
+  UNIQUE(from_persona_id, to_persona_id)
 ```
 
 ---
 
-## 画面一覧（ラフ）
+## 画面一覧（実装済み）
 
-| 画面 | パス | 概要 | Phase 0 比較 |
-|---|---|---|---|
-| ホーム | `/` | CTA・機能説明・PWA | 実装済み（名称・文言更新） |
-| イベントルーム | `/event/:id` | 参加者一覧（リアルタイム）・推し/ジャンルタグ表示 | モック→本実装 |
-| なふだ詳細 | `/p/:id` | 他者なふだ閲覧・つながり追加 | モック→本実装 |
-| マイなふだ | `/me` | 自分のなふだ確認・QR共有 | モック→本実装 |
-| なふだ編集 | `/me/edit` | 作成・編集フォーム（推しタグ・同担設定含む） | **新規** |
-| QRスキャン | `/scan` | カメラでQRを読み取り遷移（Phase 2） | **新規** |
-| つながり一覧 | `/connections` | つながっている人一覧・推し/ジャンルで絞り込み | **新規** |
-| イベント作成 | `/event/new` | イベント作成フォーム | **新規** |
-| オンボーディング | `/onboarding` | 初回ログイン後のなふだ作成誘導 | **新規** |
-
----
-
-## 技術スタック（案）
-
-> 詳細は `02_tech/tech_selection.md` 参照
-
-- フロント: React + TypeScript + Vite（プロトから継続）
-- バックエンド: 未定（Supabase / Firebase / 自前 API 等）
-- DB: 未定（Postgres / Firestore 等）
-- 認証: Supabase Auth / Firebase Auth / Auth.js 等（X OAuth 優先対応）
-- QRスキャン: jsQR or ZXing (WebAssembly)（Phase 2 以降）
-- ホスティング: 未定
+| 画面 | URL | 認証 |
+|------|-----|------|
+| ホーム | `/` | 不要 |
+| ログイン | `/login` | 不要 |
+| マイなふだ | `/me` | 必要 |
+| プロフィール編集 | `/profile/edit` | 必要 |
+| プロフィール作成ウィザード | `/profile/wizard` | 必要 |
+| コネクション一覧 | `/connections` | 必要 |
+| イベント一覧 | `/events` | 必要 |
+| イベント作成 | `/events/new` | 必要 |
+| イベントルーム | `/e/$slug` | 不要 |
+| 他者のなふだ（urlIdのみ） | `/u/$urlId` | 不要 |
+| 他者のなふだ（QR経由） | `/u/$urlId/p/$token` | 不要 |
 
 ---
 
-## 今後の検討事項
+## 今後の拡張候補
 
-- リアルタイム参加者更新の方式（WebSocket / SSE / ポーリング）
-- 複数なふだ切り替えの UX（どの画面で切り替えるか）
-- つながりの方向性（一方向フォロー型 vs 相互承認型）
-- QRスキャンをアプリ内で行うかネイティブカメラに任せ続けるか
-- イベント参加時に「どのなふだで参加するか」の選択フロー
-- 推し・ジャンルタグのサジェスト候補データの管理方法
-- 同担ポリシー設定が「拒否」のユーザーを参加者一覧から除外するかどうかの設計
+- アプリ内 QR スキャン（`/scan`）— 現在はネイティブカメラ任せ
+- コネクション先のなふだ変更追従（現在は記録時のスナップショットなし）
+- メッセージ交換
+- 一般イベント（勉強会・交流会）向け導線強化
+- 通知（新しいつながり・同じ現場への参加者増加）
+- アカウント削除（GDPR対応）
+- 推しタグのサジェスト候補管理
