@@ -10,6 +10,7 @@ import { auth } from '../auth'
 export const createConnection = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     targetShareToken: z.string().min(1),
+    fromPersonaId: z.string().uuid(), // ユーザーが選択したなふだ
   }))
   .handler(async ({ data }) => {
     // 1. 認証チェック
@@ -17,10 +18,10 @@ export const createConnection = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 2. 呼び出し側のデフォルトペルソナを取得
+    // 2. fromPersonaId が自分のペルソナであることを確認
     const fromPersonaRows = await db.select({ id: personas.id })
       .from(personas)
-      .where(and(eq(personas.userId, session.user.id), eq(personas.isDefault, true)))
+      .where(and(eq(personas.id, data.fromPersonaId), eq(personas.userId, session.user.id)))
       .limit(1)
     if (!fromPersonaRows[0]) throw new Error('自分のペルソナが見つかりません')
     const fromPersonaId = fromPersonaRows[0].id
