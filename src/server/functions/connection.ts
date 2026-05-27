@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { eq, and, isNull, desc } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db/client'
 import { connections, personas, urlIds, eventCheckins, events } from '../db/schema'
 import { auth } from '../auth'
@@ -83,31 +84,30 @@ export const getMyConnections = createServerFn({ method: 'GET' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 自分のデフォルトペルソナを取得
-    const myPersonaRows = await db.select({ id: personas.id })
-      .from(personas)
-      .where(and(eq(personas.userId, session.user.id), eq(personas.isDefault, true)))
-      .limit(1)
-    if (!myPersonaRows[0]) return []
-    const myPersonaId = myPersonaRows[0].id
+    // 自分の全ペルソナからのコネクションを取得（エイリアスで from/to を区別）
+    const fromPersona = alias(personas, 'from_persona')
+    const toPersona = alias(personas, 'to_persona')
+    const toUrlId = alias(urlIds, 'to_url_ids')
 
-    // connections + 相手ペルソナ情報 + urlId を JOIN して取得
     const result = await db.select({
       connectionId: connections.id,
       connectedAt: connections.connectedAt,
       eventName: connections.eventName,
       venueName: connections.venueName,
       eventDate: connections.eventDate,
+      fromPersonaId: connections.fromPersonaId,
+      fromDisplayName: fromPersona.displayName,
       toPersonaId: connections.toPersonaId,
-      toDisplayName: personas.displayName,
-      toAvatarUrl: personas.avatarUrl,
-      toUrlId: urlIds.urlId,
-      toShareToken: personas.shareToken,
+      toDisplayName: toPersona.displayName,
+      toAvatarUrl: toPersona.avatarUrl,
+      toUrlId: toUrlId.urlId,
+      toShareToken: toPersona.shareToken,
     })
       .from(connections)
-      .innerJoin(personas, eq(connections.toPersonaId, personas.id))
-      .innerJoin(urlIds, eq(personas.userId, urlIds.userId))
-      .where(eq(connections.fromPersonaId, myPersonaId))
+      .innerJoin(fromPersona, eq(connections.fromPersonaId, fromPersona.id))
+      .innerJoin(toPersona, eq(connections.toPersonaId, toPersona.id))
+      .innerJoin(toUrlId, eq(toPersona.userId, toUrlId.userId))
+      .where(eq(fromPersona.userId, session.user.id))
       .orderBy(desc(connections.connectedAt))
 
     return result
