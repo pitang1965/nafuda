@@ -83,9 +83,7 @@ function MePage() {
           {isPrivate('display_name') && <PrivateBadge />}
         </div>
 
-        {urlId && <p className="text-xs text-gray-400">/u/{urlId}</p>}
-
-        {currentPersona?.bio && (
+{currentPersona?.bio && (
           <div className={`w-full max-w-xs text-center ${isPrivate('bio') ? 'opacity-50' : ''}`}>
             <p className="text-sm text-gray-600 whitespace-pre-wrap">{currentPersona.bio}</p>
             {isPrivate('bio') && <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>}

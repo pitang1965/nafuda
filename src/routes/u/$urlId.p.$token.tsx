@@ -33,13 +33,13 @@ export const Route = createFileRoute('/u/$urlId/p/$token')({
       getSessionWithUrlId(),
     ])
     const isOwnProfile = sessionData.myUrlId === params.urlId
-    return { profile, session: sessionData, urlId: params.urlId, isOwnProfile }
+    return { profile, session: sessionData, urlId: params.urlId, shareToken: params.token, isOwnProfile }
   },
   component: PublicProfilePage,
 })
 
 function PublicProfilePage() {
-  const { profile, session, urlId, isOwnProfile } = Route.useLoaderData()
+  const { profile, session, shareToken, isOwnProfile } = Route.useLoaderData()
   const navigate = useNavigate()
   const [connected, setConnected] = useState(false)
   const [connecting, setConnecting] = useState(false)
@@ -55,7 +55,7 @@ function PublicProfilePage() {
     setConnecting(true)
     setError(null)
     try {
-      const result = await createConnection({ data: { targetUrlId: urlId } })
+      const result = await createConnection({ data: { targetShareToken: shareToken } })
       if (result.alreadyConnected) {
         setConnected(true)
       } else {

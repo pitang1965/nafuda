@@ -6,10 +6,10 @@ import { db } from '../db/client'
 import { connections, personas, urlIds, eventCheckins, events } from '../db/schema'
 import { auth } from '../auth'
 
-// 「つながる」ボタンから呼ばれる: targetUrlId のペルソナにコネクションを記録する
+// 「つながる」ボタンから呼ばれる: shareToken で指定されたペルソナにコネクションを記録する
 export const createConnection = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
-    targetUrlId: z.string().min(1),  // 相手の urlId（公開プロフィールURLに使われる値）
+    targetShareToken: z.string().min(1),
   }))
   .handler(async ({ data }) => {
     // 1. 認証チェック
@@ -25,22 +25,16 @@ export const createConnection = createServerFn({ method: 'POST' })
     if (!fromPersonaRows[0]) throw new Error('自分のペルソナが見つかりません')
     const fromPersonaId = fromPersonaRows[0].id
 
-    // 3. 対象 urlId からペルソナを解決
-    const targetUrlRow = await db.select({ userId: urlIds.userId })
-      .from(urlIds)
-      .where(eq(urlIds.urlId, data.targetUrlId))
-      .limit(1)
-    if (!targetUrlRow[0]) throw new Error('対象ユーザーが見つかりません')
-
-    const toPersonaRows = await db.select({ id: personas.id })
+    // 3. 対象 shareToken からペルソナを直接解決
+    const toPersonaRows = await db.select({ id: personas.id, userId: personas.userId })
       .from(personas)
-      .where(and(eq(personas.userId, targetUrlRow[0].userId), eq(personas.isDefault, true)))
+      .where(eq(personas.shareToken, data.targetShareToken))
       .limit(1)
     if (!toPersonaRows[0]) throw new Error('対象ペルソナが見つかりません')
     const toPersonaId = toPersonaRows[0].id
 
     // 4. 自己接続防止チェック
-    if (fromPersonaId === toPersonaId) throw new Error('自分自身にはつながれません')
+    if (toPersonaRows[0].userId === session.user.id) throw new Error('自分自身にはつながれません')
 
     // 5. アクティブチェックイン確認（イベントコンテキスト付与用）
     const activeCheckinRows = await db.select({

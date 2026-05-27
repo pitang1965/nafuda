@@ -45,8 +45,8 @@ function ConnectionCard({ conn }: { conn: Connection }) {
 
   return (
     <Link
-      to="/u/$urlId"
-      params={{ urlId: conn.toUrlId }}
+      to="/u/$urlId/p/$token"
+      params={{ urlId: conn.toUrlId, token: conn.toShareToken }}
       className="flex items-start gap-3 p-4 bg-white rounded-xl border hover:bg-gray-50 transition-colors"
     >
       {/* アバター */}

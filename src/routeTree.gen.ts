@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UUrlIdRouteImport } from './routes/u/$urlId'
 import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
 import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
@@ -34,11 +33,6 @@ const ProtectedRoute = ProtectedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UUrlIdRoute = UUrlIdRouteImport.update({
-  id: '/u/$urlId',
-  path: '/u/$urlId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ESlugRoute = ESlugRouteImport.update({
@@ -88,7 +82,6 @@ export interface FileRoutesByFullPath {
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
   '/e/$slug': typeof ESlugRoute
-  '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
@@ -101,7 +94,6 @@ export interface FileRoutesByTo {
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
   '/e/$slug': typeof ESlugRoute
-  '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
@@ -116,7 +108,6 @@ export interface FileRoutesById {
   '/_protected/connections': typeof ProtectedConnectionsRoute
   '/_protected/me': typeof ProtectedMeRoute
   '/e/$slug': typeof ESlugRoute
-  '/u/$urlId': typeof UUrlIdRouteWithChildren
   '/_protected/events/new': typeof ProtectedEventsNewRoute
   '/_protected/profile/edit': typeof ProtectedProfileEditRoute
   '/_protected/profile/wizard': typeof ProtectedProfileWizardRoute
@@ -131,7 +122,6 @@ export interface FileRouteTypes {
     | '/connections'
     | '/me'
     | '/e/$slug'
-    | '/u/$urlId'
     | '/events/new'
     | '/profile/edit'
     | '/profile/wizard'
@@ -144,7 +134,6 @@ export interface FileRouteTypes {
     | '/connections'
     | '/me'
     | '/e/$slug'
-    | '/u/$urlId'
     | '/events/new'
     | '/profile/edit'
     | '/profile/wizard'
@@ -158,7 +147,6 @@ export interface FileRouteTypes {
     | '/_protected/connections'
     | '/_protected/me'
     | '/e/$slug'
-    | '/u/$urlId'
     | '/_protected/events/new'
     | '/_protected/profile/edit'
     | '/_protected/profile/wizard'
@@ -171,7 +159,6 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   ESlugRoute: typeof ESlugRoute
-  UUrlIdRoute: typeof UUrlIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -195,13 +182,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u/$urlId': {
-      id: '/u/$urlId'
-      path: '/u/$urlId'
-      fullPath: '/u/$urlId'
-      preLoaderRoute: typeof UUrlIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/e/$slug': {
@@ -285,23 +265,11 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
   ProtectedRouteChildren,
 )
 
-interface UUrlIdRouteChildren {
-  UUrlIdPTokenRoute: typeof UUrlIdPTokenRoute
-}
-
-const UUrlIdRouteChildren: UUrlIdRouteChildren = {
-  UUrlIdPTokenRoute: UUrlIdPTokenRoute,
-}
-
-const UUrlIdRouteWithChildren =
-  UUrlIdRoute._addFileChildren(UUrlIdRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   ESlugRoute: ESlugRoute,
-  UUrlIdRoute: UUrlIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

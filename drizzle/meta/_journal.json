@@ -43,6 +43,13 @@
       "when": 1777224062601,
       "tag": "0005_flowery_skullbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779889571070,
+      "tag": "0006_narrow_angel",
+      "breakpoints": true
     }
   ]
 }
