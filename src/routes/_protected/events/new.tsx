@@ -60,7 +60,7 @@ function NewEventPage() {
 
   const onSubmit = async (formData: FormValues) => {
     if (!personaId) {
-      setSubmitError('ペルソナが見つかりません。プロフィールを設定してください。')
+      setSubmitError('なふだが見つかりません。プロフィールを設定してください。')
       return
     }
     setSubmitError(null)
