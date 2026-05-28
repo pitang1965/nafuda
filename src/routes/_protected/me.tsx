@@ -17,16 +17,27 @@ function PrivateBadge() {
   return <span className="text-xs text-gray-400 ml-1">🔒</span>
 }
 
+const LAST_PERSONA_KEY = 'nafuda_last_persona_id'
+
+function resolveInitialPersonaId(personas: { id: string; isDefault: boolean }[]): string {
+  const saved = typeof window !== 'undefined' ? localStorage.getItem(LAST_PERSONA_KEY) : null
+  if (saved && personas.some(p => p.id === saved)) return saved
+  return personas.find(p => p.isDefault)?.id ?? personas[0]?.id ?? ''
+}
+
 function MePage() {
   const { urlId, personas } = Route.useLoaderData()
   const navigate = useNavigate()
-  const [currentPersonaId, setCurrentPersonaId] = useState(
-    personas.find(p => p.isDefault)?.id ?? personas[0]?.id ?? ''
+  const [currentPersonaId, setCurrentPersonaId] = useState(() =>
+    resolveInitialPersonaId(personas)
   )
   const currentPersona = personas.find(p => p.id === currentPersonaId)
   const [qrOpen, setQrOpen] = useState(false)
-  const [origin, setOrigin] = useState('')
-  useEffect(() => { setOrigin(window.location.origin) }, [])
+  const [origin] = useState(() => typeof window !== 'undefined' ? window.location.origin : '')
+
+  useEffect(() => {
+    if (currentPersonaId) localStorage.setItem(LAST_PERSONA_KEY, currentPersonaId)
+  }, [currentPersonaId])
 
   const handleLogout = async () => {
     await authClient.signOut()
