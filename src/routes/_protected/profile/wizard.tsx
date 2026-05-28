@@ -45,7 +45,6 @@ function WizardPage() {
   const displayName = watch('displayName') ?? ''
   const label = watch('label') ?? ''
   const useAutoAvatar = watch('useAutoAvatar')
-  const oshiTags = watch('oshiTags') ?? []
 
   const handleProceedFromOshi = () => {
     setStep(3)
