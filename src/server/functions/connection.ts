@@ -97,6 +97,7 @@ export const getMyConnections = createServerFn({ method: 'GET' })
       eventDate: connections.eventDate,
       fromPersonaId: connections.fromPersonaId,
       fromDisplayName: fromPersona.displayName,
+      fromLabel: fromPersona.label,
       toPersonaId: connections.toPersonaId,
       toDisplayName: toPersona.displayName,
       toAvatarUrl: toPersona.avatarUrl,

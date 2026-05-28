@@ -63,6 +63,7 @@ export const personas = pgTable('personas', {
   isDefault: boolean('is_default').notNull().default(false),
   avatarUrl: text('avatar_url'),                  // null = use initials avatar
   bio: text('bio'),                               // null = no bio set (max 200 chars enforced at app layer)
+  label: text('label'),                               // 自分だけが見る識別名（最大20文字）、公開プロフィールには出ない
   oshiTags: text('oshi_tags').array().notNull().default([]),
   dojinReject: boolean('dojin_reject').notNull().default(false),
   // fieldVisibility: { sns_links: 'public'|'private', oshi_tags: 'public'|'private', avatar_url: 'public'|'private' }

@@ -71,9 +71,9 @@ const ProtectedEventsNewRoute = ProtectedEventsNewRouteImport.update({
   getParentRoute: () => ProtectedRoute,
 } as any)
 const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
-  id: '/p/$token',
-  path: '/p/$token',
-  getParentRoute: () => UUrlIdRoute,
+  id: '/u/$urlId/p/$token',
+  path: '/u/$urlId/p/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -159,6 +159,7 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   ESlugRoute: typeof ESlugRoute
+  UUrlIdPTokenRoute: typeof UUrlIdPTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -235,10 +236,10 @@ declare module '@tanstack/react-router' {
     }
     '/u/$urlId/p/$token': {
       id: '/u/$urlId/p/$token'
-      path: '/p/$token'
+      path: '/u/$urlId/p/$token'
       fullPath: '/u/$urlId/p/$token'
       preLoaderRoute: typeof UUrlIdPTokenRouteImport
-      parentRoute: typeof UUrlIdRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -270,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   ESlugRoute: ESlugRoute,
+  UUrlIdPTokenRoute: UUrlIdPTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

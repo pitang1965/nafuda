@@ -59,6 +59,7 @@ export const getOwnProfile = createServerFn({ method: 'GET' })
 export const createPersona = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
+    label: z.string().max(20).optional().nullable(),
     bio: z.string().max(200).optional().nullable(),
     avatarUrl: z.string().url().optional().nullable(),
     isDefault: z.boolean().default(false),
@@ -94,6 +95,7 @@ export const createPersona = createServerFn({ method: 'POST' })
     const [persona] = await db.insert(personas).values({
       userId: session.user.id,
       displayName: data.displayName,
+      label: data.label ?? null,
       bio: data.bio ?? null,
       shareToken,
       avatarUrl: data.avatarUrl ?? null,
@@ -109,6 +111,7 @@ export const updatePersona = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     personaId: z.string().uuid(),
     displayName: z.string().min(1).max(50).optional(),
+    label: z.string().max(20).optional().nullable(),
     bio: z.string().max(200).optional().nullable(),
     avatarUrl: z.string().url().optional().nullable(),
     fieldVisibility: z.record(z.string(), z.enum(['public', 'private'])).optional(),
@@ -120,6 +123,7 @@ export const updatePersona = createServerFn({ method: 'POST' })
 
     const updates: Partial<typeof personas.$inferInsert> = { updatedAt: new Date() }
     if (data.displayName !== undefined) updates.displayName = data.displayName
+    if (data.label !== undefined) updates.label = data.label
     if (data.bio !== undefined) updates.bio = data.bio
     if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl
     if (data.fieldVisibility !== undefined) updates.fieldVisibility = data.fieldVisibility
@@ -165,7 +169,7 @@ export const upsertSnsLink = createServerFn({ method: 'POST' })
     personaId: z.string().uuid(),
     linkId: z.string().uuid().optional(),
     platform: z.enum(['x', 'instagram', 'tiktok', 'youtube', 'discord', 'line_openchat', 'github', 'spotify', 'other']),
-    url: z.string().url('有効なURLを入力してください'),
+    url: z.string().url({ message: '有効なURLを入力してください' }),
     displayOrder: z.number().int().min(0),
   }))
   .handler(async ({ data }) => {

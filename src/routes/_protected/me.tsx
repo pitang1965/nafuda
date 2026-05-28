@@ -52,7 +52,7 @@ function MePage() {
           onCreateNew={() => navigate({ to: '/profile/wizard' })}
         />
         <div className="flex items-center gap-3">
-          <Link to="/profile/edit" className="text-sm text-gray-500 underline">編集</Link>
+          <Link to="/profile/edit" search={{ personaId: currentPersonaId }} className="text-sm text-gray-500 underline">編集</Link>
           <Link to="/events" className="text-sm text-gray-500 underline">イベント</Link>
           <button
             onClick={handleLogout}
@@ -82,6 +82,16 @@ function MePage() {
           <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
           {isPrivate('display_name') && <PrivateBadge />}
         </div>
+
+        {!currentPersona?.label && (
+          <Link
+            to="/profile/edit"
+            search={{ personaId: currentPersonaId }}
+            className="text-xs text-gray-400 underline"
+          >
+            ラベルを設定する →
+          </Link>
+        )}
 
 {currentPersona?.bio && (
           <div className={`w-full max-w-xs text-center ${isPrivate('bio') ? 'opacity-50' : ''}`}>

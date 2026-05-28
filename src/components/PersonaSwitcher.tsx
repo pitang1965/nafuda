@@ -3,6 +3,7 @@ import { useState } from 'react'
 interface Persona {
   id: string
   displayName: string
+  label?: string | null
   isDefault: boolean
 }
 
@@ -16,6 +17,7 @@ interface PersonaSwitcherProps {
 export function PersonaSwitcher({ personas, currentPersonaId, onSwitch, onCreateNew }: PersonaSwitcherProps) {
   const [open, setOpen] = useState(false)
   const current = personas.find(p => p.id === currentPersonaId)
+  const currentLabel = current?.label || current?.displayName || 'なふだ'
 
   return (
     <div className="relative">
@@ -23,7 +25,7 @@ export function PersonaSwitcher({ personas, currentPersonaId, onSwitch, onCreate
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-sm font-medium"
       >
-        <span>{current?.displayName ?? 'なふだ'}</span>
+        <span>{currentLabel}</span>
         <span className="text-xs text-gray-400">{open ? '▲' : '▼'}</span>
       </button>
 
@@ -33,11 +35,16 @@ export function PersonaSwitcher({ personas, currentPersonaId, onSwitch, onCreate
             <button
               key={p.id}
               onClick={() => { onSwitch(p.id); setOpen(false) }}
-              className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center justify-between
+              className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center justify-between gap-2
                 ${p.id === currentPersonaId ? 'font-semibold' : ''}`}
             >
-              {p.displayName}
-              {p.id === currentPersonaId && <span className="text-xs text-gray-400">使用中</span>}
+              <span className="flex flex-col">
+                <span>{p.label || p.displayName}</span>
+                {p.label && (
+                  <span className="text-xs text-gray-400 font-normal">{p.displayName}</span>
+                )}
+              </span>
+              {p.id === currentPersonaId && <span className="text-xs text-gray-400 shrink-0">使用中</span>}
             </button>
           ))}
           <button

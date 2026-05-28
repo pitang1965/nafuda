@@ -3,11 +3,12 @@ import { useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { createPersona } from '../../../server/functions/profile'
+import { createPersona, getOwnProfile } from '../../../server/functions/profile'
 import { InitialsAvatar } from '../../../components/InitialsAvatar'
 import { OshiTagInput } from '../../../components/OshiTagInput'
 
 export const Route = createFileRoute('/_protected/profile/wizard')({
+  loader: () => getOwnProfile(),
   component: WizardPage,
 })
 
@@ -15,39 +16,38 @@ export const Route = createFileRoute('/_protected/profile/wizard')({
 
 const WizardSchema = z.object({
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
-  oshiTags: z.array(z.string()).min(1, '推しタグを1個以上入力してください'),
-  avatarUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  label: z.string().max(20, '20文字以下').optional().or(z.literal('')),
+  oshiTags: z.array(z.string()),
+  avatarUrl: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   useAutoAvatar: z.boolean(),
 })
 
 type WizardForm = z.infer<typeof WizardSchema>
 
 function WizardPage() {
+  const { personas } = Route.useLoaderData()
+  const isFirstPersona = personas.length === 0
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [oshiTagsError, setOshiTagsError] = useState<string | null>(null)
 
   const methods = useForm<WizardForm>({
     resolver: zodResolver(WizardSchema),
     defaultValues: {
       useAutoAvatar: true,
       oshiTags: [],
+      label: isFirstPersona ? 'メイン' : '',
     },
   })
 
   const { register, handleSubmit, watch, formState: { errors } } = methods
 
   const displayName = watch('displayName') ?? ''
+  const label = watch('label') ?? ''
   const useAutoAvatar = watch('useAutoAvatar')
   const oshiTags = watch('oshiTags') ?? []
 
   const handleProceedFromOshi = () => {
-    if (oshiTags.length === 0) {
-      setOshiTagsError('推しタグを1個以上入力してください')
-      return
-    }
-    setOshiTagsError(null)
     setStep(3)
   }
 
@@ -57,8 +57,9 @@ function WizardPage() {
       await createPersona({
         data: {
           displayName: values.displayName,
+          label: values.label || null,
           avatarUrl: values.useAutoAvatar ? null : (values.avatarUrl || null),
-          isDefault: true,
+          isDefault: isFirstPersona,
           oshiTags: values.oshiTags,
         },
       })
@@ -68,7 +69,7 @@ function WizardPage() {
     }
   }
 
-  const steps = ['表示名', '推しタグ', 'アバター', '完了']
+  const steps = ['表示名', '推し / 趣味タグ', 'アバター', '完了']
 
   return (
     <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
@@ -101,6 +102,17 @@ function WizardPage() {
                 />
                 {errors.displayName && <p className="text-xs text-red-600 mt-1">{errors.displayName.message}</p>}
               </div>
+              <div>
+                <label className="text-sm font-medium">ラベル <span className="text-xs text-gray-400 font-normal">（自分だけが見る用途メモ・任意）</span></label>
+                <input
+                  {...register('label')}
+                  placeholder="例: 推し活用・仕事用"
+                  maxLength={20}
+                  className="mt-1 w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                />
+                <p className="text-xs text-gray-400 mt-1 text-right">{label.length}/20</p>
+                {errors.label && <p className="text-xs text-red-600 mt-1">{errors.label.message}</p>}
+              </div>
               <button
                 type="button"
                 onClick={() => { if (displayName.trim()) setStep(2) }}
@@ -115,29 +127,16 @@ function WizardPage() {
           {/* Step 2: Oshi tags */}
           {step === 2 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">推し・趣味・ジャンルを教えてください</h2>
+              <h2 className="text-xl font-bold">趣味・推し・ジャンルを登録しましょう <span className="text-sm font-normal text-gray-400">（任意）</span></h2>
               <p className="text-sm text-gray-500">
-                推しの名前・グループ名・ジャンルなど自由に入力できます。<br />
+                推しの名前・グループ名・趣味・ジャンルなど自由に入力できます。<br />
                 入力して <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">Enter</kbd> で追加、×で削除。複数登録OK。
               </p>
               <OshiTagInput name="oshiTags" />
-              {oshiTagsError && (
-                <p className="text-xs text-red-600">{oshiTagsError}</p>
-              )}
-              {errors.oshiTags && (
-                <p className="text-xs text-red-600">{errors.oshiTags.message}</p>
-              )}
               <div className="flex gap-2">
                 <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
                 <button type="button" onClick={handleProceedFromOshi} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
               </div>
-              <button
-                type="button"
-                onClick={() => { setOshiTagsError(null); setStep(3) }}
-                className="text-xs text-gray-400 text-center underline"
-              >
-                スキップ
-              </button>
             </div>
           )}
 

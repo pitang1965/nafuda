@@ -62,7 +62,7 @@ function ConnectionCard({ conn }: { conn: Connection }) {
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 truncate">{conn.toDisplayName}</p>
         <p className="text-xs text-gray-400 mt-0.5">
-          {conn.fromDisplayName} として · {connectedDate}
+          {conn.fromLabel || conn.fromDisplayName} として · {connectedDate}
         </p>
 
         {/* イベントコンテキスト（チェックイン中につながった場合のみ表示） */}

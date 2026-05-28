@@ -9,6 +9,9 @@ import { InitialsAvatar } from '../../../components/InitialsAvatar'
 import { OshiTagInput } from '../../../components/OshiTagInput'
 
 export const Route = createFileRoute('/_protected/profile/edit')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    personaId: typeof search.personaId === 'string' ? search.personaId : undefined,
+  }),
   loader: () => getOwnProfile(),
   staleTime: 0,
   component: EditPage,
@@ -61,8 +64,9 @@ interface SnsLinkState {
 
 const EditSchema = z.object({
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
+  label: z.string().max(20, '20文字以下').optional().or(z.literal('')),
   bio: z.string().max(200, '200文字以下').optional().or(z.literal('')),
-  avatarUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  avatarUrl: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   useAutoAvatar: z.boolean(),
   displayNameVisibility: z.enum(['public', 'private']),
   bioVisibility: z.enum(['public', 'private']),
@@ -99,9 +103,10 @@ function VisibilityToggle({
 function EditPage() {
   const navigate = useNavigate()
   const { personas, urlId } = Route.useLoaderData()
+  const { personaId: searchPersonaId } = Route.useSearch()
 
-  // Use default persona (or first) for editing
-  const defaultPersona = personas.find(p => p.isDefault) ?? personas[0]
+  const defaultPersona = personas.find(p => searchPersonaId ? p.id === searchPersonaId : p.isDefault)
+    ?? personas[0]
 
   if (!defaultPersona || !urlId) {
     return (
@@ -123,6 +128,7 @@ function EditPage() {
     <EditForm
       personaId={defaultPersona.id}
       initialDisplayName={defaultPersona.displayName}
+      initialLabel={defaultPersona.label ?? ''}
       initialBio={defaultPersona.bio ?? ''}
       initialAvatarUrl={defaultPersona.avatarUrl ?? ''}
       initialDisplayNameVisibility={(visibility.display_name as 'public' | 'private') ?? 'public'}
@@ -140,6 +146,7 @@ function EditPage() {
 function EditForm({
   personaId,
   initialDisplayName,
+  initialLabel,
   initialBio,
   initialAvatarUrl,
   initialDisplayNameVisibility,
@@ -153,6 +160,7 @@ function EditForm({
 }: {
   personaId: string
   initialDisplayName: string
+  initialLabel: string
   initialBio: string
   initialAvatarUrl: string
   initialDisplayNameVisibility: 'public' | 'private'
@@ -185,6 +193,7 @@ function EditForm({
     resolver: zodResolver(EditSchema),
     defaultValues: {
       displayName: initialDisplayName,
+      label: initialLabel,
       bio: initialBio,
       avatarUrl: initialAvatarUrl,
       useAutoAvatar: !initialAvatarUrl,
@@ -276,6 +285,7 @@ function EditForm({
         data: {
           personaId,
           displayName: values.displayName,
+          label: values.label || null,
           bio: values.bio || null,
           avatarUrl: values.useAutoAvatar ? null : (values.avatarUrl || null),
           fieldVisibility: {
@@ -324,7 +334,7 @@ function EditForm({
     <FormProvider {...methods}>
       <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto gap-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">プロフィールを編集</h1>
+          <h1 className="text-xl font-bold">{initialLabel || initialDisplayName} を編集</h1>
           <button
             onClick={() => navigate({ to: '/me' })}
             className="text-sm text-gray-500"
@@ -353,6 +363,25 @@ function EditForm({
               className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
             />
             {errors.displayName && <p className="text-xs text-red-600">{errors.displayName.message}</p>}
+          </div>
+
+          {/* Label */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">
+              ラベル <span className="text-xs text-gray-400 font-normal">（自分だけが見る用途メモ・任意）</span>
+            </label>
+            <div className="relative">
+              <input
+                {...register('label')}
+                placeholder="例: 推し活用・仕事用"
+                maxLength={20}
+                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                {(watch('label') ?? '').length}/20
+              </span>
+            </div>
+            {errors.label && <p className="text-xs text-red-600">{errors.label.message}</p>}
           </div>
 
           {/* Bio */}
