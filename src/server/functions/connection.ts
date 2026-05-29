@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
-import { eq, and, isNull, desc } from 'drizzle-orm'
+import { eq, and, isNull, desc, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db/client'
 import { connections, personas, urlIds, eventCheckins, events } from '../db/schema'
@@ -84,10 +84,12 @@ export const getMyConnections = createServerFn({ method: 'GET' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 自分の全ペルソナからのコネクションを取得（エイリアスで from/to を区別）
+    // from/to どちらに自分が含まれていてもつながりを返す（エイリアスで区別）
     const fromPersona = alias(personas, 'from_persona')
     const toPersona = alias(personas, 'to_persona')
+    const fromUrlId = alias(urlIds, 'from_url_ids')
     const toUrlId = alias(urlIds, 'to_url_ids')
+    const userId = session.user.id
 
     const result = await db.select({
       connectionId: connections.id,
@@ -95,20 +97,24 @@ export const getMyConnections = createServerFn({ method: 'GET' })
       eventName: connections.eventName,
       venueName: connections.venueName,
       eventDate: connections.eventDate,
-      fromPersonaId: connections.fromPersonaId,
-      fromDisplayName: fromPersona.displayName,
-      fromLabel: fromPersona.label,
-      toPersonaId: connections.toPersonaId,
-      toDisplayName: toPersona.displayName,
-      toAvatarUrl: toPersona.avatarUrl,
-      toUrlId: toUrlId.urlId,
-      toShareToken: toPersona.shareToken,
+      // 自分のペルソナ情報（自分が from なら from、to なら to）
+      fromDisplayName: sql<string>`CASE WHEN ${fromPersona.userId} = ${userId} THEN ${fromPersona.displayName} ELSE ${toPersona.displayName} END`,
+      fromLabel: sql<string | null>`CASE WHEN ${fromPersona.userId} = ${userId} THEN ${fromPersona.label} ELSE ${toPersona.label} END`,
+      // 相手のペルソナ情報
+      toDisplayName: sql<string>`CASE WHEN ${fromPersona.userId} = ${userId} THEN ${toPersona.displayName} ELSE ${fromPersona.displayName} END`,
+      toAvatarUrl: sql<string | null>`CASE WHEN ${fromPersona.userId} = ${userId} THEN ${toPersona.avatarUrl} ELSE ${fromPersona.avatarUrl} END`,
+      toUrlId: sql<string>`CASE WHEN ${fromPersona.userId} = ${userId} THEN ${toUrlId.urlId} ELSE ${fromUrlId.urlId} END`,
+      toShareToken: sql<string>`CASE WHEN ${fromPersona.userId} = ${userId} THEN ${toPersona.shareToken} ELSE ${fromPersona.shareToken} END`,
     })
       .from(connections)
       .innerJoin(fromPersona, eq(connections.fromPersonaId, fromPersona.id))
       .innerJoin(toPersona, eq(connections.toPersonaId, toPersona.id))
+      .innerJoin(fromUrlId, eq(fromPersona.userId, fromUrlId.userId))
       .innerJoin(toUrlId, eq(toPersona.userId, toUrlId.userId))
-      .where(eq(fromPersona.userId, session.user.id))
+      .where(or(
+        eq(fromPersona.userId, userId),
+        eq(toPersona.userId, userId),
+      ))
       .orderBy(desc(connections.connectedAt))
 
     return result
