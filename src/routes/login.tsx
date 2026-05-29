@@ -1,16 +1,26 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { z } from 'zod'
 import { authClient } from '../lib/auth-client'
 
 export const Route = createFileRoute('/login')({
+  validateSearch: z.object({
+    redirect: z.string().optional(),
+  }),
   component: LoginPage,
 })
 
 function LoginPage() {
+  const { redirect } = Route.useSearch()
+  // Reject protocol-relative URLs (//evil.com) to prevent open redirect
+  const callbackURL = redirect?.startsWith('/') && !redirect.startsWith('//')
+    ? redirect
+    : '/me'
+
   const handleGoogle = async () => {
-    await authClient.signIn.social({ provider: 'google', callbackURL: '/me' })
+    await authClient.signIn.social({ provider: 'google', callbackURL })
   }
   const handleFacebook = async () => {
-    await authClient.signIn.social({ provider: 'facebook', callbackURL: '/me' })
+    await authClient.signIn.social({ provider: 'facebook', callbackURL })
   }
 
   return (

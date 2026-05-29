@@ -45,7 +45,7 @@ export const Route = createFileRoute('/u/$urlId/p/$token')({
 })
 
 function PublicProfilePage() {
-  const { profile, session, shareToken, isOwnProfile } = Route.useLoaderData()
+  const { profile, session, urlId, shareToken, isOwnProfile } = Route.useLoaderData()
   const navigate = useNavigate()
   const [connected, setConnected] = useState(false)
   const [connecting, setConnecting] = useState(false)
@@ -56,7 +56,7 @@ function PublicProfilePage() {
 
   const handleConnectClick = async () => {
     if (!session.user) {
-      await navigate({ to: '/login' })
+      await navigate({ to: '/login', search: { redirect: `/u/${urlId}/p/${shareToken}` } })
       return
     }
     if (session.myPersonas.length > 1) {
