@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { getMyConnections } from '../../server/functions/connection'
 import { InitialsAvatar } from '../../components/InitialsAvatar'
 
@@ -9,13 +9,19 @@ export const Route = createFileRoute('/_protected/connections')({
 
 function ConnectionsPage() {
   const connections = Route.useLoaderData()
+  const router = useRouter()
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="p-4 border-b flex items-center gap-3">
+        <button
+          onClick={() => router.history.back()}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="戻る"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
         <h1 className="text-lg font-bold">つながり</h1>
-        <Link to="/me" className="text-sm text-gray-500 underline">戻る</Link>
       </div>
 
       {/* コネクション一覧 */}

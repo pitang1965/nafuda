@@ -14,7 +14,7 @@ export default defineConfig([
       tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
-      { rules: { 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }] } },
+      { rules: { 'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: ['Route'] }] } },
     ],
     languageOptions: {
       ecmaVersion: 2020,

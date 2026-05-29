@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { getMyEvents } from '../../../server/functions/event'
 
 export const Route = createFileRoute('/_protected/events/')({
@@ -39,11 +39,21 @@ function EventCard({ name, venueName, eventDate, slug }: EventCardProps) {
 
 function MyEventsPage() {
   const { hostedEvents, participatedEvents } = Route.useLoaderData()
+  const router = useRouter()
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-4 border-b flex items-center justify-between">
-        <h1 className="text-lg font-bold">マイイベント</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.history.back()}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="戻る"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h1 className="text-lg font-bold">マイイベント</h1>
+        </div>
         <Link
           to="/events/new"
           className="px-4 py-2 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
