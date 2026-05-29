@@ -59,10 +59,12 @@ function PublicProfilePage() {
       await navigate({ to: '/login', search: { redirect: `/u/${urlId}/p/${shareToken}` } })
       return
     }
-    if (session.myPersonas.length > 1) {
-      setShowPicker(true)
+    if (session.myPersonas.length === 0) {
+      await navigate({ to: '/profile/wizard', search: { redirect: `/u/${urlId}/p/${shareToken}` } })
     } else if (session.myPersonas.length === 1) {
       await doConnect(session.myPersonas[0].id)
+    } else {
+      setShowPicker(true)
     }
   }
 

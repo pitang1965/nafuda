@@ -8,6 +8,9 @@ import { InitialsAvatar } from '../../../components/InitialsAvatar'
 import { OshiTagInput } from '../../../components/OshiTagInput'
 
 export const Route = createFileRoute('/_protected/profile/wizard')({
+  validateSearch: z.object({
+    redirect: z.string().optional(),
+  }),
   loader: () => getOwnProfile(),
   component: WizardPage,
 })
@@ -26,6 +29,7 @@ type WizardForm = z.infer<typeof WizardSchema>
 
 function WizardPage() {
   const { personas } = Route.useLoaderData()
+  const { redirect } = Route.useSearch()
   const isFirstPersona = personas.length === 0
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
@@ -62,7 +66,14 @@ function WizardPage() {
           oshiTags: values.oshiTags,
         },
       })
-      navigate({ to: '/me' })
+      const safeRedirect = redirect?.startsWith('/') && !redirect.startsWith('//')
+        ? redirect
+        : null
+      if (safeRedirect) {
+        window.location.href = safeRedirect
+      } else {
+        navigate({ to: '/me' })
+      }
     } catch {
       setSubmitError('エラーが発生しました。もう一度お試しください。')
     }
