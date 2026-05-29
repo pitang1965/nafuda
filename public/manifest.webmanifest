@@ -2,7 +2,7 @@
   "name": "なふだ",
   "short_name": "なふだ",
   "description": "QRでその場でつながれる推し活デジタル名刺",
-  "start_url": "/",
+  "start_url": "/me",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ec4899",

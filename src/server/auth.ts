@@ -38,9 +38,13 @@ export const auth = betterAuth({
   },
   session: {
     storeSessionInDatabase: true,
-    // CRITICAL: Do NOT enable cookieCache — Better Auth bug #4203 causes session loss
-    // on Cloudflare Workers when cookieCache + secondaryStorage are both enabled.
-    // Using storeSessionInDatabase only is the safe pattern.
+    // cookieCache: avoid DB round-trip on every protected route — validated from the signed
+    // cookie itself. Bug #4203 (cookieCache + secondaryStorage) is not applicable here
+    // because secondaryStorage is not configured.
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5, // 5 minutes
+    },
     expiresIn: 60 * 60 * 24 * 30,   // 30 days (iOS ITP mitigation — users open app ~monthly)
     updateAge: 60 * 60 * 24,          // Refresh session token after 1 day of activity
   },

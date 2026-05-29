@@ -1,5 +1,5 @@
 const ASSET_CACHE = 'nafuda-assets-v1'
-const PAGE_CACHE = 'nafuda-pages-v1'
+const PAGE_CACHE = 'nafuda-pages-v2'
 
 self.addEventListener('install', () => self.skipWaiting())
 
@@ -20,11 +20,13 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
 
   // /me: NetworkFirst — オフライン時はキャッシュから応答
+  // redirect:'manual' でリダイレクト先コンテンツを /me キャッシュに書き込まない。
+  // サーバーが /login へリダイレクトした場合はブラウザがそのまま追跡し URL が変わる。
   if (url.pathname === '/me' || url.pathname.startsWith('/me/')) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { redirect: 'manual' })
         .then(response => {
-          if (response.ok) {
+          if (response.ok && !response.redirected) {
             caches.open(PAGE_CACHE).then(c => c.put(request, response.clone()))
           }
           return response
