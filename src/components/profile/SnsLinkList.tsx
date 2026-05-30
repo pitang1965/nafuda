@@ -10,6 +10,7 @@ const PLATFORM_LABELS: Record<SnsLink["platform"], string> = {
   github: "GitHub",
   spotify: "Spotify",
   facebook: "Facebook",
+  minkara: "みんカラ",
   other: "その他",
 };
 
@@ -23,6 +24,7 @@ const PLATFORM_COLORS: Record<SnsLink["platform"], string> = {
   github: "bg-gray-800 text-white",
   spotify: "bg-green-600 text-white",
   facebook: "bg-[#1877F2] text-white",
+  minkara: "bg-sky-500 text-white",
   other: "bg-gray-500 text-white",
 };
 

@@ -9,6 +9,7 @@ export interface SnsLink {
     | "github"
     | "spotify"
     | "facebook"
+    | "minkara"
     | "other";
   url: string;
   handle: string;

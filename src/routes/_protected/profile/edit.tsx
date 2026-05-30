@@ -40,6 +40,7 @@ const PLATFORMS = [
   { value: "github", label: "GitHub" },
   { value: "spotify", label: "Spotify" },
   { value: "facebook", label: "Facebook" },
+  { value: "minkara", label: "みんカラ" },
   { value: "other", label: "その他" },
 ] as const;
 
@@ -52,6 +53,7 @@ const USERNAME_BASE: Partial<Record<Platform, string>> = {
   tiktok: "https://tiktok.com/@",
   youtube: "https://youtube.com/@",
   github: "https://github.com/",
+  minkara: "https://minkara.carview.co.jp/userid/",
 };
 
 function normalizeUrl(platform: Platform, input: string): string {

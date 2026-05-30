@@ -24,6 +24,11 @@ function extractHandle(platform: string, url: string): string {
         }
         return last;
       }
+      case "minkara": {
+        const segs = u.pathname.split("/").filter(Boolean);
+        const idx = segs.indexOf("userid");
+        return idx !== -1 && segs[idx + 1] ? segs[idx + 1] : u.hostname + u.pathname;
+      }
       default:
         return u.hostname + u.pathname;
     }
@@ -95,6 +100,12 @@ function PlatformIcon({ platform }: { platform: string }) {
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="currentColor">
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg>
+      );
+    case "minkara":
+      return (
+        <svg className={cls} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
         </svg>
       );
     default:
