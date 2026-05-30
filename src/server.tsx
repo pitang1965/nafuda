@@ -3,7 +3,12 @@ import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/
 const startFetch = createStartHandler(defaultStreamHandler)
 
 async function handleRequest(request: Request): Promise<Response> {
-  const { pathname } = new URL(request.url)
+  const url = new URL(request.url)
+  const { pathname } = url
+
+  if (url.hostname === 'nafuda-dxn.pages.dev') {
+    return Response.redirect(`https://nafuda.me${pathname}${url.search}`, 301)
+  }
 
   // Route /api/auth/* directly to better-auth before TanStack Start's router.
   // TanStack Router's catch-all ($.ts) sets routeParams["**"] which makes
