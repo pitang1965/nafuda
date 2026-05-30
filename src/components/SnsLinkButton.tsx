@@ -32,7 +32,8 @@ function extractHandle(platform: string, url: string): string {
       case "linkedin": {
         const segs = u.pathname.split("/").filter(Boolean);
         const idx = segs.indexOf("in");
-        return idx !== -1 && segs[idx + 1] ? segs[idx + 1] : u.hostname + u.pathname;
+        const seg = idx !== -1 && segs[idx + 1] ? segs[idx + 1] : null;
+        return seg ? decodeURIComponent(seg) : u.hostname + u.pathname;
       }
       default:
         return u.hostname + u.pathname;
