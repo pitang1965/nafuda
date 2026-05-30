@@ -7,6 +7,10 @@ const PLATFORM_LABELS: Record<SnsLink['platform'], string> = {
   line_openchat: 'LINE オープンチャット',
   tiktok: 'TikTok',
   youtube: 'YouTube',
+  github: 'GitHub',
+  spotify: 'Spotify',
+  facebook: 'Facebook',
+  other: 'その他',
 }
 
 const PLATFORM_COLORS: Record<SnsLink['platform'], string> = {
@@ -16,6 +20,10 @@ const PLATFORM_COLORS: Record<SnsLink['platform'], string> = {
   line_openchat: 'bg-green-500 text-white',
   tiktok: 'bg-gray-900 text-white',
   youtube: 'bg-red-600 text-white',
+  github: 'bg-gray-800 text-white',
+  spotify: 'bg-green-600 text-white',
+  facebook: 'bg-[#1877F2] text-white',
+  other: 'bg-gray-500 text-white',
 }
 
 interface SnsLinkListProps {

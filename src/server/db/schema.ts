@@ -77,7 +77,7 @@ export const personas = pgTable('personas', {
 export const snsLinks = pgTable('sns_links', {
   id: uuid('id').primaryKey().defaultRandom(),
   personaId: uuid('persona_id').notNull(),         // FK to personas.id
-  // platform values: 'x' | 'instagram' | 'tiktok' | 'youtube' | 'discord' | 'line_openchat' | 'github' | 'spotify' | 'other'
+  // platform values: 'x' | 'instagram' | 'tiktok' | 'youtube' | 'discord' | 'line_openchat' | 'github' | 'spotify' | 'facebook' | 'other'
   platform: text('platform').notNull(),
   url: text('url').notNull(),
   displayOrder: smallint('display_order').notNull().default(0),

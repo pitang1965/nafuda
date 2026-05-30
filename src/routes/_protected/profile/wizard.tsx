@@ -21,7 +21,7 @@ const WizardSchema = z.object({
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
   label: z.string().max(20, '20文字以下').optional().or(z.literal('')),
   oshiTags: z.array(z.string()),
-  avatarUrl: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
+  avatarUrl: z.url('有効なURLを入力してください').optional().or(z.literal('')),
   useAutoAvatar: z.boolean(),
 })
 

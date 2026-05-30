@@ -26,6 +26,7 @@ const PLATFORMS = [
   { value: 'line_openchat', label: 'LINEオープンチャット' },
   { value: 'github', label: 'GitHub' },
   { value: 'spotify', label: 'Spotify' },
+  { value: 'facebook', label: 'Facebook' },
   { value: 'other', label: 'その他' },
 ] as const
 
@@ -51,6 +52,7 @@ function getSnsPlaceholder(platform: Platform): string {
   if (platform in USERNAME_BASE) return 'ユーザー名 または https://...'
   if (platform === 'discord') return 'https://discord.gg/...'
   if (platform === 'line_openchat') return 'https://line.me/ti/g2/...'
+  if (platform === 'facebook') return 'https://www.facebook.com/groups/... または https://www.facebook.com/...'
   return 'https://...'
 }
 
@@ -66,7 +68,7 @@ const EditSchema = z.object({
   displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
   label: z.string().max(20, '20文字以下').optional().or(z.literal('')),
   bio: z.string().max(200, '200文字以下').optional().or(z.literal('')),
-  avatarUrl: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
+  avatarUrl: z.url('有効なURLを入力してください').optional().or(z.literal('')),
   useAutoAvatar: z.boolean(),
   displayNameVisibility: z.enum(['public', 'private']),
   bioVisibility: z.enum(['public', 'private']),

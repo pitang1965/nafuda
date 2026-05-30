@@ -1,5 +1,5 @@
 export interface SnsLink {
-  platform: 'x' | 'instagram' | 'discord' | 'line_openchat' | 'tiktok' | 'youtube'
+  platform: 'x' | 'instagram' | 'discord' | 'line_openchat' | 'tiktok' | 'youtube' | 'github' | 'spotify' | 'facebook' | 'other'
   url: string
   handle: string
 }

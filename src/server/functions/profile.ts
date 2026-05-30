@@ -61,7 +61,7 @@ export const createPersona = createServerFn({ method: 'POST' })
     displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
     label: z.string().max(20).optional().nullable(),
     bio: z.string().max(200).optional().nullable(),
-    avatarUrl: z.string().url().optional().nullable(),
+    avatarUrl: z.url().optional().nullable(),
     isDefault: z.boolean().default(false),
     oshiTags: z.array(z.string()).default([]),
   }))
@@ -113,7 +113,7 @@ export const updatePersona = createServerFn({ method: 'POST' })
     displayName: z.string().min(1).max(50).optional(),
     label: z.string().max(20).optional().nullable(),
     bio: z.string().max(200).optional().nullable(),
-    avatarUrl: z.string().url().optional().nullable(),
+    avatarUrl: z.url().optional().nullable(),
     fieldVisibility: z.record(z.string(), z.enum(['public', 'private'])).optional(),
   }))
   .handler(async ({ data }) => {
@@ -168,8 +168,8 @@ export const upsertSnsLink = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     personaId: z.string().uuid(),
     linkId: z.string().uuid().optional(),
-    platform: z.enum(['x', 'instagram', 'tiktok', 'youtube', 'discord', 'line_openchat', 'github', 'spotify', 'other']),
-    url: z.string().url({ message: '有効なURLを入力してください' }),
+    platform: z.enum(['x', 'instagram', 'tiktok', 'youtube', 'discord', 'line_openchat', 'github', 'spotify', 'facebook', 'other']),
+    url: z.url('有効なURLを入力してください'),
     displayOrder: z.number().int().min(0),
   }))
   .handler(async ({ data }) => {
