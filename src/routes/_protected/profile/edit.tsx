@@ -1,148 +1,186 @@
-import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { getOwnProfile, updatePersona, upsertSnsLink, deleteSnsLink } from '../../../server/functions/profile'
-import { updateOshiTags, updateDojinReject } from '../../../server/functions/oshi'
-import { InitialsAvatar } from '../../../components/InitialsAvatar'
-import { OshiTagInput } from '../../../components/OshiTagInput'
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
+import { useState } from "react";
+import { useForm, FormProvider } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  getOwnProfile,
+  updatePersona,
+  upsertSnsLink,
+  deleteSnsLink,
+} from "../../../server/functions/profile";
+import {
+  updateOshiTags,
+  updateDojinReject,
+} from "../../../server/functions/oshi";
+import { InitialsAvatar } from "../../../components/InitialsAvatar";
+import { OshiTagInput } from "../../../components/OshiTagInput";
 
-export const Route = createFileRoute('/_protected/profile/edit')({
+export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
-    personaId: typeof search.personaId === 'string' ? search.personaId : undefined,
+    personaId:
+      typeof search.personaId === "string" ? search.personaId : undefined,
   }),
   loader: () => getOwnProfile(),
   staleTime: 0,
   component: EditPage,
-})
+});
 
 const PLATFORMS = [
-  { value: 'x', label: 'X (Twitter)' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'tiktok', label: 'TikTok' },
-  { value: 'youtube', label: 'YouTube' },
-  { value: 'discord', label: 'Discord' },
-  { value: 'line_openchat', label: 'LINEオープンチャット' },
-  { value: 'github', label: 'GitHub' },
-  { value: 'spotify', label: 'Spotify' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'other', label: 'その他' },
-] as const
+  { value: "x", label: "X (Twitter)" },
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
+  { value: "discord", label: "Discord" },
+  { value: "line_openchat", label: "LINEオープンチャット" },
+  { value: "github", label: "GitHub" },
+  { value: "spotify", label: "Spotify" },
+  { value: "facebook", label: "Facebook" },
+  { value: "other", label: "その他" },
+] as const;
 
-type Platform = typeof PLATFORMS[number]['value']
+type Platform = (typeof PLATFORMS)[number]["value"];
 
 // Platforms where a bare username can be entered (no https:// required)
 const USERNAME_BASE: Partial<Record<Platform, string>> = {
-  x: 'https://x.com/',
-  instagram: 'https://instagram.com/',
-  tiktok: 'https://tiktok.com/@',
-  youtube: 'https://youtube.com/@',
-  github: 'https://github.com/',
-}
+  x: "https://x.com/",
+  instagram: "https://instagram.com/",
+  tiktok: "https://tiktok.com/@",
+  youtube: "https://youtube.com/@",
+  github: "https://github.com/",
+};
 
 function normalizeUrl(platform: Platform, input: string): string {
-  const trimmed = input.trim()
-  if (!trimmed || trimmed.startsWith('http')) return trimmed
-  const base = USERNAME_BASE[platform]
-  return base ? `${base}${trimmed}` : trimmed
+  const trimmed = input.trim();
+  if (!trimmed || trimmed.startsWith("http")) return trimmed;
+  const base = USERNAME_BASE[platform];
+  return base ? `${base}${trimmed}` : trimmed;
 }
 
 function getSnsPlaceholder(platform: Platform): string {
-  if (platform in USERNAME_BASE) return 'ユーザー名 または https://...'
-  if (platform === 'discord') return 'https://discord.gg/...'
-  if (platform === 'line_openchat') return 'https://line.me/ti/g2/...'
-  if (platform === 'facebook') return 'https://www.facebook.com/groups/... または https://www.facebook.com/...'
-  return 'https://...'
+  if (platform in USERNAME_BASE) return "ユーザー名 または https://...";
+  if (platform === "discord") return "https://discord.gg/...";
+  if (platform === "line_openchat") return "https://line.me/ti/g2/...";
+  if (platform === "facebook")
+    return "https://www.facebook.com/groups/... または https://www.facebook.com/...";
+  return "https://...";
 }
 
 interface SnsLinkState {
-  id?: string
-  platform: Platform
-  url: string
-  displayOrder: number
-  isNew: boolean
+  id?: string;
+  platform: Platform;
+  url: string;
+  displayOrder: number;
+  isNew: boolean;
 }
 
 const EditSchema = z.object({
-  displayName: z.string().min(1, '表示名を入力してください').max(50, '50文字以下'),
-  label: z.string().max(20, '20文字以下').optional().or(z.literal('')),
-  bio: z.string().max(200, '200文字以下').optional().or(z.literal('')),
-  avatarUrl: z.url('有効なURLを入力してください').optional().or(z.literal('')),
+  displayName: z
+    .string()
+    .min(1, "表示名を入力してください")
+    .max(50, "50文字以下"),
+  label: z.string().max(20, "20文字以下").optional().or(z.literal("")),
+  bio: z.string().max(200, "200文字以下").optional().or(z.literal("")),
+  avatarUrl: z.url("有効なURLを入力してください").optional().or(z.literal("")),
   useAutoAvatar: z.boolean(),
-  displayNameVisibility: z.enum(['public', 'private']),
-  bioVisibility: z.enum(['public', 'private']),
-  avatarVisibility: z.enum(['public', 'private']),
-  snsLinksVisibility: z.enum(['public', 'private']),
-  oshiTagsVisibility: z.enum(['public', 'private']),
+  displayNameVisibility: z.enum(["public", "private"]),
+  bioVisibility: z.enum(["public", "private"]),
+  avatarVisibility: z.enum(["public", "private"]),
+  snsLinksVisibility: z.enum(["public", "private"]),
+  oshiTagsVisibility: z.enum(["public", "private"]),
   // oshiTags managed via OshiTagInput (FormProvider context) — RHF field
   oshiTags: z.array(z.string()),
   // dojinReject stored as string in radio input, converted to boolean on save
-  dojinReject: z.enum(['false', 'true']),
-})
+  dojinReject: z.enum(["false", "true"]),
+});
 
-type EditForm = z.infer<typeof EditSchema>
+type EditForm = z.infer<typeof EditSchema>;
 
 function VisibilityToggle({
   value,
   onChange,
 }: {
-  value: 'public' | 'private'
-  onChange: (v: 'public' | 'private') => void
+  value: "public" | "private";
+  onChange: (v: "public" | "private") => void;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onChange(value === 'public' ? 'private' : 'public')}
-      title={value === 'public' ? '公開中（タップで非公開に）' : '非公開（タップで公開に）'}
+      onClick={() => onChange(value === "public" ? "private" : "public")}
+      title={
+        value === "public"
+          ? "公開中（タップで非公開に）"
+          : "非公開（タップで公開に）"
+      }
       className="text-lg select-none"
     >
-      {value === 'public' ? '👁' : '🔒'}
+      {value === "public" ? "👁" : "🔒"}
     </button>
-  )
+  );
 }
 
 function EditPage() {
-  const navigate = useNavigate()
-  const { personas, urlId } = Route.useLoaderData()
-  const { personaId: searchPersonaId } = Route.useSearch()
+  const navigate = useNavigate();
+  const { personas, urlId } = Route.useLoaderData();
+  const { personaId: searchPersonaId } = Route.useSearch();
 
-  const defaultPersona = personas.find(p => searchPersonaId ? p.id === searchPersonaId : p.isDefault)
-    ?? personas[0]
+  const defaultPersona =
+    personas.find((p) =>
+      searchPersonaId ? p.id === searchPersonaId : p.isDefault,
+    ) ?? personas[0];
 
   if (!defaultPersona || !urlId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
-        <p className="text-sm text-gray-500">プロフィールがまだ設定されていません</p>
+        <p className="text-sm text-gray-500">
+          プロフィールがまだ設定されていません
+        </p>
         <button
-          onClick={() => navigate({ to: '/profile/wizard' })}
+          onClick={() => navigate({ to: "/profile/wizard" })}
           className="px-6 py-3 bg-black text-white rounded-lg text-sm"
         >
           プロフィールを作成する
         </button>
       </div>
-    )
+    );
   }
 
-  const visibility = (defaultPersona.fieldVisibility ?? {}) as Record<string, string>
+  const visibility = (defaultPersona.fieldVisibility ?? {}) as Record<
+    string,
+    string
+  >;
 
   return (
     <EditForm
       personaId={defaultPersona.id}
       initialDisplayName={defaultPersona.displayName}
-      initialLabel={defaultPersona.label ?? ''}
-      initialBio={defaultPersona.bio ?? ''}
-      initialAvatarUrl={defaultPersona.avatarUrl ?? ''}
-      initialDisplayNameVisibility={(visibility.display_name as 'public' | 'private') ?? 'public'}
-      initialBioVisibility={(visibility.bio as 'public' | 'private') ?? 'public'}
-      initialAvatarVisibility={(visibility.avatar_url as 'public' | 'private') ?? 'public'}
-      initialSnsLinksVisibility={(visibility.sns_links as 'public' | 'private') ?? 'public'}
-      initialOshiTagsVisibility={(visibility.oshi_tags as 'public' | 'private') ?? 'public'}
+      initialLabel={defaultPersona.label ?? ""}
+      initialBio={defaultPersona.bio ?? ""}
+      initialAvatarUrl={defaultPersona.avatarUrl ?? ""}
+      initialDisplayNameVisibility={
+        (visibility.display_name as "public" | "private") ?? "public"
+      }
+      initialBioVisibility={
+        (visibility.bio as "public" | "private") ?? "public"
+      }
+      initialAvatarVisibility={
+        (visibility.avatar_url as "public" | "private") ?? "public"
+      }
+      initialSnsLinksVisibility={
+        (visibility.sns_links as "public" | "private") ?? "public"
+      }
+      initialOshiTagsVisibility={
+        (visibility.oshi_tags as "public" | "private") ?? "public"
+      }
       initialOshiTags={defaultPersona.oshiTags}
       initialDojinReject={defaultPersona.dojinReject}
       initialSnsLinks={defaultPersona.snsLinks}
     />
-  )
+  );
 }
 
 function EditForm({
@@ -160,37 +198,42 @@ function EditForm({
   initialDojinReject,
   initialSnsLinks,
 }: {
-  personaId: string
-  initialDisplayName: string
-  initialLabel: string
-  initialBio: string
-  initialAvatarUrl: string
-  initialDisplayNameVisibility: 'public' | 'private'
-  initialBioVisibility: 'public' | 'private'
-  initialAvatarVisibility: 'public' | 'private'
-  initialSnsLinksVisibility: 'public' | 'private'
-  initialOshiTagsVisibility: 'public' | 'private'
-  initialOshiTags: string[]
-  initialDojinReject: boolean
-  initialSnsLinks: { id: string; platform: string; url: string; displayOrder: number }[]
+  personaId: string;
+  initialDisplayName: string;
+  initialLabel: string;
+  initialBio: string;
+  initialAvatarUrl: string;
+  initialDisplayNameVisibility: "public" | "private";
+  initialBioVisibility: "public" | "private";
+  initialAvatarVisibility: "public" | "private";
+  initialSnsLinksVisibility: "public" | "private";
+  initialOshiTagsVisibility: "public" | "private";
+  initialOshiTags: string[];
+  initialDojinReject: boolean;
+  initialSnsLinks: {
+    id: string;
+    platform: string;
+    url: string;
+    displayOrder: number;
+  }[];
 }) {
-  const navigate = useNavigate()
-  const router = useRouter()
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const navigate = useNavigate();
+  const router = useRouter();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [snsLinks, setSnsLinks] = useState<SnsLinkState[]>(() =>
-    initialSnsLinks.map(l => ({
+    initialSnsLinks.map((l) => ({
       id: l.id,
       platform: l.platform as Platform,
       url: l.url,
       displayOrder: l.displayOrder,
       isNew: false,
-    }))
-  )
-  const [deletedLinkIds, setDeletedLinkIds] = useState<string[]>([])
-  const [oshiSaving, setOshiSaving] = useState(false)
-  const [oshiSaveError, setOshiSaveError] = useState<string | null>(null)
-  const [oshiSaved, setOshiSaved] = useState(false)
+    })),
+  );
+  const [deletedLinkIds, setDeletedLinkIds] = useState<string[]>([]);
+  const [oshiSaving, setOshiSaving] = useState(false);
+  const [oshiSaveError, setOshiSaveError] = useState<string | null>(null);
+  const [oshiSaved, setOshiSaved] = useState(false);
 
   const methods = useForm<EditForm>({
     resolver: zodResolver(EditSchema),
@@ -206,97 +249,123 @@ function EditForm({
       snsLinksVisibility: initialSnsLinksVisibility,
       oshiTagsVisibility: initialOshiTagsVisibility,
       oshiTags: initialOshiTags,
-      dojinReject: initialDojinReject ? 'true' : 'false',
+      dojinReject: initialDojinReject ? "true" : "false",
     },
-  })
+  });
 
-  const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = methods
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isDirty },
+  } = methods;
 
   const snsLinksDirty =
     deletedLinkIds.length > 0 ||
     snsLinks.some((l) => {
-      if (l.isNew) return true
-      const orig = initialSnsLinks.find((o) => o.id === l.id)
-      return !orig || orig.platform !== l.platform || orig.url !== l.url || orig.displayOrder !== l.displayOrder
-    })
+      if (l.isNew) return true;
+      const orig = initialSnsLinks.find((o) => o.id === l.id);
+      return (
+        !orig ||
+        orig.platform !== l.platform ||
+        orig.url !== l.url ||
+        orig.displayOrder !== l.displayOrder
+      );
+    });
 
   const handleBack = () => {
     if (isDirty || snsLinksDirty) {
-      if (!window.confirm('保存されていない変更があります。戻りますか？')) return
+      if (!window.confirm("保存されていない変更があります。戻りますか？"))
+        return;
     }
-    router.history.back()
-  }
+    router.history.back();
+  };
 
-  const displayName = watch('displayName') ?? ''
-  const bio = watch('bio') ?? ''
-  const useAutoAvatar = watch('useAutoAvatar')
-  const displayNameVisibility = watch('displayNameVisibility')
-  const bioVisibility = watch('bioVisibility')
-  const avatarVisibility = watch('avatarVisibility')
-  const snsLinksVisibility = watch('snsLinksVisibility')
-  const oshiTagsVisibility = watch('oshiTagsVisibility')
+  const displayName = watch("displayName") ?? "";
+  const bio = watch("bio") ?? "";
+  const useAutoAvatar = watch("useAutoAvatar");
+  const displayNameVisibility = watch("displayNameVisibility");
+  const bioVisibility = watch("bioVisibility");
+  const avatarVisibility = watch("avatarVisibility");
+  const snsLinksVisibility = watch("snsLinksVisibility");
+  const oshiTagsVisibility = watch("oshiTagsVisibility");
 
   const addSnsLink = () => {
-    setSnsLinks(prev => [...prev, {
-      platform: 'x',
-      url: '',
-      displayOrder: prev.length,
-      isNew: true,
-    }])
-  }
+    setSnsLinks((prev) => [
+      ...prev,
+      {
+        platform: "x",
+        url: "",
+        displayOrder: prev.length,
+        isNew: true,
+      },
+    ]);
+  };
 
   const removeSnsLink = (index: number) => {
-    const link = snsLinks[index]
+    const link = snsLinks[index];
     if (link.id) {
-      setDeletedLinkIds(prev => [...prev, link.id!])
+      setDeletedLinkIds((prev) => [...prev, link.id!]);
     }
-    setSnsLinks(prev => prev.filter((_, i) => i !== index))
-  }
+    setSnsLinks((prev) => prev.filter((_, i) => i !== index));
+  };
 
-  const moveSnsLink = (index: number, direction: 'up' | 'down') => {
-    const newLinks = [...snsLinks]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (targetIndex < 0 || targetIndex >= newLinks.length) return
-    ;[newLinks[index], newLinks[targetIndex]] = [newLinks[targetIndex], newLinks[index]]
-    setSnsLinks(newLinks.map((l, i) => ({ ...l, displayOrder: i })))
-  }
+  const moveSnsLink = (index: number, direction: "up" | "down") => {
+    const newLinks = [...snsLinks];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newLinks.length) return;
+    [newLinks[index], newLinks[targetIndex]] = [
+      newLinks[targetIndex],
+      newLinks[index],
+    ];
+    setSnsLinks(newLinks.map((l, i) => ({ ...l, displayOrder: i })));
+  };
 
-  const updateSnsLinkField = (index: number, field: 'platform' | 'url', value: string) => {
-    setSnsLinks(prev => prev.map((l, i) =>
-      i === index ? { ...l, [field]: value } : l
-    ))
-  }
+  const updateSnsLinkField = (
+    index: number,
+    field: "platform" | "url",
+    value: string,
+  ) => {
+    setSnsLinks((prev) =>
+      prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)),
+    );
+  };
 
   // Save oshi tags separately (explicit save button)
   const handleSaveOshiTags = async () => {
-    setOshiSaveError(null)
-    setOshiSaving(true)
-    setOshiSaved(false)
+    setOshiSaveError(null);
+    setOshiSaving(true);
+    setOshiSaved(false);
     try {
-      const tags = methods.getValues('oshiTags')
-      await updateOshiTags({ data: { personaId, tags } })
-      setOshiSaved(true)
-      setTimeout(() => setOshiSaved(false), 2000)
+      const tags = methods.getValues("oshiTags");
+      await updateOshiTags({ data: { personaId, tags } });
+      setOshiSaved(true);
+      setTimeout(() => setOshiSaved(false), 2000);
     } catch {
-      setOshiSaveError('保存に失敗しました。もう一度お試しください。')
+      setOshiSaveError("保存に失敗しました。もう一度お試しください。");
     } finally {
-      setOshiSaving(false)
+      setOshiSaving(false);
     }
-  }
+  };
 
   // dojin_reject — immediate save on radio change (feels instant per CONTEXT.md)
-  const handleDojinRejectChange = async (value: 'true' | 'false') => {
-    setValue('dojinReject', value)
+  const handleDojinRejectChange = async (value: "true" | "false") => {
+    setValue("dojinReject", value);
     try {
-      await updateDojinReject({ data: { personaId, dojinReject: value === 'true' } })
+      await updateDojinReject({
+        data: { personaId, dojinReject: value === "true" },
+      });
     } catch {
-      setSaveError('同担設定の保存に失敗しました。「保存する」ボタンで再試行してください。')
+      setSaveError(
+        "同担設定の保存に失敗しました。「保存する」ボタンで再試行してください。",
+      );
     }
-  }
+  };
 
   const onSubmit = async (values: EditForm) => {
-    setSaveError(null)
-    setSaving(true)
+    setSaveError(null);
+    setSaving(true);
     try {
       // Update persona fields and visibility
       await updatePersona({
@@ -305,7 +374,7 @@ function EditForm({
           displayName: values.displayName,
           label: values.label || null,
           bio: values.bio || null,
-          avatarUrl: values.useAutoAvatar ? null : (values.avatarUrl || null),
+          avatarUrl: values.useAutoAvatar ? null : values.avatarUrl || null,
           fieldVisibility: {
             display_name: values.displayNameVisibility,
             bio: values.bioVisibility,
@@ -314,19 +383,21 @@ function EditForm({
             oshi_tags: values.oshiTagsVisibility,
           },
         },
-      })
+      });
 
       // Save dojinReject (guaranteed save — fallback if immediate onChange save failed)
-      await updateDojinReject({ data: { personaId, dojinReject: values.dojinReject === 'true' } })
+      await updateDojinReject({
+        data: { personaId, dojinReject: values.dojinReject === "true" },
+      });
 
       // Delete removed SNS links
       for (const linkId of deletedLinkIds) {
-        await deleteSnsLink({ data: { linkId } })
+        await deleteSnsLink({ data: { linkId } });
       }
 
       // Upsert SNS links (normalize username inputs to full URLs before saving)
       for (const link of snsLinks) {
-        if (!link.url.trim()) continue
+        if (!link.url.trim()) continue;
         await upsertSnsLink({
           data: {
             personaId,
@@ -335,18 +406,18 @@ function EditForm({
             url: normalizeUrl(link.platform, link.url),
             displayOrder: link.displayOrder,
           },
-        })
+        });
       }
 
-      navigate({ to: '/me' })
+      navigate({ to: "/me" });
     } catch {
-      setSaveError('保存に失敗しました。もう一度お試しください。')
+      setSaveError("保存に失敗しました。もう一度お試しください。");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
-  const dojinRejectValue = watch('dojinReject')
+  const dojinRejectValue = watch("dojinReject");
 
   return (
     <FormProvider {...methods}>
@@ -358,52 +429,73 @@ function EditForm({
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="戻る"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold">{initialLabel || initialDisplayName} を編集</h1>
+          <h1 className="text-xl font-bold">
+            {initialLabel || initialDisplayName} を編集
+          </h1>
         </div>
 
         {saveError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{saveError}</div>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {saveError}
+          </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-
           {/* Display name */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">表示名</label>
               <VisibilityToggle
                 value={displayNameVisibility}
-                onChange={(v) => setValue('displayNameVisibility', v)}
+                onChange={(v) => setValue("displayNameVisibility", v)}
               />
             </div>
             <input
-              {...register('displayName')}
+              {...register("displayName")}
               className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
             />
-            {errors.displayName && <p className="text-xs text-red-600">{errors.displayName.message}</p>}
+            {errors.displayName && (
+              <p className="text-xs text-red-600">
+                {errors.displayName.message}
+              </p>
+            )}
           </div>
 
           {/* Label */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">
-              ラベル <span className="text-xs text-gray-400 font-normal">（自分だけが見る用途メモ・任意）</span>
+              ラベル{" "}
+              <span className="text-xs text-gray-400 font-normal">
+                （自分だけが見る用途メモ・任意）
+              </span>
             </label>
             <div className="relative">
               <input
-                {...register('label')}
+                {...register("label")}
                 placeholder="例: 推し活用・仕事用"
                 maxLength={20}
                 className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                {(watch('label') ?? '').length}/20
+                {(watch("label") ?? "").length}/20
               </span>
             </div>
-            {errors.label && <p className="text-xs text-red-600">{errors.label.message}</p>}
+            {errors.label && (
+              <p className="text-xs text-red-600">{errors.label.message}</p>
+            )}
           </div>
 
           {/* Bio */}
@@ -412,20 +504,24 @@ function EditForm({
               <label className="text-sm font-medium">自己紹介</label>
               <VisibilityToggle
                 value={bioVisibility}
-                onChange={(v) => setValue('bioVisibility', v)}
+                onChange={(v) => setValue("bioVisibility", v)}
               />
             </div>
             <div className="relative">
               <textarea
-                {...register('bio')}
+                {...register("bio")}
                 rows={3}
                 maxLength={200}
                 placeholder="推し活のきっかけや活動スタイルなど、自由に書いてください"
                 className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
               />
-              <span className="absolute bottom-2 right-3 text-xs text-gray-400">{bio.length}/200</span>
+              <span className="absolute bottom-2 right-3 text-xs text-gray-400">
+                {bio.length}/200
+              </span>
             </div>
-            {errors.bio && <p className="text-xs text-red-600">{errors.bio.message}</p>}
+            {errors.bio && (
+              <p className="text-xs text-red-600">{errors.bio.message}</p>
+            )}
           </div>
 
           {/* Avatar */}
@@ -434,24 +530,32 @@ function EditForm({
               <label className="text-sm font-medium">アバター</label>
               <VisibilityToggle
                 value={avatarVisibility}
-                onChange={(v) => setValue('avatarVisibility', v)}
+                onChange={(v) => setValue("avatarVisibility", v)}
               />
             </div>
             <div className="flex items-center gap-3">
-              <InitialsAvatar name={displayName || '?'} size={48} />
+              <InitialsAvatar name={displayName || "?"} size={48} />
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" {...register('useAutoAvatar')} className="rounded" />
+                <input
+                  type="checkbox"
+                  {...register("useAutoAvatar")}
+                  className="rounded"
+                />
                 <span className="text-sm">イニシャルアバターを使う</span>
               </label>
             </div>
             {!useAutoAvatar && (
               <div>
                 <input
-                  {...register('avatarUrl')}
+                  {...register("avatarUrl")}
                   placeholder="https://example.com/avatar.png"
                   className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
                 />
-                {errors.avatarUrl && <p className="text-xs text-red-600">{errors.avatarUrl.message}</p>}
+                {errors.avatarUrl && (
+                  <p className="text-xs text-red-600">
+                    {errors.avatarUrl.message}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -462,21 +566,31 @@ function EditForm({
               <label className="text-sm font-medium">推し / 趣味タグ</label>
               <VisibilityToggle
                 value={oshiTagsVisibility}
-                onChange={(v) => setValue('oshiTagsVisibility', v)}
+                onChange={(v) => setValue("oshiTagsVisibility", v)}
               />
             </div>
             <p className="text-xs text-gray-500">
-              推しの名前・グループ名・ジャンルなど自由に入力できます。入力して <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">Enter</kbd> で追加、×で削除。
+              推しの名前・グループ名・ジャンルなど自由に入力できます。入力して{" "}
+              <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">
+                Enter
+              </kbd>{" "}
+              で追加、×で削除。
             </p>
             <OshiTagInput name="oshiTags" />
-            {oshiSaveError && <p className="text-xs text-red-600">{oshiSaveError}</p>}
+            {oshiSaveError && (
+              <p className="text-xs text-red-600">{oshiSaveError}</p>
+            )}
             <button
               type="button"
               onClick={handleSaveOshiTags}
               disabled={oshiSaving}
               className="self-start px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
             >
-              {oshiSaving ? '保存中...' : oshiSaved ? '保存しました' : '推し / 趣味タグを保存'}
+              {oshiSaving
+                ? "保存中..."
+                : oshiSaved
+                  ? "保存しました"
+                  : "推し / 趣味タグを保存"}
             </button>
           </div>
 
@@ -488,21 +602,25 @@ function EditForm({
                 <input
                   type="radio"
                   value="false"
-                  checked={dojinRejectValue === 'false'}
-                  onChange={() => void handleDojinRejectChange('false')}
+                  checked={dojinRejectValue === "false"}
+                  onChange={() => void handleDojinRejectChange("false")}
                   className="mt-0.5"
                 />
-                <span className="text-sm">同担の方にも表示される（デフォルト）</span>
+                <span className="text-sm">
+                  同担の方にも表示される（デフォルト）
+                </span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
                 <input
                   type="radio"
                   value="true"
-                  checked={dojinRejectValue === 'true'}
-                  onChange={() => void handleDojinRejectChange('true')}
+                  checked={dojinRejectValue === "true"}
+                  onChange={() => void handleDojinRejectChange("true")}
                   className="mt-0.5"
                 />
-                <span className="text-sm">同担の方の一覧に表示されたくない場合はオンにしてください</span>
+                <span className="text-sm">
+                  同担の方の一覧に表示されたくない場合はオンにしてください
+                </span>
               </label>
             </div>
           </div>
@@ -513,7 +631,7 @@ function EditForm({
               <label className="text-sm font-medium">SNSリンク</label>
               <VisibilityToggle
                 value={snsLinksVisibility}
-                onChange={(v) => setValue('snsLinksVisibility', v)}
+                onChange={(v) => setValue("snsLinksVisibility", v)}
               />
             </div>
 
@@ -523,21 +641,28 @@ function EditForm({
 
             <div className="flex flex-col gap-2">
               {snsLinks.map((link, index) => (
-                <div key={index} className="flex flex-col gap-1 p-3 border rounded-lg bg-gray-50">
+                <div
+                  key={index}
+                  className="flex flex-col gap-1 p-3 border rounded-lg bg-gray-50"
+                >
                   <div className="flex items-center gap-2">
                     <select
                       value={link.platform}
-                      onChange={(e) => updateSnsLinkField(index, 'platform', e.target.value)}
+                      onChange={(e) =>
+                        updateSnsLinkField(index, "platform", e.target.value)
+                      }
                       className="flex-1 px-2 py-1.5 border rounded text-sm bg-white outline-none"
                     >
-                      {PLATFORMS.map(p => (
-                        <option key={p.value} value={p.value}>{p.label}</option>
+                      {PLATFORMS.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
                       ))}
                     </select>
                     <div className="flex gap-1">
                       <button
                         type="button"
-                        onClick={() => moveSnsLink(index, 'up')}
+                        onClick={() => moveSnsLink(index, "up")}
                         disabled={index === 0}
                         className="px-2 py-1 text-xs border rounded disabled:opacity-30"
                       >
@@ -545,7 +670,7 @@ function EditForm({
                       </button>
                       <button
                         type="button"
-                        onClick={() => moveSnsLink(index, 'down')}
+                        onClick={() => moveSnsLink(index, "down")}
                         disabled={index === snsLinks.length - 1}
                         className="px-2 py-1 text-xs border rounded disabled:opacity-30"
                       >
@@ -562,7 +687,9 @@ function EditForm({
                   </div>
                   <input
                     value={link.url}
-                    onChange={(e) => updateSnsLinkField(index, 'url', e.target.value)}
+                    onChange={(e) =>
+                      updateSnsLinkField(index, "url", e.target.value)
+                    }
                     placeholder={getSnsPlaceholder(link.platform)}
                     className="w-full px-2 py-1.5 border rounded text-sm bg-white outline-none"
                   />
@@ -584,10 +711,10 @@ function EditForm({
             disabled={saving}
             className="w-full py-3 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-40"
           >
-            {saving ? '保存中...' : '保存する'}
+            {saving ? "保存中..." : "保存する"}
           </button>
         </form>
       </div>
     </FormProvider>
-  )
+  );
 }
