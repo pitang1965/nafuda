@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -175,6 +175,7 @@ function EditForm({
   initialSnsLinks: { id: string; platform: string; url: string; displayOrder: number }[]
 }) {
   const navigate = useNavigate()
+  const router = useRouter()
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [snsLinks, setSnsLinks] = useState<SnsLinkState[]>(() =>
@@ -209,7 +210,22 @@ function EditForm({
     },
   })
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = methods
+  const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = methods
+
+  const snsLinksDirty =
+    deletedLinkIds.length > 0 ||
+    snsLinks.some((l) => {
+      if (l.isNew) return true
+      const orig = initialSnsLinks.find((o) => o.id === l.id)
+      return !orig || orig.platform !== l.platform || orig.url !== l.url || orig.displayOrder !== l.displayOrder
+    })
+
+  const handleBack = () => {
+    if (isDirty || snsLinksDirty) {
+      if (!window.confirm('保存されていない変更があります。戻りますか？')) return
+    }
+    router.history.back()
+  }
 
   const displayName = watch('displayName') ?? ''
   const bio = watch('bio') ?? ''
@@ -335,14 +351,18 @@ function EditForm({
   return (
     <FormProvider {...methods}>
       <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">{initialLabel || initialDisplayName} を編集</h1>
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate({ to: '/me' })}
-            className="text-sm text-gray-500"
+            type="button"
+            onClick={handleBack}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="戻る"
           >
-            ✕ 閉じる
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
+          <h1 className="text-xl font-bold">{initialLabel || initialDisplayName} を編集</h1>
         </div>
 
         {saveError && (
