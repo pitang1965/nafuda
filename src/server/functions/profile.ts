@@ -233,6 +233,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "spotify",
         "facebook",
         "minkara",
+        "linkedin",
         "other",
       ]),
       url: z.url("有効なURLを入力してください"),

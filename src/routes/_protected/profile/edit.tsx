@@ -41,6 +41,7 @@ const PLATFORMS = [
   { value: "spotify", label: "Spotify" },
   { value: "facebook", label: "Facebook" },
   { value: "minkara", label: "みんカラ" },
+  { value: "linkedin", label: "LinkedIn" },
   { value: "other", label: "その他" },
 ] as const;
 
@@ -54,6 +55,7 @@ const USERNAME_BASE: Partial<Record<Platform, string>> = {
   youtube: "https://youtube.com/@",
   github: "https://github.com/",
   minkara: "https://minkara.carview.co.jp/userid/",
+  linkedin: "https://www.linkedin.com/in/",
 };
 
 function normalizeUrl(platform: Platform, input: string): string {

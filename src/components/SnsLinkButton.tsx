@@ -29,6 +29,11 @@ function extractHandle(platform: string, url: string): string {
         const idx = segs.indexOf("userid");
         return idx !== -1 && segs[idx + 1] ? segs[idx + 1] : u.hostname + u.pathname;
       }
+      case "linkedin": {
+        const segs = u.pathname.split("/").filter(Boolean);
+        const idx = segs.indexOf("in");
+        return idx !== -1 && segs[idx + 1] ? segs[idx + 1] : u.hostname + u.pathname;
+      }
       default:
         return u.hostname + u.pathname;
     }
@@ -106,6 +111,12 @@ function PlatformIcon({ platform }: { platform: string }) {
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
+        </svg>
+      );
+    case "linkedin":
+      return (
+        <svg className={cls} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
         </svg>
       );
     default:

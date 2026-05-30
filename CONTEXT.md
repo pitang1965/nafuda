@@ -48,7 +48,7 @@
 ペルソナに紐づく自由記述のタグ配列。応援しているアーティスト・キャラクター・作品などを登録する。任意項目（未設定のまま使用できる）。アプリは推し活を主なユースケースとして打ち出しているが、趣味・コミュニティ・仕事など汎用的な名刺交換用途も想定している。`personas.oshi_tags` に格納。
 
 ### SNSリンク (SNS Link)
-ペルソナに紐づく外部サービスへのリンク。プラットフォーム種別・URL・表示順を持つ。`sns_links` テーブルに格納。対応プラットフォーム: x, instagram, tiktok, youtube, discord, line_openchat, github, spotify, facebook, minkara, other。
+ペルソナに紐づく外部サービスへのリンク。プラットフォーム種別・URL・表示順を持つ。`sns_links` テーブルに格納。対応プラットフォーム: x, instagram, tiktok, youtube, discord, line_openchat, github, spotify, facebook, minkara, linkedin, other。
 
 ### 公開範囲 (Field Visibility)
 ペルソナのフィールドごとの公開/非公開設定。`personas.field_visibility` に JSON で格納。デフォルトは全フィールド公開（QRを渡す行為自体が公開の意思表示という前提）。

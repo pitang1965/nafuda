@@ -10,6 +10,7 @@ export interface SnsLink {
     | "spotify"
     | "facebook"
     | "minkara"
+    | "linkedin"
     | "other";
   url: string;
   handle: string;
