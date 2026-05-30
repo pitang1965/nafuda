@@ -38,7 +38,7 @@ export const Route = createFileRoute('/')({
 
 function LandingPage() {
   return (
-    <div className='min-h-screen bg-gradient-to-b from-pink-50 to-white flex flex-col items-center px-4 py-12'>
+    <div className='min-h-screen bg-linear-to-b from-pink-50 to-white flex flex-col items-center px-4 py-12'>
       <div className='max-w-md w-full flex flex-col items-center'>
         <h1 className='text-4xl font-bold text-pink-500 mb-2'>なふだ</h1>
         <p className='text-sm text-gray-400 mb-10'>推し活をもっと楽しく</p>

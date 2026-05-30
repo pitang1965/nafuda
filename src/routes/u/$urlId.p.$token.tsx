@@ -1,145 +1,307 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { eq, and } from 'drizzle-orm'
-import { getPublicProfile } from '../../server/functions/profile'
-import { createConnection } from '../../server/functions/connection'
-import { InitialsAvatar } from '../../components/InitialsAvatar'
-import { SnsLinkButton } from '../../components/SnsLinkButton'
-import { auth } from '../../server/auth'
-import { db } from '../../server/db/client'
-import { urlIds, personas } from '../../server/db/schema'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
+import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { eq, and, or } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
+import { z } from 'zod';
+import { getPublicProfile } from '../../server/functions/profile';
+import { createConnection } from '../../server/functions/connection';
+import { InitialsAvatar } from '../../components/InitialsAvatar';
+import { SnsLinkButton } from '../../components/SnsLinkButton';
+import { auth } from '../../server/auth';
+import { db } from '../../server/db/client';
+import { urlIds, personas, connections } from '../../server/db/schema';
 
-const getSessionData = createServerFn({ method: 'GET' }).handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user) return { user: null, myUrlId: null, myPersonas: [] }
+const getSessionData = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ shareToken: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user)
+      return {
+        user: null,
+        myUrlId: null,
+        myPersonas: [],
+        existingConnection: null,
+      };
 
-  const [urlIdRow, myPersonas] = await Promise.all([
-    db.select({ urlId: urlIds.urlId })
-      .from(urlIds)
-      .where(eq(urlIds.userId, session.user.id))
-      .limit(1),
-    db.select({ id: personas.id, displayName: personas.displayName, isDefault: personas.isDefault })
+    const [urlIdRow, myPersonas] = await Promise.all([
+      db
+        .select({ urlId: urlIds.urlId })
+        .from(urlIds)
+        .where(eq(urlIds.userId, session.user.id))
+        .limit(1),
+      db
+        .select({
+          id: personas.id,
+          displayName: personas.displayName,
+          isDefault: personas.isDefault,
+        })
+        .from(personas)
+        .where(and(eq(personas.userId, session.user.id)))
+        .orderBy(personas.createdAt),
+    ]);
+
+    const toPersonaRow = await db
+      .select({ id: personas.id })
       .from(personas)
-      .where(and(eq(personas.userId, session.user.id)))
-      .orderBy(personas.createdAt),
-  ])
+      .where(eq(personas.shareToken, data.shareToken))
+      .limit(1);
 
-  return { user: session.user, myUrlId: urlIdRow[0]?.urlId ?? null, myPersonas }
-})
+    let existingConnection: {
+      connectedAt: Date;
+      eventName: string | null;
+      venueName: string | null;
+    } | null = null;
+    if (toPersonaRow[0]) {
+      const fromP = alias(personas, 'fp');
+      const toP = alias(personas, 'tp');
+      const connRow = await db
+        .select({
+          connectedAt: connections.connectedAt,
+          eventName: connections.eventName,
+          venueName: connections.venueName,
+        })
+        .from(connections)
+        .innerJoin(fromP, eq(connections.fromPersonaId, fromP.id))
+        .innerJoin(toP, eq(connections.toPersonaId, toP.id))
+        .where(
+          or(
+            // 自分 → 相手
+            and(
+              eq(fromP.userId, session.user.id),
+              eq(connections.toPersonaId, toPersonaRow[0].id),
+            ),
+            // 相手 → 自分
+            and(
+              eq(connections.fromPersonaId, toPersonaRow[0].id),
+              eq(toP.userId, session.user.id),
+            ),
+          ),
+        )
+        .limit(1);
+      existingConnection = connRow[0] ?? null;
+    }
+
+    return {
+      user: session.user,
+      myUrlId: urlIdRow[0]?.urlId ?? null,
+      myPersonas,
+      existingConnection,
+    };
+  });
 
 // Specific persona by share token — public route, no auth required
 export const Route = createFileRoute('/u/$urlId/p/$token')({
   loader: async ({ params }) => {
     const [profile, sessionData] = await Promise.all([
       getPublicProfile({ data: { shareToken: params.token } }),
-      getSessionData(),
-    ])
-    const isOwnProfile = sessionData.myUrlId === params.urlId
-    return { profile, session: sessionData, urlId: params.urlId, shareToken: params.token, isOwnProfile }
+      getSessionData({ data: { shareToken: params.token } }),
+    ]);
+    const isOwnProfile = sessionData.myUrlId === params.urlId;
+    return {
+      profile,
+      session: sessionData,
+      urlId: params.urlId,
+      shareToken: params.token,
+      isOwnProfile,
+    };
   },
   component: PublicProfilePage,
-})
+});
 
 function PublicProfilePage() {
-  const { profile, session, urlId, shareToken, isOwnProfile } = Route.useLoaderData()
-  const navigate = useNavigate()
-  const [connected, setConnected] = useState(false)
-  const [connecting, setConnecting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showPicker, setShowPicker] = useState(false)
+  const { profile, session, urlId, shareToken, isOwnProfile } =
+    Route.useLoaderData();
+  const navigate = useNavigate();
+  const router = useRouter();
+  const [connected, setConnected] = useState(
+    () => !!session.existingConnection,
+  );
+  const [connMeta, setConnMeta] = useState<{
+    connectedAt: string;
+    eventName: string | null;
+    venueName: string | null;
+  } | null>(() =>
+    session.existingConnection
+      ? {
+          connectedAt: String(session.existingConnection.connectedAt),
+          eventName: session.existingConnection.eventName,
+          venueName: session.existingConnection.venueName,
+        }
+      : null,
+  );
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
 
-  if (!profile) return <div className="p-6 text-sm text-gray-500">プロフィールが見つかりません</div>
+  if (!profile)
+    return (
+      <div className='p-6 text-sm text-gray-500'>
+        プロフィールが見つかりません
+      </div>
+    );
 
   const handleConnectClick = async () => {
     if (!session.user) {
-      await navigate({ to: '/login', search: { redirect: `/u/${urlId}/p/${shareToken}` } })
-      return
+      await navigate({
+        to: '/login',
+        search: { redirect: `/u/${urlId}/p/${shareToken}` },
+      });
+      return;
     }
     if (session.myPersonas.length === 0) {
-      await navigate({ to: '/profile/wizard', search: { redirect: `/u/${urlId}/p/${shareToken}` } })
+      await navigate({
+        to: '/profile/wizard',
+        search: { redirect: `/u/${urlId}/p/${shareToken}` },
+      });
     } else if (session.myPersonas.length === 1) {
-      await doConnect(session.myPersonas[0].id)
+      await doConnect(session.myPersonas[0].id);
     } else {
-      setShowPicker(true)
+      setShowPicker(true);
     }
-  }
+  };
 
   const doConnect = async (fromPersonaId: string) => {
-    setShowPicker(false)
-    setConnecting(true)
-    setError(null)
+    setShowPicker(false);
+    setConnecting(true);
+    setError(null);
     try {
-      await createConnection({ data: { targetShareToken: shareToken, fromPersonaId } })
-      setConnected(true)
+      const result = await createConnection({
+        data: { targetShareToken: shareToken, fromPersonaId },
+      });
+      setConnected(true);
+      if (result.connection) {
+        setConnMeta({
+          connectedAt: String(result.connection.connectedAt),
+          eventName: result.connection.eventName ?? null,
+          venueName: result.connection.venueName ?? null,
+        });
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'エラーが発生しました'
-      setError(message)
+      const message =
+        err instanceof Error ? err.message : 'エラーが発生しました';
+      setError(message);
     } finally {
-      setConnecting(false)
+      setConnecting(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen p-6 flex flex-col items-center gap-4">
-      {profile.avatarUrl ? (
-        <img src={profile.avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
-      ) : (
-        <InitialsAvatar name={profile.displayName} size={80} />
-      )}
-      <h1 className="text-2xl font-bold">{profile.displayName}</h1>
-      {profile.bio && (
-        <p className="text-sm text-gray-600 text-center whitespace-pre-wrap max-w-sm">{profile.bio}</p>
-      )}
-      {profile.oshiTags.length > 0 && (
-        <div className="flex flex-wrap gap-1 justify-center">
-          {profile.oshiTags.map(tag => (
-            <span key={tag} className="px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs">{tag}</span>
-          ))}
-        </div>
-      )}
-      {profile.snsLinks.length > 0 && (
-        <div className="w-full max-w-sm flex flex-col gap-2">
-          {profile.snsLinks.map(link => (
-            <SnsLinkButton key={link.id} platform={link.platform} url={link.url} />
-          ))}
-        </div>
-      )}
+    <div className='min-h-screen flex flex-col'>
+      <div className='p-4 border-b flex items-center'>
+        <button
+          onClick={() => router.history.back()}
+          className='text-muted-foreground hover:text-foreground transition-colors'
+          aria-label='戻る'
+        >
+          <svg
+            width='20'
+            height='20'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2.5'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          >
+            <path d='M15 18l-6-6 6-6' />
+          </svg>
+        </button>
+      </div>
+      <div className='flex-1 p-6 flex flex-col items-center gap-4'>
+        {profile.avatarUrl ? (
+          <img
+            src={profile.avatarUrl}
+            alt=''
+            className='w-20 h-20 rounded-full object-cover'
+          />
+        ) : (
+          <InitialsAvatar name={profile.displayName} size={80} />
+        )}
+        <h1 className='text-2xl font-bold'>{profile.displayName}</h1>
+        {profile.bio && (
+          <p className='text-sm text-gray-600 text-center whitespace-pre-wrap max-w-sm'>
+            {profile.bio}
+          </p>
+        )}
+        {profile.oshiTags.length > 0 && (
+          <div className='flex flex-wrap gap-1 justify-center'>
+            {profile.oshiTags.map((tag) => (
+              <span
+                key={tag}
+                className='px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs'
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        {profile.snsLinks.length > 0 && (
+          <div className='w-full max-w-sm flex flex-col gap-2'>
+            {profile.snsLinks.map((link) => (
+              <SnsLinkButton
+                key={link.id}
+                platform={link.platform}
+                url={link.url}
+              />
+            ))}
+          </div>
+        )}
 
-      {/* 「つながる」ボタン: 自分のプロフィールでは非表示 */}
-      {!isOwnProfile && (
-        <div className="w-full max-w-sm mt-2">
-          {connected ? (
-            <div className="w-full text-center px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium">
-              つながり済み ✓
-            </div>
-          ) : showPicker ? (
-            <PersonaPicker
-              personas={session.myPersonas}
-              onSelect={doConnect}
-              onCancel={() => setShowPicker(false)}
-            />
-          ) : (
-            <button
-              onClick={handleConnectClick}
-              disabled={connecting}
-              className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
-            >
-              {connecting ? 'つながっています...' : 'つながる'}
-            </button>
-          )}
-          {error && <p className="text-xs text-red-500 text-center mt-2">{error}</p>}
-        </div>
-      )}
+        {/* 「つながる」ボタン: 自分のプロフィールでは非表示 */}
+        {!isOwnProfile && (
+          <div className='w-full max-w-sm mt-2'>
+            {connected ? (
+              <div className='w-full flex flex-col items-center gap-1.5'>
+                <div className='w-full text-center px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium'>
+                  つながり済み ✓
+                </div>
+                {connMeta && (
+                  <p className='text-xs text-gray-400 text-center'>
+                    {new Date(connMeta.connectedAt).toLocaleDateString(
+                      'ja-JP',
+                      { year: 'numeric', month: 'long', day: 'numeric' },
+                    )}
+                    {connMeta.eventName && ` · ${connMeta.eventName}`}
+                    {!connMeta.eventName &&
+                      connMeta.venueName &&
+                      ` · ${connMeta.venueName}`}
+                  </p>
+                )}
+              </div>
+            ) : showPicker ? (
+              <PersonaPicker
+                personas={session.myPersonas}
+                onSelect={doConnect}
+                onCancel={() => setShowPicker(false)}
+              />
+            ) : (
+              <button
+                onClick={handleConnectClick}
+                disabled={connecting}
+                className='w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50'
+              >
+                {connecting ? 'つながっています...' : 'つながる'}
+              </button>
+            )}
+            {error && (
+              <p className='text-xs text-red-500 text-center mt-2'>{error}</p>
+            )}
+          </div>
+        )}
 
-      <Link to="/" className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2">
-        なふだとは？
-      </Link>
+        <Link
+          to='/'
+          className='mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2'
+        >
+          なふだとは？
+        </Link>
+      </div>
     </div>
-  )
+  );
 }
 
 function PersonaPicker({
@@ -147,29 +309,33 @@ function PersonaPicker({
   onSelect,
   onCancel,
 }: {
-  personas: { id: string; displayName: string; isDefault: boolean }[]
-  onSelect: (id: string) => void
-  onCancel: () => void
+  personas: { id: string; displayName: string; isDefault: boolean }[];
+  onSelect: (id: string) => void;
+  onCancel: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm text-gray-600 text-center">どのなふだとしてつながりますか？</p>
-      {personas.map(p => (
+    <div className='flex flex-col gap-2'>
+      <p className='text-sm text-gray-600 text-center'>
+        どのなふだとしてつながりますか？
+      </p>
+      {personas.map((p) => (
         <button
           key={p.id}
           onClick={() => onSelect(p.id)}
-          className="w-full px-4 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors flex items-center justify-between"
+          className='w-full px-4 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors flex items-center justify-between'
         >
           <span>{p.displayName}</span>
-          {p.isDefault && <span className="text-xs text-pink-200">デフォルト</span>}
+          {p.isDefault && (
+            <span className='text-xs text-pink-200'>デフォルト</span>
+          )}
         </button>
       ))}
       <button
         onClick={onCancel}
-        className="w-full px-4 py-2 text-gray-400 text-sm"
+        className='w-full px-4 py-2 text-gray-400 text-sm'
       >
         キャンセル
       </button>
     </div>
-  )
+  );
 }
