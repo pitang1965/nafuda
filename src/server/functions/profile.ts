@@ -234,6 +234,8 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "facebook",
         "minkara",
         "linkedin",
+        "note",
+        "pixiv",
         "other",
       ]),
       url: z.url("有効なURLを入力してください"),

@@ -11,6 +11,8 @@ export interface SnsLink {
     | "facebook"
     | "minkara"
     | "linkedin"
+    | "note"
+    | "pixiv"
     | "other";
   url: string;
   handle: string;
