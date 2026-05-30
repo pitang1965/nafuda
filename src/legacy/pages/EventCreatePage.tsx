@@ -1,24 +1,27 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { useEvents } from '../context/EventContext'
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useEvents } from "../context/EventContext";
 
 export function EventCreatePage() {
-  const navigate = useNavigate()
-  const { createEvent } = useEvents()
-  const [name, setName] = useState('')
-  const [venue, setVenue] = useState('')
-  const [date, setDate] = useState('')
+  const navigate = useNavigate();
+  const { createEvent } = useEvents();
+  const [name, setName] = useState("");
+  const [venue, setVenue] = useState("");
+  const [date, setDate] = useState("");
 
   function handleSave() {
-    if (!name.trim()) return
-    const event = createEvent({ name: name.trim(), venue: venue.trim(), date })
-    navigate(`/event/${event.id}`)
+    if (!name.trim()) return;
+    const event = createEvent({ name: name.trim(), venue: venue.trim(), date });
+    navigate(`/event/${event.id}`);
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex flex-col items-center px-4">
       <header className="w-full max-w-md flex items-center py-4">
-        <Link to="/events" className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-600">
+        <Link
+          to="/events"
+          className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-600"
+        >
           <span>‹</span>
           <span>戻る</span>
         </Link>
@@ -29,7 +32,9 @@ export function EventCreatePage() {
 
       <div className="w-full max-w-md flex flex-col gap-5 pt-4 pb-12">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-gray-500">イベント名 <span className="text-red-400">*</span></label>
+          <label className="text-xs font-semibold text-gray-500">
+            イベント名 <span className="text-red-400">*</span>
+          </label>
           <input
             type="text"
             value={name}
@@ -68,8 +73,10 @@ export function EventCreatePage() {
           作成する
         </button>
 
-        <p className="text-xs text-gray-300 text-center">※ デモ版：保存はされません</p>
+        <p className="text-xs text-gray-300 text-center">
+          ※ デモ版：保存はされません
+        </p>
       </div>
     </div>
-  )
+  );
 }

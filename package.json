@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && wrangler deploy --config wrangler-bundle.toml --dry-run --outdir dist/bundle && node -e \"const fs=require('fs');fs.copyFileSync('dist/bundle/worker-entry.js','dist/client/_worker.js');fs.rmSync('dist/client/wrangler.json',{force:true});fs.rmSync('.wrangler/deploy/config.json',{force:true});\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "lint": "eslint .",
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
@@ -49,6 +50,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
     "pg": "^8.20.0",
+    "prettier": "^3.8.3",
     "sharp": "^0.34.5",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",

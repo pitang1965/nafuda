@@ -1,16 +1,23 @@
-import { Link } from '@tanstack/react-router'
-import { InitialsAvatar } from './InitialsAvatar'
+import { Link } from "@tanstack/react-router";
+import { InitialsAvatar } from "./InitialsAvatar";
 
 interface ParticipantCardProps {
-  displayName: string
-  avatarUrl?: string | null
-  profileHref?: string       // undefined のとき: カードはクリック不可・リンクなし（OSHI-05）
-  className?: string
+  displayName: string;
+  avatarUrl?: string | null;
+  profileHref?: string; // undefined のとき: カードはクリック不可・リンクなし（OSHI-05）
+  className?: string;
 }
 
-export function ParticipantCard({ displayName, avatarUrl, profileHref, className }: ParticipantCardProps) {
+export function ParticipantCard({
+  displayName,
+  avatarUrl,
+  profileHref,
+  className,
+}: ParticipantCardProps) {
   const content = (
-    <div className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 bg-white ${profileHref ? 'hover:border-pink-300 hover:shadow-sm transition-all' : 'opacity-80'} ${className ?? ''}`}>
+    <div
+      className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 bg-white ${profileHref ? "hover:border-pink-300 hover:shadow-sm transition-all" : "opacity-80"} ${className ?? ""}`}
+    >
       {avatarUrl ? (
         <img
           src={avatarUrl}
@@ -27,15 +34,15 @@ export function ParticipantCard({ displayName, avatarUrl, profileHref, className
         <span className="text-xs text-pink-500">プロフィールを見る</span>
       )}
     </div>
-  )
+  );
 
   if (profileHref) {
     return (
       <Link to={profileHref} className="block no-underline">
         {content}
       </Link>
-    )
+    );
   }
 
-  return content
+  return content;
 }

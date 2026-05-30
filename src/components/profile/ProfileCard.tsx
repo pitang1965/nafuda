@@ -1,9 +1,9 @@
-import type { MockProfile } from '../../data/mockData'
-import { SnsLinkList } from './SnsLinkList'
+import type { MockProfile } from "../../data/mockData";
+import { SnsLinkList } from "./SnsLinkList";
 
 interface ProfileCardProps {
-  profile: MockProfile
-  onQROpen?: () => void
+  profile: MockProfile;
+  onQROpen?: () => void;
 }
 
 export function ProfileCard({ profile, onQROpen }: ProfileCardProps) {
@@ -35,7 +35,9 @@ export function ProfileCard({ profile, onQROpen }: ProfileCardProps) {
 
       {/* 自己紹介 */}
       {profile.bio && (
-        <p className="text-sm text-gray-600 text-center leading-relaxed">{profile.bio}</p>
+        <p className="text-sm text-gray-600 text-center leading-relaxed">
+          {profile.bio}
+        </p>
       )}
 
       {/* SNSリンク */}
@@ -53,5 +55,5 @@ export function ProfileCard({ profile, onQROpen }: ProfileCardProps) {
         </button>
       )}
     </div>
-  )
+  );
 }

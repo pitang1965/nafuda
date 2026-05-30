@@ -1,27 +1,26 @@
-import { Sheet } from 'react-modal-sheet'
-import { QRCodeSVG } from 'qrcode.react'
+import { Sheet } from "react-modal-sheet";
+import { QRCodeSVG } from "qrcode.react";
 
 interface QRBottomSheetProps {
-  isOpen: boolean
-  onClose: () => void
-  url: string
-  title?: string
+  isOpen: boolean;
+  onClose: () => void;
+  url: string;
+  title?: string;
 }
 
-export function QRBottomSheet({ isOpen, onClose, url, title }: QRBottomSheetProps) {
+export function QRBottomSheet({
+  isOpen,
+  onClose,
+  url,
+  title,
+}: QRBottomSheetProps) {
   return (
-    <Sheet
-      isOpen={isOpen}
-      onClose={onClose}
-      detent="content"
-    >
+    <Sheet isOpen={isOpen} onClose={onClose} detent="content">
       <Sheet.Container>
         <Sheet.Header />
         <Sheet.Content>
           <div className="flex flex-col items-center gap-4 px-6 pb-8 pt-2">
-            {title && (
-              <p className="text-sm text-gray-500">{title}</p>
-            )}
+            {title && <p className="text-sm text-gray-500">{title}</p>}
             <div className="bg-white p-4 rounded-2xl shadow-inner">
               <QRCodeSVG
                 value={url}
@@ -46,5 +45,5 @@ export function QRBottomSheet({ isOpen, onClose, url, title }: QRBottomSheetProp
       </Sheet.Container>
       <Sheet.Backdrop onTap={onClose} />
     </Sheet>
-  )
+  );
 }

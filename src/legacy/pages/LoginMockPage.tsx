@@ -1,17 +1,19 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useState } from "react";
+import { useNavigate } from "react-router";
 
 export function LoginMockPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const navigate = useNavigate()
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   if (isLoggedIn) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6 px-4">
         <div className="text-4xl">✓</div>
-        <p className="text-lg font-semibold text-gray-800">ログイン中（デモ）</p>
+        <p className="text-lg font-semibold text-gray-800">
+          ログイン中（デモ）
+        </p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="px-6 py-3 bg-pink-500 text-white rounded-full font-medium"
         >
           プロフィールを見る
@@ -23,7 +25,7 @@ export function LoginMockPage() {
           ログアウト（デモ）
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -42,5 +44,5 @@ export function LoginMockPage() {
         ※ Phase 0 デモ: 実際の認証は行いません
       </p>
     </div>
-  )
+  );
 }
