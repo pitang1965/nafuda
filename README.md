@@ -65,7 +65,7 @@ DATABASE_URL=postgresql://...@...neon.tech/neondb?sslmode=require
 # Better Auth
 BETTER_AUTH_SECRET=<openssl rand -base64 32 で生成>
 BETTER_AUTH_URL=http://localhost:3000
-VITE_BETTER_AUTH_URL=http://localhost:3000
+VITE_BETTER_AUTH_URL=http://localhost:3000  # ローカル開発のみ。本番は auth-client.ts の fallback を使用
 
 # Google OAuth
 GOOGLE_CLIENT_ID=<Google Cloud Consoleで取得>

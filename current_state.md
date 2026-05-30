@@ -133,7 +133,7 @@ pnpm db:migrate # Neon へのマイグレーション実行
 `.env.local` に必要な変数:
 - `DATABASE_URL` — Neon 接続文字列
 - `BETTER_AUTH_URL=http://localhost:5173`
-- `VITE_BETTER_AUTH_URL=http://localhost:5173`
+- `VITE_BETTER_AUTH_URL=http://localhost:5173`（ローカル開発のみ。本番は auth-client.ts の fallback `https://nafuda.me` を使用）
 - `BETTER_AUTH_SECRET`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
 - `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET`
