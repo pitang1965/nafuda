@@ -6,7 +6,7 @@ const STORAGE_KEY = "pwa-banner-dismissed";
 export function PwaInstallBanner() {
   const { canInstall, isIos, isInstalled, promptInstall } = usePwaInstall();
   const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem(STORAGE_KEY) === "1",
+    () => typeof window !== "undefined" && sessionStorage.getItem(STORAGE_KEY) === "1",
   );
 
   const dismiss = () => {
