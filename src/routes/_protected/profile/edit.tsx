@@ -21,6 +21,7 @@ import { InitialsAvatar } from "../../../components/InitialsAvatar";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -292,6 +293,7 @@ function EditForm({
   const displayName = watch("displayName") ?? "";
   const bio = watch("bio") ?? "";
   const useAutoAvatar = watch("useAutoAvatar");
+  const avatarUrl = watch("avatarUrl") ?? "";
   const displayNameVisibility = watch("displayNameVisibility");
   const bioVisibility = watch("bioVisibility");
   const avatarVisibility = watch("avatarVisibility");
@@ -539,12 +541,19 @@ function EditForm({
               />
             </div>
             <div className="flex items-center gap-3">
-              <InitialsAvatar name={displayName || "?"} size={48} />
+              {!useAutoAvatar && avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <InitialsAvatar name={displayName || "?"} size={48} />
+              )}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register("useAutoAvatar")}
-                  className="rounded"
+                <Switch
+                  checked={useAutoAvatar}
+                  onCheckedChange={(v) => setValue("useAutoAvatar", v)}
                 />
                 <span className="text-sm">イニシャルアバターを使う</span>
               </label>
@@ -717,12 +726,7 @@ function EditForm({
             </Button>
           </div>
 
-          <Button
-            type="submit"
-            disabled={saving}
-            size="lg"
-            className="w-full"
-          >
+          <Button type="submit" disabled={saving} size="lg" className="w-full">
             {saving ? "保存中..." : "保存する"}
           </Button>
         </form>
