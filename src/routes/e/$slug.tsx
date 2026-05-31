@@ -74,10 +74,21 @@ function EventPage() {
   }
 
   return (
-    <div className="min-h-screen p-6 max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="min-h-screen flex flex-col">
+      <div className="p-4 border-b flex items-center gap-3">
+        <button
+          onClick={() => router.history.back()}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="戻る"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h1 className="text-lg font-bold truncate">{data.event.name}</h1>
+      </div>
+
+      <div className="p-6 max-w-2xl mx-auto w-full flex flex-col gap-6">
       {/* イベント情報ヘッダー */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-900">{data.event.name}</h1>
         <p className="text-sm text-gray-500">{data.event.venueName}</p>
         <p className="text-xs text-gray-400">
           {new Date(data.event.eventDate).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -166,6 +177,7 @@ function EventPage() {
         url={currentUrl}
         label={`${data.event.name} のQRコード`}
       />
+      </div>
     </div>
   )
 }
