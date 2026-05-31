@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { z } from 'zod'
 import { authClient } from '../lib/auth-client'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/login')({
   validateSearch: z.object({
@@ -31,20 +32,23 @@ function LoginPage() {
       </div>
 
       <div className="w-full max-w-xs flex flex-col gap-3">
-        <button
+        <Button
           onClick={handleGoogle}
-          className="flex items-center justify-center gap-2 w-full py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          variant="outline"
+          size="lg"
+          className="w-full gap-2"
         >
           <span>G</span>
           Googleでログイン
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleFacebook}
-          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          size="lg"
+          className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
         >
           <span>f</span>
           Facebookでログイン
-        </button>
+        </Button>
       </div>
 
       <Link
@@ -66,9 +70,14 @@ function OAuthErrorMessage() {
   return (
     <div className="w-full max-w-xs p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
       ログインに失敗しました。もう一度お試しください。
-      <button onClick={() => { window.location.href = '/login' }} className="ml-2 underline">
+      <Button
+        variant="link"
+        size="sm"
+        onClick={() => { window.location.href = '/login' }}
+        className="ml-1 p-0 h-auto text-red-700 underline"
+      >
         再試行
-      </button>
+      </Button>
     </div>
   )
 }

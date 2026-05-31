@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { createPersona, getOwnProfile } from '../../../server/functions/profile'
 import { InitialsAvatar } from '../../../components/InitialsAvatar'
 import { OshiTagInput } from '../../../components/OshiTagInput'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/_protected/profile/wizard')({
   validateSearch: z.object({
@@ -105,32 +107,35 @@ function WizardPage() {
               <h2 className="text-xl font-bold">表示名を決めましょう</h2>
               <p className="text-sm text-gray-500">本名は不要です。ハンドル名・ニックネームでOK。絵文字も使えます。</p>
               <div>
-                <input
+                <Input
                   {...register('displayName')}
                   placeholder="ぴたんこ🐾"
-                  className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                  className="h-12"
                 />
                 {errors.displayName && <p className="text-xs text-red-600 mt-1">{errors.displayName.message}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium">ラベル <span className="text-xs text-gray-400 font-normal">（自分だけが見る用途メモ・任意）</span></label>
-                <input
-                  {...register('label')}
-                  placeholder="例: 推し活用・仕事用"
-                  maxLength={20}
-                  className="mt-1 w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
-                />
-                <p className="text-xs text-gray-400 mt-1 text-right">{label.length}/20</p>
+                <div className="relative mt-1">
+                  <Input
+                    {...register('label')}
+                    placeholder="例: 推し活用・仕事用"
+                    maxLength={20}
+                    className="h-12 pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{label.length}/20</span>
+                </div>
                 {errors.label && <p className="text-xs text-red-600 mt-1">{errors.label.message}</p>}
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={() => { if (displayName.trim()) setStep(2) }}
                 disabled={!displayName.trim()}
-                className="w-full py-3 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-40"
+                size="lg"
+                className="w-full"
               >
                 次へ
-              </button>
+              </Button>
             </div>
           )}
 
@@ -144,8 +149,8 @@ function WizardPage() {
               </p>
               <OshiTagInput name="oshiTags" />
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
-                <button type="button" onClick={handleProceedFromOshi} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
+                <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">戻る</Button>
+                <Button type="button" onClick={handleProceedFromOshi} className="flex-1">次へ</Button>
               </div>
             </div>
           )}
@@ -164,18 +169,18 @@ function WizardPage() {
                 </label>
                 {!useAutoAvatar && (
                   <div>
-                    <input
+                    <Input
                       {...register('avatarUrl')}
                       placeholder="https://example.com/avatar.png"
-                      className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                      className="h-12"
                     />
                     {errors.avatarUrl && <p className="text-xs text-red-600 mt-1">{errors.avatarUrl.message}</p>}
                   </div>
                 )}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(2)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
-                <button type="button" onClick={() => setStep(4)} className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">次へ</button>
+                <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">戻る</Button>
+                <Button type="button" onClick={() => setStep(4)} className="flex-1">次へ</Button>
               </div>
             </div>
           )}
@@ -189,8 +194,8 @@ function WizardPage() {
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{submitError}</div>
               )}
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 border rounded-lg text-sm">戻る</button>
-                <button type="submit" className="flex-1 py-3 bg-black text-white rounded-lg text-sm font-medium">プロフィールを作成</button>
+                <Button type="button" variant="outline" onClick={() => setStep(3)} className="flex-1">戻る</Button>
+                <Button type="submit" className="flex-1">プロフィールを作成</Button>
               </div>
             </div>
           )}

@@ -1,4 +1,10 @@
-import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Persona {
   id: string;
@@ -20,56 +26,47 @@ export function PersonaSwitcher({
   onSwitch,
   onCreateNew,
 }: PersonaSwitcherProps) {
-  const [open, setOpen] = useState(false);
   const current = personas.find((p) => p.id === currentPersonaId);
   const currentLabel = current?.label || current?.displayName || "なふだ";
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-sm font-medium"
-      >
-        <span>{currentLabel}</span>
-        <span className="text-xs text-gray-400">{open ? "▲" : "▼"}</span>
-      </button>
-
-      {open && (
-        <div className="absolute top-full mt-1 left-0 min-w-48 bg-white border rounded-xl shadow-lg z-50 overflow-hidden">
-          {personas.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                onSwitch(p.id);
-                setOpen(false);
-              }}
-              className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center justify-between gap-2
-                ${p.id === currentPersonaId ? "font-semibold" : ""}`}
-            >
-              <span className="flex flex-col">
-                <span>{p.label || p.displayName}</span>
-                {p.label && (
-                  <span className="text-xs text-gray-400 font-normal">
-                    {p.displayName}
-                  </span>
-                )}
-              </span>
-              {p.id === currentPersonaId && (
-                <span className="text-xs text-gray-400 shrink-0">使用中</span>
-              )}
-            </button>
-          ))}
-          <button
-            onClick={() => {
-              onCreateNew();
-              setOpen(false);
-            }}
-            className="w-full text-left px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 border-t"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-sm font-medium">
+          <span>{currentLabel}</span>
+          <span className="text-xs text-gray-400">▼</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {personas.map((p) => (
+          <DropdownMenuItem
+            key={p.id}
+            onSelect={() => onSwitch(p.id)}
+            className="flex items-center justify-between gap-2"
           >
-            ＋ なふだを追加
-          </button>
-        </div>
-      )}
-    </div>
+            <span className="flex flex-col">
+              <span>{p.label || p.displayName}</span>
+              {p.label && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  {p.displayName}
+                </span>
+              )}
+            </span>
+            {p.id === currentPersonaId && (
+              <span className="text-xs text-muted-foreground shrink-0">
+                使用中
+              </span>
+            )}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={onCreateNew}
+          className="text-blue-600 focus:text-blue-600 focus:bg-blue-50"
+        >
+          ＋ なふだを追加
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -7,6 +7,7 @@ import { InitialsAvatar } from '../../components/InitialsAvatar'
 import { SnsLinkButton } from '../../components/SnsLinkButton'
 import { QRBottomSheet } from '../../components/QRBottomSheet'
 import { PwaInstallBanner } from '../../components/PwaInstallBanner'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_protected/me')({
   loader: () => getOwnProfile(),
@@ -65,12 +66,14 @@ function MePage() {
         <div className="flex items-center gap-3">
           <Link to="/profile/edit" search={{ personaId: currentPersonaId }} className="text-sm text-gray-500 underline">編集</Link>
           <Link to="/events" className="text-sm text-gray-500 underline">イベント</Link>
-          <button
+          <Button
+            variant="link"
+            size="sm"
             onClick={handleLogout}
-            className="text-sm text-gray-500 underline hover:text-gray-700"
+            className="p-0 h-auto text-gray-500"
           >
             ログアウト
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -104,7 +107,7 @@ function MePage() {
           </Link>
         )}
 
-{currentPersona?.bio && (
+        {currentPersona?.bio && (
           <div className={`w-full max-w-xs text-center ${isPrivate('bio') ? 'opacity-50' : ''}`}>
             <p className="text-sm text-gray-600 whitespace-pre-wrap">{currentPersona.bio}</p>
             {isPrivate('bio') && <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>}
@@ -132,18 +135,21 @@ function MePage() {
         )}
 
         <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
-          <button
+          <Button
             onClick={() => setQrOpen(true)}
-            className="block w-full text-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+            size="lg"
+            className="w-full rounded-xl"
           >
             QRコードを表示
-          </button>
-          <Link
-            to="/connections"
-            className="block w-full text-center px-6 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            asChild
+            className="w-full rounded-xl"
           >
-            つながりを見る
-          </Link>
+            <Link to="/connections">つながりを見る</Link>
+          </Button>
         </div>
       </div>
 
@@ -163,9 +169,9 @@ function RedirectToWizard() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
       <p className="text-sm text-gray-500">プロフィールを設定しましょう</p>
-      <Link to="/profile/wizard" className="px-6 py-3 bg-black text-white rounded-lg text-sm">
-        プロフィールを作成する
-      </Link>
+      <Button asChild size="lg">
+        <Link to="/profile/wizard">プロフィールを作成する</Link>
+      </Button>
     </div>
   )
 }

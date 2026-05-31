@@ -21,6 +21,11 @@ function nafudaPwaPlugin(): Plugin {
 }
 
 export default defineConfig(({ command }) => ({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   plugins: [
     cloudflare({
       // Dev uses a Workers-style wrangler config (with `main`) so the plugin
@@ -33,6 +38,9 @@ export default defineConfig(({ command }) => ({
     viteReact(),
     nafudaPwaPlugin(),
   ],
+  optimizeDeps: {
+    exclude: ['@better-auth/kysely-adapter'],
+  },
   ssr: {
     noExternal: ['emblor', 'react-hook-form'],
   },

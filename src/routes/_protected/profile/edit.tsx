@@ -19,6 +19,8 @@ import {
 } from "../../../server/functions/oshi";
 import { InitialsAvatar } from "../../../components/InitialsAvatar";
 import { OshiTagInput } from "../../../components/OshiTagInput";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -147,12 +149,9 @@ function EditPage() {
         <p className="text-sm text-gray-500">
           プロフィールがまだ設定されていません
         </p>
-        <button
-          onClick={() => navigate({ to: "/profile/wizard" })}
-          className="px-6 py-3 bg-black text-white rounded-lg text-sm"
-        >
+        <Button onClick={() => navigate({ to: "/profile/wizard" })} size="lg">
           プロフィールを作成する
-        </button>
+        </Button>
       </div>
     );
   }
@@ -431,10 +430,11 @@ function EditForm({
     <FormProvider {...methods}>
       <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto gap-6">
         <div className="flex items-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={handleBack}
-            className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="戻る"
           >
             <svg
@@ -449,7 +449,7 @@ function EditForm({
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
-          </button>
+          </Button>
           <h1 className="text-xl font-bold">
             {initialLabel || initialDisplayName} を編集
           </h1>
@@ -471,10 +471,7 @@ function EditForm({
                 onChange={(v) => setValue("displayNameVisibility", v)}
               />
             </div>
-            <input
-              {...register("displayName")}
-              className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
-            />
+            <Input {...register("displayName")} />
             {errors.displayName && (
               <p className="text-xs text-red-600">
                 {errors.displayName.message}
@@ -491,11 +488,11 @@ function EditForm({
               </span>
             </label>
             <div className="relative">
-              <input
+              <Input
                 {...register("label")}
                 placeholder="例: 推し活用・仕事用"
                 maxLength={20}
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
+                className="pr-12"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                 {(watch("label") ?? "").length}/20
@@ -554,10 +551,9 @@ function EditForm({
             </div>
             {!useAutoAvatar && (
               <div>
-                <input
+                <Input
                   {...register("avatarUrl")}
                   placeholder="https://example.com/avatar.png"
-                  className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black"
                 />
                 {errors.avatarUrl && (
                   <p className="text-xs text-red-600">
@@ -588,18 +584,20 @@ function EditForm({
             {oshiSaveError && (
               <p className="text-xs text-red-600">{oshiSaveError}</p>
             )}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleSaveOshiTags}
               disabled={oshiSaving}
-              className="self-start px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+              className="self-start"
             >
               {oshiSaving
                 ? "保存中..."
                 : oshiSaved
                   ? "保存しました"
                   : "推し / 趣味タグを保存"}
-            </button>
+            </Button>
           </div>
 
           {/* Dojin reject — immediate save on radio change */}
@@ -668,59 +666,65 @@ function EditForm({
                       ))}
                     </select>
                     <div className="flex gap-1">
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="icon-xs"
                         onClick={() => moveSnsLink(index, "up")}
                         disabled={index === 0}
-                        className="px-2 py-1 text-xs border rounded disabled:opacity-30"
                       >
                         ↑
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="icon-xs"
                         onClick={() => moveSnsLink(index, "down")}
                         disabled={index === snsLinks.length - 1}
-                        className="px-2 py-1 text-xs border rounded disabled:opacity-30"
                       >
                         ↓
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="icon-xs"
                         onClick={() => removeSnsLink(index)}
-                        className="px-2 py-1 text-xs border rounded text-red-600 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-600"
                       >
                         ✕
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                  <input
+                  <Input
                     value={link.url}
                     onChange={(e) =>
                       updateSnsLinkField(index, "url", e.target.value)
                     }
                     placeholder={getSnsPlaceholder(link.platform)}
-                    className="w-full px-2 py-1.5 border rounded text-sm bg-white outline-none"
+                    className="bg-white"
                   />
                 </div>
               ))}
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={addSnsLink}
-              className="mt-1 w-full py-2.5 border border-dashed rounded-lg text-sm text-gray-500 hover:bg-gray-50"
+              className="mt-1 w-full border-dashed text-gray-500"
             >
               ＋ SNSリンクを追加
-            </button>
+            </Button>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="w-full py-3 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-40"
+            size="lg"
+            className="w-full"
           >
             {saving ? "保存中..." : "保存する"}
-          </button>
+          </Button>
         </form>
       </div>
     </FormProvider>
