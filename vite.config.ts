@@ -34,6 +34,6 @@ export default defineConfig(({ command }) => ({
     nafudaPwaPlugin(),
   ],
   ssr: {
-    noExternal: ['emblor'],
+    noExternal: ['emblor', 'react-hook-form'],
   },
 }))
