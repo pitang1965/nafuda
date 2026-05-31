@@ -39,7 +39,7 @@ export function PwaInstallBanner() {
         <p className="text-xs text-gray-600">
           ホーム画面に追加するとオフラインでも QR を表示できます
         </p>
-        <div className="ml-3 flex-shrink-0 flex items-center gap-2">
+        <div className="ml-3 shrink-0 flex items-center gap-2">
           <button
             onClick={promptInstall}
             className="px-3 py-1.5 bg-black text-white rounded-lg text-xs font-medium"

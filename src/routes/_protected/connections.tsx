@@ -56,7 +56,7 @@ function ConnectionCard({ conn }: { conn: Connection }) {
       className="flex items-start gap-3 p-4 bg-white rounded-xl border hover:bg-gray-50 transition-colors"
     >
       {/* アバター */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         {conn.toAvatarUrl ? (
           <img src={conn.toAvatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
         ) : (
@@ -86,7 +86,7 @@ function ConnectionCard({ conn }: { conn: Connection }) {
       </div>
 
       {/* 矢印 */}
-      <div className="flex-shrink-0 text-gray-300 self-center">›</div>
+      <div className="shrink-0 text-gray-300 self-center">›</div>
     </Link>
   )
 }
