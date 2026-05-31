@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { auth } from '../../server/auth'
 import { getEventParticipants, checkinToEvent, getMyCheckinStatus, cancelCheckin } from '../../server/functions/event'
 import { getOwnProfile } from '../../server/functions/profile'
@@ -51,8 +51,7 @@ function EventPage() {
   const [isCancelling, setIsCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
   const [qrOpen, setQrOpen] = useState(false)
-  const [currentUrl, setCurrentUrl] = useState('')
-  useEffect(() => { setCurrentUrl(window.location.href) }, [])
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   const handleCheckin = useCallback(async () => {
     if (!defaultPersonaId || !data || isCheckedIn) return
