@@ -36,6 +36,10 @@ export const auth = betterAuth({
       // email + public_profile are default scopes — sufficient for Phase 1
     },
   },
+  accountLinking: {
+    enabled: true,
+    trustedProviders: ["google", "facebook"],
+  },
   session: {
     storeSessionInDatabase: true,
     // cookieCache: avoid DB round-trip on every protected route — validated from the signed
