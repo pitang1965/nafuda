@@ -139,7 +139,7 @@ export const createPersona = createServerFn({ method: "POST" })
 export const updatePersona = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
-      personaId: z.string().uuid(),
+      personaId: z.uuid(),
       displayName: z.string().min(1).max(50).optional(),
       label: z.string().max(20).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
@@ -220,8 +220,8 @@ export const getPublicProfile = createServerFn({ method: "GET" })
 export const upsertSnsLink = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
-      personaId: z.string().uuid(),
-      linkId: z.string().uuid().optional(),
+      personaId: z.uuid(),
+      linkId: z.uuid().optional(),
       platform: z.enum([
         "x",
         "instagram",
@@ -279,7 +279,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
   });
 
 export const deleteSnsLink = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ linkId: z.string().uuid() }))
+  .inputValidator(z.object({ linkId: z.uuid() }))
   .handler(async ({ data }) => {
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });

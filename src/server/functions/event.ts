@@ -11,7 +11,7 @@ import { auth } from '../auth'
 export const checkinToEvent = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     slug: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-]+$/, 'スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます'),
-    personaId: z.string().uuid(),
+    personaId: z.uuid(),
   }))
   .handler(async ({ data }) => {
     // 1. 認証チェック
@@ -64,7 +64,7 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
     eventName: z.string().min(1).max(100),
     venueName: z.string().min(1).max(100),
     eventDate: z.string().datetime(),
-    personaId: z.string().uuid(),
+    personaId: z.uuid(),
     gpsCoordinates: z.object({ x: z.number(), y: z.number() }).optional(),
   }))
   .handler(async ({ data }) => {
@@ -137,7 +137,7 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
 
 // Checkout from event (set checkedOutAt = now)
 export const checkoutFromEvent = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ checkinId: z.string().uuid() }))
+  .inputValidator(z.object({ checkinId: z.uuid() }))
   .handler(async ({ data }) => {
     // 1. 認証チェック
     const request = getRequest()
@@ -163,7 +163,7 @@ export const checkoutFromEvent = createServerFn({ method: 'POST' })
 
 // Get active checkin for current user's persona (NULL checkedOutAt = active)
 export const getActiveCheckin = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ personaId: z.string().uuid() }))
+  .inputValidator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
     // 1. 認証チェック
     const request = getRequest()
@@ -246,7 +246,7 @@ export const getEventParticipants = createServerFn({ method: 'POST' })
 
 // Check if the current user's persona has any checkin for this event (ignores dojinReject)
 export const getMyCheckinStatus = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ slug: z.string(), personaId: z.string().uuid() }))
+  .inputValidator(z.object({ slug: z.string(), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
@@ -266,6 +266,35 @@ export const getMyCheckinStatus = createServerFn({ method: 'POST' })
       ))
       .limit(1)
     return checkin.length > 0
+  })
+
+// Cancel participation (delete all checkin records for this event + persona)
+export const cancelCheckin = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ slug: z.string().min(1), personaId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) throw new Error('Unauthorized')
+
+    const persona = await db.select({ userId: personas.userId })
+      .from(personas)
+      .where(eq(personas.id, data.personaId))
+      .limit(1)
+    if (!persona[0] || persona[0].userId !== session.user.id) throw new Error('Forbidden')
+
+    const eventRow = await db.select({ id: events.id })
+      .from(events)
+      .where(eq(events.slug, data.slug))
+      .limit(1)
+    if (!eventRow[0]) throw new Error('Event not found')
+
+    await db.delete(eventCheckins)
+      .where(and(
+        eq(eventCheckins.eventId, eventRow[0].id),
+        eq(eventCheckins.personaId, data.personaId),
+      ))
+
+    return { success: true }
   })
 
 // Get events created by or participated in by the current user

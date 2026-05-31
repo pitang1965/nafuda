@@ -3,9 +3,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { useState, useEffect, useCallback } from 'react'
 import { auth } from '../../server/auth'
-import { getEventParticipants } from '../../server/functions/event'
+import { getEventParticipants, checkinToEvent, getMyCheckinStatus, cancelCheckin } from '../../server/functions/event'
 import { getOwnProfile } from '../../server/functions/profile'
-import { checkinToEvent, getMyCheckinStatus } from '../../server/functions/event'
 import { ParticipantCard } from '../../components/ParticipantCard'
 import { QRBottomSheet } from '../../components/QRBottomSheet'
 
@@ -24,6 +23,8 @@ export const Route = createFileRoute('/e/$slug')({
       getOptionalSession(),
     ])
     let defaultPersonaId: string | null = null
+    let myPersonaName: string | null = null
+    let myUrlId: string | null = null
     let isCheckedIn = false
     if (session?.user) {
       const profile = await getOwnProfile()
@@ -33,18 +34,22 @@ export const Route = createFileRoute('/e/$slug')({
         ?? null
       if (defaultPersonaId) {
         isCheckedIn = await getMyCheckinStatus({ data: { slug: params.slug, personaId: defaultPersonaId } })
+        myPersonaName = profile?.personas?.find((p) => p.id === defaultPersonaId)?.displayName ?? null
       }
+      myUrlId = profile?.urlId ?? null
     }
-    return { data, isLoggedIn: !!session?.user, defaultPersonaId, isCheckedIn }
+    return { data, isLoggedIn: !!session?.user, defaultPersonaId, myPersonaName, myUrlId, isCheckedIn }
   },
   component: EventPage,
 })
 
 function EventPage() {
-  const { data, isLoggedIn, defaultPersonaId, isCheckedIn } = Route.useLoaderData()
+  const { data, isLoggedIn, defaultPersonaId, myPersonaName, myUrlId, isCheckedIn } = Route.useLoaderData()
   const router = useRouter()
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [checkinError, setCheckinError] = useState<string | null>(null)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
   const [qrOpen, setQrOpen] = useState(false)
   const [currentUrl, setCurrentUrl] = useState('')
   useEffect(() => { setCurrentUrl(window.location.href) }, [])
@@ -62,6 +67,20 @@ function EventPage() {
       setIsCheckingIn(false)
     }
   }, [defaultPersonaId, data, isCheckedIn, router])
+
+  const handleCancel = useCallback(async () => {
+    if (!defaultPersonaId || !data) return
+    setIsCancelling(true)
+    setCancelError(null)
+    try {
+      await cancelCheckin({ data: { slug: data.event.slug, personaId: defaultPersonaId } })
+      await router.navigate({ to: '/e/$slug', params: { slug: data.event.slug }, replace: true })
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : '取り消しに失敗しました')
+    } finally {
+      setIsCancelling(false)
+    }
+  }, [defaultPersonaId, data, router])
 
   if (!data) {
     return (
@@ -108,9 +127,19 @@ function EventPage() {
         defaultPersonaId ? (
           <div className="flex flex-col gap-2">
             {isCheckedIn ? (
-              <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">
-                参加済み
-              </div>
+              <>
+                <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">
+                  参加済み{myPersonaName ? `（${myPersonaName}）` : ''}
+                </div>
+                <button
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                  className="w-full py-2 rounded-xl border border-red-200 text-red-500 text-xs font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isCancelling ? '取り消し中...' : '参加を取り消す'}
+                </button>
+                {cancelError && <p className="text-xs text-red-500 text-center">{cancelError}</p>}
+              </>
             ) : (
               <button
                 onClick={handleCheckin}
@@ -161,7 +190,7 @@ function EventPage() {
               displayName={p.displayName}
               avatarUrl={p.avatarUrl}
               // OSHI-05: ログイン済みの場合のみ profileHref を渡す
-              profileHref={isLoggedIn && p.urlId ? `/u/${p.urlId}/p/${p.shareToken}` : undefined}
+              profileHref={isLoggedIn && p.urlId && p.urlId !== myUrlId ? `/u/${p.urlId}/p/${p.shareToken}` : undefined}
             />
           ))}
         </div>

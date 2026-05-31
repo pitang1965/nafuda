@@ -11,7 +11,7 @@ import { auth } from '../auth'
 export const createConnection = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     targetShareToken: z.string().min(1),
-    fromPersonaId: z.string().uuid(), // ユーザーが選択したなふだ
+    fromPersonaId: z.uuid(), // ユーザーが選択したなふだ
   }))
   .handler(async ({ data }) => {
     // 1. 認証チェック

@@ -31,7 +31,7 @@ export const getOshiSuggestions = createServerFn({ method: 'GET' })
 // Update oshi tags for a persona
 export const updateOshiTags = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
-    personaId: z.string().uuid(),
+    personaId: z.uuid(),
     tags: z.array(z.string().min(1).max(50)).max(20, '推しタグは20個まで'),
   }))
   .handler(async ({ data }) => {
@@ -47,7 +47,7 @@ export const updateOshiTags = createServerFn({ method: 'POST' })
 // Update dojin_reject flag for a persona
 export const updateDojinReject = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
-    personaId: z.string().uuid(),
+    personaId: z.uuid(),
     dojinReject: z.boolean(),
   }))
   .handler(async ({ data }) => {
