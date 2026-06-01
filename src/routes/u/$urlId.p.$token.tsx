@@ -1,20 +1,20 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
-import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { eq, and, or } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
-import { z } from 'zod';
-import { getPublicProfile } from '../../server/functions/profile';
-import { createConnection } from '../../server/functions/connection';
-import { InitialsAvatar } from '../../components/InitialsAvatar';
-import { SnsLinkButton } from '../../components/SnsLinkButton';
-import { auth } from '../../server/auth';
-import { db } from '../../server/db/client';
-import { urlIds, personas, connections } from '../../server/db/schema';
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { eq, and, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { z } from "zod";
+import { getPublicProfile } from "../../server/functions/profile";
+import { createConnection } from "../../server/functions/connection";
+import { InitialsAvatar } from "../../components/InitialsAvatar";
+import { SnsLinkButton } from "../../components/SnsLinkButton";
+import { auth } from "../../server/auth";
+import { db } from "../../server/db/client";
+import { urlIds, personas, connections } from "../../server/db/schema";
 
-const getSessionData = createServerFn({ method: 'GET' })
+const getSessionData = createServerFn({ method: "GET" })
   .inputValidator(z.object({ shareToken: z.string() }))
   .handler(async ({ data }) => {
     const request = getRequest();
@@ -56,8 +56,8 @@ const getSessionData = createServerFn({ method: 'GET' })
       venueName: string | null;
     } | null = null;
     if (toPersonaRow[0]) {
-      const fromP = alias(personas, 'fp');
-      const toP = alias(personas, 'tp');
+      const fromP = alias(personas, "fp");
+      const toP = alias(personas, "tp");
       const connRow = await db
         .select({
           connectedAt: connections.connectedAt,
@@ -94,7 +94,7 @@ const getSessionData = createServerFn({ method: 'GET' })
   });
 
 // Specific persona by share token — public route, no auth required
-export const Route = createFileRoute('/u/$urlId/p/$token')({
+export const Route = createFileRoute("/u/$urlId/p/$token")({
   loader: async ({ params }) => {
     const [profile, sessionData] = await Promise.all([
       getPublicProfile({ data: { shareToken: params.token } }),
@@ -117,6 +117,13 @@ function PublicProfilePage() {
     Route.useLoaderData();
   const navigate = useNavigate();
   const router = useRouter();
+  const [canGoBack] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      document.referrer !== "" &&
+      new URL(document.referrer).origin === window.location.origin
+    );
+  });
   const [connected, setConnected] = useState(
     () => !!session.existingConnection,
   );
@@ -139,7 +146,7 @@ function PublicProfilePage() {
 
   if (!profile)
     return (
-      <div className='p-6 text-sm text-gray-500'>
+      <div className="p-6 text-sm text-gray-500">
         プロフィールが見つかりません
       </div>
     );
@@ -147,14 +154,14 @@ function PublicProfilePage() {
   const handleConnectClick = async () => {
     if (!session.user) {
       await navigate({
-        to: '/login',
+        to: "/login",
         search: { redirect: `/u/${urlId}/p/${shareToken}` },
       });
       return;
     }
     if (session.myPersonas.length === 0) {
       await navigate({
-        to: '/profile/wizard',
+        to: "/profile/wizard",
         search: { redirect: `/u/${urlId}/p/${shareToken}` },
       });
     } else if (session.myPersonas.length === 1) {
@@ -182,7 +189,7 @@ function PublicProfilePage() {
       }
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'エラーが発生しました';
+        err instanceof Error ? err.message : "エラーが発生しました";
       setError(message);
     } finally {
       setConnecting(false);
@@ -190,49 +197,51 @@ function PublicProfilePage() {
   };
 
   return (
-    <div className='min-h-screen flex flex-col'>
-      <div className='p-4 border-b flex items-center'>
-        <button
-          onClick={() => router.history.back()}
-          className='text-muted-foreground hover:text-foreground transition-colors'
-          aria-label='戻る'
-        >
-          <svg
-            width='20'
-            height='20'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2.5'
-            strokeLinecap='round'
-            strokeLinejoin='round'
+    <div className="min-h-screen flex flex-col">
+      {canGoBack && (
+        <div className="p-4 border-b flex items-center">
+          <button
+            onClick={() => router.history.back()}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="戻る"
           >
-            <path d='M15 18l-6-6 6-6' />
-          </svg>
-        </button>
-      </div>
-      <div className='flex-1 p-6 flex flex-col items-center gap-4'>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        </div>
+      )}
+      <div className="flex-1 p-6 flex flex-col items-center gap-4">
         {profile.avatarUrl ? (
           <img
             src={profile.avatarUrl}
-            alt=''
-            className='w-20 h-20 rounded-full object-cover'
+            alt=""
+            className="w-20 h-20 rounded-full object-cover"
           />
         ) : (
           <InitialsAvatar name={profile.displayName} size={80} />
         )}
-        <h1 className='text-2xl font-bold'>{profile.displayName}</h1>
+        <h1 className="text-2xl font-bold">{profile.displayName}</h1>
         {profile.bio && (
-          <p className='text-sm text-gray-600 text-center whitespace-pre-wrap max-w-sm'>
+          <p className="text-sm text-gray-600 text-center whitespace-pre-wrap max-w-sm">
             {profile.bio}
           </p>
         )}
         {profile.oshiTags.length > 0 && (
-          <div className='flex flex-wrap gap-1 justify-center'>
+          <div className="flex flex-wrap gap-1 justify-center">
             {profile.oshiTags.map((tag) => (
               <span
                 key={tag}
-                className='px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs'
+                className="px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs"
               >
                 {tag}
               </span>
@@ -240,7 +249,7 @@ function PublicProfilePage() {
           </div>
         )}
         {profile.snsLinks.length > 0 && (
-          <div className='w-full max-w-sm flex flex-col gap-2'>
+          <div className="w-full max-w-sm flex flex-col gap-2">
             {profile.snsLinks.map((link) => (
               <SnsLinkButton
                 key={link.id}
@@ -253,17 +262,17 @@ function PublicProfilePage() {
 
         {/* 「つながる」ボタン: 自分のプロフィールでは非表示 */}
         {!isOwnProfile && (
-          <div className='w-full max-w-sm mt-2'>
+          <div className="w-full max-w-sm mt-2">
             {connected ? (
-              <div className='w-full flex flex-col items-center gap-1.5'>
-                <div className='w-full text-center px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium'>
+              <div className="w-full flex flex-col items-center gap-1.5">
+                <div className="w-full text-center px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium">
                   つながり済み ✓
                 </div>
                 {connMeta && (
-                  <p className='text-xs text-gray-400 text-center'>
+                  <p className="text-xs text-gray-400 text-center">
                     {new Date(connMeta.connectedAt).toLocaleDateString(
-                      'ja-JP',
-                      { year: 'numeric', month: 'long', day: 'numeric' },
+                      "ja-JP",
+                      { year: "numeric", month: "long", day: "numeric" },
                     )}
                     {connMeta.eventName && ` · ${connMeta.eventName}`}
                     {!connMeta.eventName &&
@@ -282,20 +291,20 @@ function PublicProfilePage() {
               <button
                 onClick={handleConnectClick}
                 disabled={connecting}
-                className='w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50'
+                className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
               >
-                {connecting ? 'つながっています...' : 'つながる'}
+                {connecting ? "つながっています..." : "つながる"}
               </button>
             )}
             {error && (
-              <p className='text-xs text-red-500 text-center mt-2'>{error}</p>
+              <p className="text-xs text-red-500 text-center mt-2">{error}</p>
             )}
           </div>
         )}
 
         <Link
-          to='/'
-          className='mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2'
+          to="/"
+          className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
         >
           なふだとは？
         </Link>
@@ -314,25 +323,25 @@ function PersonaPicker({
   onCancel: () => void;
 }) {
   return (
-    <div className='flex flex-col gap-2'>
-      <p className='text-sm text-gray-600 text-center'>
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-gray-600 text-center">
         どのなふだとしてつながりますか？
       </p>
       {personas.map((p) => (
         <button
           key={p.id}
           onClick={() => onSelect(p.id)}
-          className='w-full px-4 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors flex items-center justify-between'
+          className="w-full px-4 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors flex items-center justify-between"
         >
           <span>{p.displayName}</span>
           {p.isDefault && (
-            <span className='text-xs text-pink-200'>デフォルト</span>
+            <span className="text-xs text-pink-200">デフォルト</span>
           )}
         </button>
       ))}
       <button
         onClick={onCancel}
-        className='w-full px-4 py-2 text-gray-400 text-sm'
+        className="w-full px-4 py-2 text-gray-400 text-sm"
       >
         キャンセル
       </button>

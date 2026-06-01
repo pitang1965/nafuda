@@ -1,9 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, or } from "drizzle-orm";
 import { db } from "../db/client";
-import { personas, urlIds, snsLinks } from "../db/schema";
+import {
+  personas,
+  urlIds,
+  snsLinks,
+  connections,
+  eventCheckins,
+  events,
+  user as userTable,
+  session as sessionTable,
+  account as accountTable,
+} from "../db/schema";
 import { auth } from "../auth";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -286,3 +296,47 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
     if (!session?.user) throw new Error("Unauthorized");
     await db.delete(snsLinks).where(eq(snsLinks.id, data.linkId));
   });
+
+export const deleteAccount = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+    const userId = session.user.id;
+
+    const myPersonas = await db
+      .select({ id: personas.id })
+      .from(personas)
+      .where(eq(personas.userId, userId));
+    const personaIds = myPersonas.map((p) => p.id);
+
+    // イベントは保持し、hostUserId のみ NULL に更新（ADR-0005）
+    await db
+      .update(events)
+      .set({ hostUserId: null })
+      .where(eq(events.hostUserId, userId));
+
+    if (personaIds.length > 0) {
+      // FK 制約順: connections → event_checkins → sns_links → personas
+      await db
+        .delete(connections)
+        .where(
+          or(
+            inArray(connections.fromPersonaId, personaIds),
+            inArray(connections.toPersonaId, personaIds),
+          ),
+        );
+      await db
+        .delete(eventCheckins)
+        .where(inArray(eventCheckins.personaId, personaIds));
+      await db.delete(snsLinks).where(inArray(snsLinks.personaId, personaIds));
+      await db.delete(personas).where(eq(personas.userId, userId));
+    }
+
+    await db.delete(urlIds).where(eq(urlIds.userId, userId));
+    // Better Auth テーブル: session・account は user より先に削除（FK 制約）
+    await db.delete(sessionTable).where(eq(sessionTable.userId, userId));
+    await db.delete(accountTable).where(eq(accountTable.userId, userId));
+    await db.delete(userTable).where(eq(userTable.id, userId));
+  },
+);
