@@ -37,18 +37,27 @@ export const checkinToEvent = createServerFn({ method: 'POST' })
     if (!persona[0]) throw new Error('Persona not found')
     if (persona[0].userId !== session.user.id) throw new Error('Forbidden: persona does not belong to current user')
 
+    const eventRow = await db.select()
+      .from(events)
+      .where(eq(events.shareToken, data.token))
+      .limit(1)
+    if (!eventRow[0]) throw new Error('Event not found')
+
+    // Remove other personas of same user from this event (1ユーザー = 1エントリ)
+    await db.delete(eventCheckins)
+      .where(and(
+        eq(eventCheckins.eventId, eventRow[0].id),
+        eq(eventCheckins.userId, session.user.id),
+        ne(eventCheckins.personaId, data.personaId),
+      ))
+
+    // Check out same persona from other active events
     await db.update(eventCheckins)
       .set({ checkedOutAt: new Date() })
       .where(and(
         eq(eventCheckins.personaId, data.personaId),
         isNull(eventCheckins.checkedOutAt)
       ))
-
-    const eventRow = await db.select()
-      .from(events)
-      .where(eq(events.shareToken, data.token))
-      .limit(1)
-    if (!eventRow[0]) throw new Error('Event not found')
 
     const newCheckin = await db.insert(eventCheckins)
       .values({
@@ -73,6 +82,7 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
     showTime: z.boolean(),
     description: z.string().max(1000).optional().nullable(),
     personaId: z.uuid(),
+    hostPersonaId: z.uuid(),
     gpsCoordinates: z.object({ x: z.number(), y: z.number() }).optional(),
   }))
   .handler(async ({ data }) => {
@@ -111,6 +121,7 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
             showTime: data.showTime,
             description: data.description ?? null,
             hostUserId: session.user.id,
+            hostPersonaId: data.hostPersonaId,
           })
           .returning()
         eventRow = inserted
@@ -127,6 +138,14 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
     }
 
     if (!eventRow[0]) throw new Error('Failed to create or retrieve event')
+
+    // Remove other personas of same user from this event (1ユーザー = 1エントリ)
+    await db.delete(eventCheckins)
+      .where(and(
+        eq(eventCheckins.eventId, eventRow[0].id),
+        eq(eventCheckins.userId, session.user.id),
+        ne(eventCheckins.personaId, data.personaId),
+      ))
 
     const newCheckin = await db.insert(eventCheckins)
       .values({

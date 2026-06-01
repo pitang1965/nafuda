@@ -8,6 +8,7 @@ import { createEventAndCheckin } from "../../../server/functions/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { PersonaSwitcher } from "../../../components/PersonaSwitcher";
 
 async function getGpsCoords(): Promise<{ x: number; y: number } | null> {
   return new Promise((resolve) => {
@@ -50,13 +51,14 @@ export const Route = createFileRoute("/_protected/events/new")({
     const profile = await getOwnProfile();
     const defaultPersona =
       profile?.personas?.find((p) => p.isDefault) ?? profile?.personas?.[0];
-    return { personaId: defaultPersona?.id ?? null };
+    return { personaId: defaultPersona?.id ?? null, personas: profile?.personas ?? [] };
   },
   component: NewEventPage,
 });
 
 function NewEventPage() {
-  const { personaId } = Route.useLoaderData();
+  const { personaId: defaultPersonaId, personas } = Route.useLoaderData();
+  const [selectedPersonaId, setSelectedPersonaId] = useState(defaultPersonaId);
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,7 +77,7 @@ function NewEventPage() {
   const showTime = useWatch({ control, name: "showTime", defaultValue: false });
 
   const onSubmit = async (formData: FormValues) => {
-    if (!personaId) {
+    if (!selectedPersonaId) {
       setSubmitError("なふだが見つかりません。なふだを作成してください。");
       return;
     }
@@ -93,7 +95,8 @@ function NewEventPage() {
           eventTime: formData.eventTime,
           showTime: formData.showTime,
           description: formData.description || null,
-          personaId,
+          personaId: selectedPersonaId,
+          hostPersonaId: selectedPersonaId,
           gpsCoordinates: gps ?? undefined,
         },
       });
@@ -136,6 +139,17 @@ function NewEventPage() {
       </div>
 
       <div className="flex-1 p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
+        {personas.length > 1 && selectedPersonaId && (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <span>参加なふだ：</span>
+            <PersonaSwitcher
+              personas={personas}
+              currentPersonaId={selectedPersonaId}
+              onSwitch={setSelectedPersonaId}
+              onCreateNew={() => router.navigate({ to: "/profile/wizard" })}
+            />
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col gap-1">

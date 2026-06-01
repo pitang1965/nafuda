@@ -12,6 +12,7 @@ import {
 import { getOwnProfile } from "../../server/functions/profile";
 import { ParticipantCard } from "../../components/ParticipantCard";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
+import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 
 const getOptionalSession = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -45,22 +46,35 @@ export const Route = createFileRoute("/e/$slug")({
       getOptionalSession(),
     ]);
     let defaultPersonaId: string | null = null;
-    let myPersonaName: string | null = null;
     let myUrlId: string | null = null;
-    let isCheckedIn = false;
+    let personas: {
+      id: string;
+      displayName: string;
+      label: string | null;
+      isDefault: boolean;
+    }[] = [];
+    let checkedInPersonaIds: string[] = [];
     if (session?.user) {
       const profile = await getOwnProfile();
+      personas = (profile?.personas ?? []).map((p) => ({
+        id: p.id,
+        displayName: p.displayName,
+        label: p.label ?? null,
+        isDefault: p.isDefault,
+      }));
       defaultPersonaId =
-        profile?.personas?.find((p) => p.isDefault)?.id ??
-        profile?.personas?.[0]?.id ??
-        null;
-      if (defaultPersonaId) {
-        isCheckedIn = await getMyCheckinStatus({
-          data: { token: params.slug, personaId: defaultPersonaId },
-        });
-        myPersonaName =
-          profile?.personas?.find((p) => p.id === defaultPersonaId)
-            ?.displayName ?? null;
+        personas.find((p) => p.isDefault)?.id ?? personas[0]?.id ?? null;
+      if (personas.length > 0) {
+        const statuses = await Promise.all(
+          personas.map((p) =>
+            getMyCheckinStatus({
+              data: { token: params.slug, personaId: p.id },
+            }),
+          ),
+        );
+        checkedInPersonaIds = personas
+          .filter((_, i) => statuses[i])
+          .map((p) => p.id);
       }
       myUrlId = profile?.urlId ?? null;
     }
@@ -71,9 +85,9 @@ export const Route = createFileRoute("/e/$slug")({
       token: params.slug,
       isLoggedIn: !!session?.user,
       defaultPersonaId,
-      myPersonaName,
+      personas,
+      checkedInPersonaIds,
       myUrlId,
-      isCheckedIn,
       isHost,
     };
   },
@@ -86,12 +100,13 @@ function EventPage() {
     token,
     isLoggedIn,
     defaultPersonaId,
-    myPersonaName,
+    personas,
+    checkedInPersonaIds,
     myUrlId,
-    isCheckedIn,
     isHost,
   } = Route.useLoaderData();
   const router = useRouter();
+  const [selectedPersonaId, setSelectedPersonaId] = useState(defaultPersonaId);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [checkinError, setCheckinError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -99,13 +114,19 @@ function EventPage() {
   const [qrOpen, setQrOpen] = useState(false);
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
+  const isCheckedIn = selectedPersonaId
+    ? checkedInPersonaIds.includes(selectedPersonaId)
+    : false;
+  const myPersonaName =
+    personas.find((p) => p.id === selectedPersonaId)?.displayName ?? null;
+
   const handleCheckin = useCallback(async () => {
-    if (!defaultPersonaId || !data || isCheckedIn) return;
+    if (!selectedPersonaId || !data || isCheckedIn) return;
     setIsCheckingIn(true);
     setCheckinError(null);
     try {
       await checkinToEvent({
-        data: { token, personaId: defaultPersonaId },
+        data: { token, personaId: selectedPersonaId },
       });
       await router.navigate({
         to: "/e/$slug",
@@ -119,15 +140,15 @@ function EventPage() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [defaultPersonaId, data, isCheckedIn, router, token]);
+  }, [selectedPersonaId, data, isCheckedIn, router, token]);
 
   const handleCancel = useCallback(async () => {
-    if (!defaultPersonaId || !data) return;
+    if (!selectedPersonaId || !data) return;
     setIsCancelling(true);
     setCancelError(null);
     try {
       await cancelCheckin({
-        data: { token, personaId: defaultPersonaId },
+        data: { token, personaId: selectedPersonaId },
       });
       await router.navigate({
         to: "/e/$slug",
@@ -141,7 +162,7 @@ function EventPage() {
     } finally {
       setIsCancelling(false);
     }
-  }, [defaultPersonaId, data, router, token]);
+  }, [selectedPersonaId, data, router, token]);
 
   if (!data) {
     return (
@@ -214,8 +235,24 @@ function EventPage() {
 
         {/* 参加ボタン / ログイン誘導 */}
         {isLoggedIn ? (
-          defaultPersonaId ? (
+          defaultPersonaId && selectedPersonaId ? (
             <div className="flex flex-col gap-2">
+              {personas.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">なふだを選択：</span>
+                  <PersonaSwitcher
+                    personas={personas}
+                    currentPersonaId={selectedPersonaId}
+                    onSwitch={setSelectedPersonaId}
+                    onCreateNew={() =>
+                      router.navigate({
+                        to: "/profile/wizard",
+                        search: { redirect: `/e/${token}` },
+                      })
+                    }
+                  />
+                </div>
+              )}
               {isCheckedIn ? (
                 <>
                   <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">

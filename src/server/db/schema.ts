@@ -95,6 +95,7 @@ export const events = pgTable('events', {
   showTime: boolean('show_time').notNull().default(false),
   description: text('description'),
   hostUserId: text('host_user_id'),
+  hostPersonaId: uuid('host_persona_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
