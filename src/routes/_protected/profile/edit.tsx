@@ -147,11 +147,9 @@ function EditPage() {
   if (!defaultPersona || !urlId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
-        <p className="text-sm text-gray-500">
-          プロフィールがまだ設定されていません
-        </p>
+        <p className="text-sm text-gray-500">なふだがまだ設定されていません</p>
         <Button onClick={() => navigate({ to: "/profile/wizard" })} size="lg">
-          プロフィールを作成する
+          なふだを作成する
         </Button>
       </div>
     );

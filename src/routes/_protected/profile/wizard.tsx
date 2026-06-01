@@ -278,7 +278,7 @@ function WizardPage() {
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">設定完了！</h2>
               <p className="text-sm text-gray-500">
-                プロフィールを作成して始めましょう。
+                なふだを作成して始めましょう。
               </p>
               {submitError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -295,7 +295,7 @@ function WizardPage() {
                   戻る
                 </Button>
                 <Button type="submit" className="flex-1">
-                  プロフィールを作成
+                  なふだを作成
                 </Button>
               </div>
             </div>

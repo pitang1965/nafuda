@@ -16,6 +16,7 @@ import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
 import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
 import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
+import { Route as ESlugEditRouteImport } from './routes/e/$slug_.edit'
 import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
 import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
 import { Route as ProtectedEventsNewRouteImport } from './routes/_protected/events/new'
@@ -55,6 +56,11 @@ const ProtectedEventsIndexRoute = ProtectedEventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ESlugEditRoute = ESlugEditRouteImport.update({
+  id: '/e/$slug_/edit',
+  path: '/e/$slug/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedProfileWizardRoute = ProtectedProfileWizardRouteImport.update({
   id: '/profile/wizard',
   path: '/profile/wizard',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
+  '/e/$slug/edit': typeof ESlugEditRoute
   '/events/': typeof ProtectedEventsIndexRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
   '/profile/wizard': typeof ProtectedProfileWizardRoute
+  '/e/$slug/edit': typeof ESlugEditRoute
   '/events': typeof ProtectedEventsIndexRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_protected/events/new': typeof ProtectedEventsNewRoute
   '/_protected/profile/edit': typeof ProtectedProfileEditRoute
   '/_protected/profile/wizard': typeof ProtectedProfileWizardRoute
+  '/e/$slug_/edit': typeof ESlugEditRoute
   '/_protected/events/': typeof ProtectedEventsIndexRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/events/new'
     | '/profile/edit'
     | '/profile/wizard'
+    | '/e/$slug/edit'
     | '/events/'
     | '/u/$urlId/p/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/events/new'
     | '/profile/edit'
     | '/profile/wizard'
+    | '/e/$slug/edit'
     | '/events'
     | '/u/$urlId/p/$token'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_protected/events/new'
     | '/_protected/profile/edit'
     | '/_protected/profile/wizard'
+    | '/e/$slug_/edit'
     | '/_protected/events/'
     | '/u/$urlId/p/$token'
   fileRoutesById: FileRoutesById
@@ -159,6 +171,7 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   ESlugRoute: typeof ESlugRoute
+  ESlugEditRoute: typeof ESlugEditRoute
   UUrlIdPTokenRoute: typeof UUrlIdPTokenRoute
 }
 
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/events/'
       preLoaderRoute: typeof ProtectedEventsIndexRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/e/$slug_/edit': {
+      id: '/e/$slug_/edit'
+      path: '/e/$slug/edit'
+      fullPath: '/e/$slug/edit'
+      preLoaderRoute: typeof ESlugEditRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_protected/profile/wizard': {
       id: '/_protected/profile/wizard'
@@ -271,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   ESlugRoute: ESlugRoute,
+  ESlugEditRoute: ESlugEditRoute,
   UUrlIdPTokenRoute: UUrlIdPTokenRoute,
 }
 export const routeTree = rootRouteImport

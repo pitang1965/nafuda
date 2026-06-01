@@ -87,18 +87,21 @@ export const snsLinks = pgTable('sns_links', {
 // Events table: self-created by first check-in (no admin management)
 export const events = pgTable('events', {
   id: uuid('id').primaryKey().defaultRandom(),
-  slug: text('slug').notNull().unique(),         // URL-safe identifier 例: "animejapan-20260405"
-  name: text('name').notNull(),                  // イベント名（表示用）
-  venueName: text('venue_name').notNull(),        // 会場名
+  slug: text('slug').notNull().unique(),              // 重複検出用内部識別子 例: "animejapan-20260405"
+  shareToken: text('share_token').notNull().unique(), // 公開URL用ランダムトークン（推測不可）
+  name: text('name').notNull(),
+  venueName: text('venue_name').notNull(),
   eventDate: timestamp('event_date', { withTimezone: true }).notNull(),
-  hostUserId: text('host_user_id'),              // Better Auth user.id of creator (nullable for legacy rows)
+  showTime: boolean('show_time').notNull().default(false),
+  description: text('description'),
+  hostUserId: text('host_user_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 // Event check-ins table: one per persona per event (active = checkedOutAt IS NULL)
 export const eventCheckins = pgTable('event_checkins', {
   id: uuid('id').primaryKey().defaultRandom(),
-  eventId: uuid('event_id').notNull().references(() => events.id),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   personaId: uuid('persona_id').notNull().references(() => personas.id),
   userId: text('user_id').notNull(),             // Better Auth user.id（認証チェック用）
   // GPS: point mode 'xy' → { x: longitude, y: latitude }。ユーザーが拒否した場合 null
@@ -117,7 +120,7 @@ export const connections = pgTable('connections', {
   toPersonaId: uuid('to_persona_id').notNull().references(() => personas.id),
   fromUserId: text('from_user_id').notNull(),  // Better Auth user.id（認証チェック用）
   // イベントコンテキスト（チェックイン中でない場合は null）
-  eventId: uuid('event_id').references(() => events.id),
+  eventId: uuid('event_id').references(() => events.id, { onDelete: 'set null' }),
   eventName: text('event_name'),    // 非正規化: JOIN不要で表示できるよう保存
   venueName: text('venue_name'),    // 非正規化
   eventDate: timestamp('event_date', { withTimezone: true }),

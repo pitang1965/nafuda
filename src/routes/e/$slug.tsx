@@ -13,8 +13,6 @@ import { getOwnProfile } from "../../server/functions/profile";
 import { ParticipantCard } from "../../components/ParticipantCard";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 
-// Public route — no auth required (OSHI-04, OSHI-05)
-// Returns null when not authenticated instead of throwing redirect
 const getOptionalSession = createServerFn({ method: "GET" }).handler(
   async () => {
     const request = getRequest();
@@ -22,10 +20,28 @@ const getOptionalSession = createServerFn({ method: "GET" }).handler(
   },
 );
 
+function formatEventDate(date: Date | string, showTime: boolean): string {
+  const d = new Date(date);
+  if (showTime) {
+    return d.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return d.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export const Route = createFileRoute("/e/$slug")({
   loader: async ({ params }) => {
     const [data, session] = await Promise.all([
-      getEventParticipants({ data: { slug: params.slug } }),
+      getEventParticipants({ data: { token: params.slug } }),
       getOptionalSession(),
     ]);
     let defaultPersonaId: string | null = null;
@@ -40,7 +56,7 @@ export const Route = createFileRoute("/e/$slug")({
         null;
       if (defaultPersonaId) {
         isCheckedIn = await getMyCheckinStatus({
-          data: { slug: params.slug, personaId: defaultPersonaId },
+          data: { token: params.slug, personaId: defaultPersonaId },
         });
         myPersonaName =
           profile?.personas?.find((p) => p.id === defaultPersonaId)
@@ -48,13 +64,16 @@ export const Route = createFileRoute("/e/$slug")({
       }
       myUrlId = profile?.urlId ?? null;
     }
+    const isHost = !!session?.user && data?.event?.hostUserId === session.user.id;
     return {
       data,
+      token: params.slug,
       isLoggedIn: !!session?.user,
       defaultPersonaId,
       myPersonaName,
       myUrlId,
       isCheckedIn,
+      isHost,
     };
   },
   component: EventPage,
@@ -63,11 +82,13 @@ export const Route = createFileRoute("/e/$slug")({
 function EventPage() {
   const {
     data,
+    token,
     isLoggedIn,
     defaultPersonaId,
     myPersonaName,
     myUrlId,
     isCheckedIn,
+    isHost,
   } = Route.useLoaderData();
   const router = useRouter();
   const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -83,11 +104,11 @@ function EventPage() {
     setCheckinError(null);
     try {
       await checkinToEvent({
-        data: { slug: data.event.slug, personaId: defaultPersonaId },
+        data: { token, personaId: defaultPersonaId },
       });
       await router.navigate({
         to: "/e/$slug",
-        params: { slug: data.event.slug },
+        params: { slug: token },
         replace: true,
       });
     } catch (err) {
@@ -97,7 +118,7 @@ function EventPage() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [defaultPersonaId, data, isCheckedIn, router]);
+  }, [defaultPersonaId, data, isCheckedIn, router, token]);
 
   const handleCancel = useCallback(async () => {
     if (!defaultPersonaId || !data) return;
@@ -105,11 +126,11 @@ function EventPage() {
     setCancelError(null);
     try {
       await cancelCheckin({
-        data: { slug: data.event.slug, personaId: defaultPersonaId },
+        data: { token, personaId: defaultPersonaId },
       });
       await router.navigate({
         to: "/e/$slug",
-        params: { slug: data.event.slug },
+        params: { slug: token },
         replace: true,
       });
     } catch (err) {
@@ -119,7 +140,7 @@ function EventPage() {
     } finally {
       setIsCancelling(false);
     }
-  }, [defaultPersonaId, data, router]);
+  }, [defaultPersonaId, data, router, token]);
 
   if (!data) {
     return (
@@ -143,20 +164,20 @@ function EventPage() {
           className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="戻る"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold truncate">{data.event.name}</h1>
+        <h1 className="text-lg font-bold truncate flex-1">{data.event.name}</h1>
+        {isHost && (
+          <Link
+            to="/e/$slug/edit"
+            params={{ slug: token }}
+            className="text-sm text-gray-500 underline shrink-0"
+          >
+            編集
+          </Link>
+        )}
       </div>
 
       <div className="p-6 max-w-2xl mx-auto w-full flex flex-col gap-6">
@@ -164,12 +185,13 @@ function EventPage() {
         <div className="flex flex-col gap-1">
           <p className="text-sm text-gray-500">{data.event.venueName}</p>
           <p className="text-xs text-gray-400">
-            {new Date(data.event.eventDate).toLocaleDateString("ja-JP", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {formatEventDate(data.event.eventDate, data.event.showTime)}
           </p>
+          {data.event.description && (
+            <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">
+              {data.event.description}
+            </p>
+          )}
         </div>
 
         {/* QRコード */}
@@ -197,9 +219,7 @@ function EventPage() {
                     {isCancelling ? "取り消し中..." : "参加を取り消す"}
                   </button>
                   {cancelError && (
-                    <p className="text-xs text-red-500 text-center">
-                      {cancelError}
-                    </p>
+                    <p className="text-xs text-red-500 text-center">{cancelError}</p>
                   )}
                 </>
               ) : (
@@ -212,9 +232,7 @@ function EventPage() {
                 </button>
               )}
               {checkinError && (
-                <p className="text-xs text-red-500 text-center">
-                  {checkinError}
-                </p>
+                <p className="text-xs text-red-500 text-center">{checkinError}</p>
               )}
             </div>
           ) : (
@@ -222,7 +240,7 @@ function EventPage() {
               to="/profile/wizard"
               className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
             >
-              プロフィールを設定して参加する
+              なふだを作って参加する
             </Link>
           )
         ) : (
@@ -239,13 +257,12 @@ function EventPage() {
           {data.participants.length}人が参加
         </p>
 
-        {/* 未ログイン時の注意書き（OSHI-05） */}
         {!isLoggedIn && data.participants.length > 0 && (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
             <Link to="/login" className="font-semibold underline">
               ログイン
             </Link>
-            するとプロフィールを閲覧できます
+            するとなふだを閲覧できます
           </p>
         )}
 
@@ -257,7 +274,6 @@ function EventPage() {
                 key={p.checkinId}
                 displayName={p.displayName}
                 avatarUrl={p.avatarUrl}
-                // OSHI-05: ログイン済みの場合のみ profileHref を渡す
                 profileHref={
                   isLoggedIn && p.urlId && p.urlId !== myUrlId
                     ? `/u/${p.urlId}/p/${p.shareToken}`

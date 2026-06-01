@@ -99,7 +99,7 @@ function EmptyState() {
         まだつながりがありません
       </p>
       <p className="text-xs text-gray-400 text-center">
-        相手のQRコードを読み取り、プロフィールページで「つながる」を押してみましょう
+        相手のQRコードを読み取り、なふだページで「つながる」を押してみましょう
       </p>
     </div>
   )

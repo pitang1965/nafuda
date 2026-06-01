@@ -6,20 +6,30 @@ import { db } from '../db/client'
 import { events, eventCheckins, personas, urlIds } from '../db/schema'
 import { auth } from '../auth'
 
-// Check in to an event by slug (event must already exist)
-// Auto-checkouts from previous active checkin for the persona
+function generateShareToken(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function buildEventDate(eventDate: string, showTime: boolean, eventTime?: string): Date {
+  if (showTime && eventTime) {
+    return new Date(`${eventDate}T${eventTime}:00`)
+  }
+  return new Date(eventDate)
+}
+
+// Check in to an existing event by shareToken
 export const checkinToEvent = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
-    slug: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-]+$/, 'スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます'),
+    token: z.string(),
     personaId: z.uuid(),
   }))
   .handler(async ({ data }) => {
-    // 1. 認証チェック
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 2. personaId の owner が session.user.id か確認（他人のペルソナへのチェックイン防止）
     const persona = await db.select({ id: personas.id, userId: personas.userId })
       .from(personas)
       .where(eq(personas.id, data.personaId))
@@ -27,7 +37,6 @@ export const checkinToEvent = createServerFn({ method: 'POST' })
     if (!persona[0]) throw new Error('Persona not found')
     if (persona[0].userId !== session.user.id) throw new Error('Forbidden: persona does not belong to current user')
 
-    // 3. 既存アクティブチェックイン（checkedOutAt IS NULL）があれば auto-checkout
     await db.update(eventCheckins)
       .set({ checkedOutAt: new Date() })
       .where(and(
@@ -35,15 +44,12 @@ export const checkinToEvent = createServerFn({ method: 'POST' })
         isNull(eventCheckins.checkedOutAt)
       ))
 
-    // 4. slug で events を SELECT — 存在しなければエラー
     const eventRow = await db.select()
       .from(events)
-      .where(eq(events.slug, data.slug))
+      .where(eq(events.shareToken, data.token))
       .limit(1)
-
     if (!eventRow[0]) throw new Error('Event not found')
 
-    // 5. event_checkins に INSERT して新レコードを返す
     const newCheckin = await db.insert(eventCheckins)
       .values({
         eventId: eventRow[0].id,
@@ -57,23 +63,23 @@ export const checkinToEvent = createServerFn({ method: 'POST' })
   })
 
 // Create event and check in (used from the event creation form)
-// Slug is auto-generated from eventName + eventDate
 export const createEventAndCheckin = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     slug: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-]+$/, 'スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます'),
     eventName: z.string().min(1).max(100),
     venueName: z.string().min(1).max(100),
-    eventDate: z.string().datetime(),
+    eventDate: z.string(),
+    eventTime: z.string().optional(),
+    showTime: z.boolean(),
+    description: z.string().max(1000).optional().nullable(),
     personaId: z.uuid(),
     gpsCoordinates: z.object({ x: z.number(), y: z.number() }).optional(),
   }))
   .handler(async ({ data }) => {
-    // 1. 認証チェック
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 2. personaId の owner が session.user.id か確認（他人のペルソナへのチェックイン防止）
     const persona = await db.select({ id: personas.id, userId: personas.userId })
       .from(personas)
       .where(eq(personas.id, data.personaId))
@@ -81,7 +87,6 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
     if (!persona[0]) throw new Error('Persona not found')
     if (persona[0].userId !== session.user.id) throw new Error('Forbidden: persona does not belong to current user')
 
-    // 3. 既存アクティブチェックイン（checkedOutAt IS NULL）があれば auto-checkout
     await db.update(eventCheckins)
       .set({ checkedOutAt: new Date() })
       .where(and(
@@ -89,7 +94,6 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
         isNull(eventCheckins.checkedOutAt)
       ))
 
-    // 4. slug で events を SELECT — 存在しなければ INSERT（slug 衝突時は既存を使用）
     let eventRow = await db.select()
       .from(events)
       .where(eq(events.slug, data.slug))
@@ -100,15 +104,17 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
         const inserted = await db.insert(events)
           .values({
             slug: data.slug,
+            shareToken: generateShareToken(),
             name: data.eventName,
             venueName: data.venueName,
-            eventDate: new Date(data.eventDate),
+            eventDate: buildEventDate(data.eventDate, data.showTime, data.eventTime),
+            showTime: data.showTime,
+            description: data.description ?? null,
             hostUserId: session.user.id,
           })
           .returning()
         eventRow = inserted
       } catch (err: unknown) {
-        // 23505 = unique_violation (slug collision): fetch the existing record
         if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
           eventRow = await db.select()
             .from(events)
@@ -122,7 +128,6 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
 
     if (!eventRow[0]) throw new Error('Failed to create or retrieve event')
 
-    // 5. event_checkins に INSERT して新レコードを返す
     const newCheckin = await db.insert(eventCheckins)
       .values({
         eventId: eventRow[0].id,
@@ -139,12 +144,10 @@ export const createEventAndCheckin = createServerFn({ method: 'POST' })
 export const checkoutFromEvent = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ checkinId: z.uuid() }))
   .handler(async ({ data }) => {
-    // 1. 認証チェック
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 2. checkinId で SELECT して userId が session.user.id か確認
     const checkin = await db.select({ id: eventCheckins.id, userId: eventCheckins.userId })
       .from(eventCheckins)
       .where(eq(eventCheckins.id, data.checkinId))
@@ -152,7 +155,6 @@ export const checkoutFromEvent = createServerFn({ method: 'POST' })
     if (!checkin[0]) throw new Error('Checkin not found')
     if (checkin[0].userId !== session.user.id) throw new Error('Forbidden: checkin does not belong to current user')
 
-    // 3. checkedOutAt = new Date() で UPDATE
     const updated = await db.update(eventCheckins)
       .set({ checkedOutAt: new Date() })
       .where(eq(eventCheckins.id, data.checkinId))
@@ -161,17 +163,14 @@ export const checkoutFromEvent = createServerFn({ method: 'POST' })
     return updated[0]
   })
 
-// Get active checkin for current user's persona (NULL checkedOutAt = active)
+// Get active checkin for current user's persona
 export const getActiveCheckin = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
-    // 1. 認証チェック
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) throw new Error('Unauthorized')
 
-    // 2. WHERE personaId = ? AND checkedOutAt IS NULL LIMIT 1
-    // 3. JOIN events テーブルでイベント名・会場名も返す（UI表示用）
     const result = await db
       .select({
         checkinId: eventCheckins.id,
@@ -184,7 +183,9 @@ export const getActiveCheckin = createServerFn({ method: 'GET' })
         eventName: events.name,
         venueName: events.venueName,
         eventSlug: events.slug,
+        eventToken: events.shareToken,
         eventDate: events.eventDate,
+        showTime: events.showTime,
       })
       .from(eventCheckins)
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
@@ -194,27 +195,19 @@ export const getActiveCheckin = createServerFn({ method: 'GET' })
       ))
       .limit(1)
 
-    // 4. 存在しなければ null を返す
     return result[0] ?? null
   })
 
-// Get event participants — public endpoint (no auth required)
-// CRITICAL: dojinReject filter MUST be in SQL WHERE clause (never client-side)
-// Returns ALL checkin records (no checkedOutAt filter) — shows everyone who ever participated
+// Get event participants by shareToken — public endpoint (no auth required)
 export const getEventParticipants = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ slug: z.string() }))
+  .inputValidator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
-    // 1. slug で events を SELECT — 存在しなければ null を返す
     const eventRow = await db.select()
       .from(events)
-      .where(eq(events.slug, data.slug))
+      .where(eq(events.shareToken, data.token))
       .limit(1)
     if (!eventRow[0]) return null
 
-    // leftJoin で urlIds が未設定のユーザーも表示対象に含める
-    // dojinReject=true のペルソナのみ除外（OSHI-04 要件）
-    // isPublic フィルタは外す — チェックインはイベント参加の意思表示であり公開を前提とする
-    // checkedInAt DESC でソートし、アプリ層で personaId 重複を除去（再チェックイン対策）
     const rows = await db
       .select({
         checkinId: eventCheckins.id,
@@ -233,7 +226,6 @@ export const getEventParticipants = createServerFn({ method: 'POST' })
       ))
       .orderBy(desc(eventCheckins.checkedInAt))
 
-    // 同一ペルソナの重複を除去（最新チェックインを代表として採用）
     const seen = new Set<string>()
     const participants = rows.filter((r) => {
       if (seen.has(r.personaId)) return false
@@ -244,9 +236,9 @@ export const getEventParticipants = createServerFn({ method: 'POST' })
     return { event: eventRow[0], participants }
   })
 
-// Check if the current user's persona has any checkin for this event (ignores dojinReject)
+// Check if the current user's persona has any checkin for this event
 export const getMyCheckinStatus = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ slug: z.string(), personaId: z.uuid() }))
+  .inputValidator(z.object({ token: z.string(), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
@@ -254,7 +246,7 @@ export const getMyCheckinStatus = createServerFn({ method: 'POST' })
 
     const eventRow = await db.select({ id: events.id })
       .from(events)
-      .where(eq(events.slug, data.slug))
+      .where(eq(events.shareToken, data.token))
       .limit(1)
     if (!eventRow[0]) return false
 
@@ -270,7 +262,7 @@ export const getMyCheckinStatus = createServerFn({ method: 'POST' })
 
 // Cancel participation (delete all checkin records for this event + persona)
 export const cancelCheckin = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ slug: z.string().min(1), personaId: z.uuid() }))
+  .inputValidator(z.object({ token: z.string().min(1), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
@@ -284,7 +276,7 @@ export const cancelCheckin = createServerFn({ method: 'POST' })
 
     const eventRow = await db.select({ id: events.id })
       .from(events)
-      .where(eq(events.slug, data.slug))
+      .where(eq(events.shareToken, data.token))
       .limit(1)
     if (!eventRow[0]) throw new Error('Event not found')
 
@@ -297,6 +289,61 @@ export const cancelCheckin = createServerFn({ method: 'POST' })
     return { success: true }
   })
 
+// Update event fields (host only, slug and shareToken are immutable)
+export const updateEvent = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({
+    token: z.string(),
+    name: z.string().min(1).max(100),
+    venueName: z.string().min(1).max(100),
+    eventDate: z.string(),
+    eventTime: z.string().optional(),
+    showTime: z.boolean(),
+    description: z.string().max(1000).optional().nullable(),
+  }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) throw new Error('Unauthorized')
+
+    const eventRow = await db.select({ id: events.id, hostUserId: events.hostUserId })
+      .from(events)
+      .where(eq(events.shareToken, data.token))
+      .limit(1)
+    if (!eventRow[0]) throw new Error('Event not found')
+    if (eventRow[0].hostUserId !== session.user.id) throw new Error('Forbidden: only the host can edit this event')
+
+    await db.update(events)
+      .set({
+        name: data.name,
+        venueName: data.venueName,
+        eventDate: buildEventDate(data.eventDate, data.showTime, data.eventTime),
+        showTime: data.showTime,
+        description: data.description ?? null,
+      })
+      .where(eq(events.id, eventRow[0].id))
+
+    return { success: true }
+  })
+
+// Delete event (host only) — CASCADE deletes event_checkins automatically
+export const deleteEvent = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ token: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) throw new Error('Unauthorized')
+
+    const eventRow = await db.select({ id: events.id, hostUserId: events.hostUserId })
+      .from(events)
+      .where(eq(events.shareToken, data.token))
+      .limit(1)
+    if (!eventRow[0]) throw new Error('Event not found')
+    if (eventRow[0].hostUserId !== session.user.id) throw new Error('Forbidden: only the host can delete this event')
+
+    await db.delete(events).where(eq(events.id, eventRow[0].id))
+    return { success: true }
+  })
+
 // Get events created by or participated in by the current user
 export const getMyEvents = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -306,19 +353,20 @@ export const getMyEvents = createServerFn({ method: 'GET' })
 
     const userId = session.user.id
 
-    // Events created by this user
     const hostedEvents = await db.select()
       .from(events)
       .where(eq(events.hostUserId, userId))
 
-    // Events participated in but not hosted (deduplicated by event)
     const participatedRows = await db
       .selectDistinctOn([events.id], {
         id: events.id,
         slug: events.slug,
+        shareToken: events.shareToken,
         name: events.name,
         venueName: events.venueName,
         eventDate: events.eventDate,
+        showTime: events.showTime,
+        description: events.description,
         hostUserId: events.hostUserId,
         createdAt: events.createdAt,
         checkedInAt: eventCheckins.checkedInAt,

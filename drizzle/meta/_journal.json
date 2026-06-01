@@ -57,6 +57,13 @@
       "when": 1779955616679,
       "tag": "0007_easy_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780298058030,
+      "tag": "0008_famous_loki",
+      "breakpoints": true
     }
   ]
 }

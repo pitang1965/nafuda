@@ -1,45 +1,47 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { getMyEvents } from '../../../server/functions/event'
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { getMyEvents } from "../../../server/functions/event";
 
-export const Route = createFileRoute('/_protected/events/')({
+export const Route = createFileRoute("/_protected/events/")({
   loader: async () => {
-    return await getMyEvents()
+    return await getMyEvents();
   },
   component: MyEventsPage,
-})
+});
 
 function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  return new Date(date).toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 interface EventCardProps {
-  name: string
-  venueName: string
-  eventDate: Date | string
-  slug: string
+  name: string;
+  venueName: string;
+  eventDate: Date | string;
+  shareToken: string;
 }
 
-function EventCard({ name, venueName, eventDate, slug }: EventCardProps) {
+function EventCard({ name, venueName, eventDate, shareToken }: EventCardProps) {
   return (
     <Link
       to="/e/$slug"
-      params={{ slug }}
+      params={{ slug: shareToken }}
       className="block rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow"
     >
       <p className="font-semibold leading-snug">{name}</p>
       <p className="text-sm text-muted-foreground mt-0.5">{venueName}</p>
-      <p className="text-xs text-muted-foreground mt-1">{formatDate(eventDate)}</p>
+      <p className="text-xs text-muted-foreground mt-1">
+        {formatDate(eventDate)}
+      </p>
     </Link>
-  )
+  );
 }
 
 function MyEventsPage() {
-  const { hostedEvents, participatedEvents } = Route.useLoaderData()
-  const router = useRouter()
+  const { hostedEvents, participatedEvents } = Route.useLoaderData();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -50,7 +52,18 @@ function MyEventsPage() {
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="戻る"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
           <h1 className="text-lg font-bold">マイイベント</h1>
         </div>
@@ -78,7 +91,7 @@ function MyEventsPage() {
                 name={event.name}
                 venueName={event.venueName}
                 eventDate={event.eventDate}
-                slug={event.slug}
+                shareToken={event.shareToken}
               />
             ))
           )}
@@ -99,12 +112,12 @@ function MyEventsPage() {
                 name={event.name}
                 venueName={event.venueName}
                 eventDate={event.eventDate}
-                slug={event.slug}
+                shareToken={event.shareToken}
               />
             ))
           )}
         </section>
       </div>
     </div>
-  )
+  );
 }
