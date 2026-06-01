@@ -179,174 +179,180 @@ function EventPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="p-4 border-b flex items-center gap-3">
-        <button
-          onClick={() => router.navigate({ to: "/" })}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="戻る"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    <div className="min-h-screen bg-gray-100">
+      <div className="mx-auto sm:max-w-sm w-full min-h-screen bg-white flex flex-col sm:shadow-sm">
+        <div className="p-4 border-b flex items-center gap-3">
+          <button
+            onClick={() => router.navigate({ to: "/" })}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="戻る"
           >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <h1 className="text-lg font-bold truncate flex-1">{data.event.name}</h1>
-        {isHost && (
-          <Link
-            to="/e/$slug/edit"
-            params={{ slug: token }}
-            className="text-sm text-gray-500 underline shrink-0"
-          >
-            編集
-          </Link>
-        )}
-      </div>
-
-      <div className="p-6 max-w-2xl mx-auto w-full flex flex-col gap-6">
-        {/* イベント情報ヘッダー */}
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-gray-500">{data.event.venueName}</p>
-          <p className="text-xs text-gray-400">
-            {formatEventDate(data.event.eventDate, data.event.showTime)}
-          </p>
-          {data.event.description && (
-            <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">
-              {data.event.description}
-            </p>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-bold truncate flex-1">
+            {data.event.name}
+          </h1>
+          {isHost && (
+            <Link
+              to="/e/$slug/edit"
+              params={{ slug: token }}
+              className="text-sm text-gray-500 underline shrink-0"
+            >
+              編集
+            </Link>
           )}
         </div>
 
-        {/* QRコード */}
-        <button
-          onClick={() => setQrOpen(true)}
-          className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
-        >
-          QRコードを表示
-        </button>
+        <div className="p-6 flex flex-col gap-6">
+          {/* イベント情報ヘッダー */}
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-gray-500">{data.event.venueName}</p>
+            <p className="text-xs text-gray-400">
+              {formatEventDate(data.event.eventDate, data.event.showTime)}
+            </p>
+            {data.event.description && (
+              <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">
+                {data.event.description}
+              </p>
+            )}
+          </div>
 
-        {/* 参加ボタン / ログイン誘導 */}
-        {isLoggedIn ? (
-          defaultPersonaId && selectedPersonaId ? (
-            <div className="flex flex-col gap-2">
-              {personas.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">なふだを選択：</span>
-                  <PersonaSwitcher
-                    personas={personas}
-                    currentPersonaId={selectedPersonaId}
-                    onSwitch={setSelectedPersonaId}
-                    onCreateNew={() =>
-                      router.navigate({
-                        to: "/profile/wizard",
-                        search: { redirect: `/e/${token}` },
-                      })
-                    }
-                  />
-                </div>
-              )}
-              {isCheckedIn ? (
-                <>
-                  <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">
-                    参加済み{myPersonaName ? `（${myPersonaName}）` : ""}
+          {/* QRコード */}
+          <button
+            onClick={() => setQrOpen(true)}
+            className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            QRコードを表示
+          </button>
+
+          {/* 参加ボタン / ログイン誘導 */}
+          {isLoggedIn ? (
+            defaultPersonaId && selectedPersonaId ? (
+              <div className="flex flex-col gap-2">
+                {personas.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">
+                      なふだを選択：
+                    </span>
+                    <PersonaSwitcher
+                      personas={personas}
+                      currentPersonaId={selectedPersonaId}
+                      onSwitch={setSelectedPersonaId}
+                      onCreateNew={() =>
+                        router.navigate({
+                          to: "/profile/wizard",
+                          search: { redirect: `/e/${token}` },
+                        })
+                      }
+                    />
                   </div>
+                )}
+                {isCheckedIn ? (
+                  <>
+                    <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">
+                      参加済み{myPersonaName ? `（${myPersonaName}）` : ""}
+                    </div>
+                    <button
+                      onClick={handleCancel}
+                      disabled={isCancelling}
+                      className="w-full py-2 rounded-xl border border-red-200 text-red-500 text-xs font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isCancelling ? "取り消し中..." : "参加を取り消す"}
+                    </button>
+                    {cancelError && (
+                      <p className="text-xs text-red-500 text-center">
+                        {cancelError}
+                      </p>
+                    )}
+                  </>
+                ) : (
                   <button
-                    onClick={handleCancel}
-                    disabled={isCancelling}
-                    className="w-full py-2 rounded-xl border border-red-200 text-red-500 text-xs font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    onClick={handleCheckin}
+                    disabled={isCheckingIn}
+                    className="w-full py-3 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {isCancelling ? "取り消し中..." : "参加を取り消す"}
+                    {isCheckingIn ? "参加中..." : "参加する"}
                   </button>
-                  {cancelError && (
-                    <p className="text-xs text-red-500 text-center">
-                      {cancelError}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <button
-                  onClick={handleCheckin}
-                  disabled={isCheckingIn}
-                  className="w-full py-3 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isCheckingIn ? "参加中..." : "参加する"}
-                </button>
-              )}
-              {checkinError && (
-                <p className="text-xs text-red-500 text-center">
-                  {checkinError}
-                </p>
-              )}
-            </div>
+                )}
+                {checkinError && (
+                  <p className="text-xs text-red-500 text-center">
+                    {checkinError}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/profile/wizard"
+                search={{ redirect: `/e/${token}` }}
+                className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
+              >
+                なふだを作って参加する
+              </Link>
+            )
           ) : (
             <Link
-              to="/profile/wizard"
+              to="/login"
               search={{ redirect: `/e/${token}` }}
-              className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
+              className="block w-full py-3 rounded-xl bg-black text-white text-center text-sm font-semibold hover:bg-gray-800 transition-colors"
             >
-              なふだを作って参加する
+              ログインして参加する
             </Link>
-          )
-        ) : (
-          <Link
-            to="/login"
-            search={{ redirect: `/e/${token}` }}
-            className="block w-full py-3 rounded-xl bg-black text-white text-center text-sm font-semibold hover:bg-gray-800 transition-colors"
-          >
-            ログインして参加する
-          </Link>
-        )}
+          )}
 
-        {/* 参加者カウント */}
-        <p className="text-sm text-gray-600 font-medium">
-          {data.participants.length}人が参加
-        </p>
-
-        {!isLoggedIn && data.participants.length > 0 && (
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-            <Link to="/login" className="font-semibold underline">
-              ログイン
-            </Link>
-            するとなふだを閲覧できます
+          {/* 参加者カウント */}
+          <p className="text-sm text-gray-600 font-medium">
+            {data.participants.length}人が参加
           </p>
-        )}
 
-        {/* 参加者グリッド */}
-        {data.participants.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {data.participants.map((p) => (
-              <ParticipantCard
-                key={p.checkinId}
-                displayName={p.displayName}
-                avatarUrl={p.avatarUrl}
-                profileHref={
-                  isLoggedIn && p.urlId && p.urlId !== myUrlId
-                    ? `/u/${p.urlId}/p/${p.shareToken}`
-                    : undefined
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400 text-center py-8">
-            まだ参加者はいません
-          </p>
-        )}
+          {!isLoggedIn && data.participants.length > 0 && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <Link to="/login" className="font-semibold underline">
+                ログイン
+              </Link>
+              するとなふだを閲覧できます
+            </p>
+          )}
 
-        <QRBottomSheet
-          isOpen={qrOpen}
-          onClose={() => setQrOpen(false)}
-          url={currentUrl}
-          label={`${data.event.name} のQRコード`}
-        />
+          {/* 参加者グリッド */}
+          {data.participants.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {data.participants.map((p) => (
+                <ParticipantCard
+                  key={p.checkinId}
+                  displayName={p.displayName}
+                  avatarUrl={p.avatarUrl}
+                  profileHref={
+                    isLoggedIn && p.urlId && p.urlId !== myUrlId
+                      ? `/u/${p.urlId}/p/${p.shareToken}`
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-8">
+              まだ参加者はいません
+            </p>
+          )}
+
+          <QRBottomSheet
+            isOpen={qrOpen}
+            onClose={() => setQrOpen(false)}
+            url={currentUrl}
+            label={`${data.event.name} のQRコード`}
+          />
+        </div>
       </div>
     </div>
   );
