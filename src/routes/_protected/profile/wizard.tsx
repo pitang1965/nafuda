@@ -39,6 +39,7 @@ type WizardForm = z.infer<typeof WizardSchema>;
 function WizardPage() {
   const { personas } = Route.useLoaderData();
   const { redirect } = Route.useSearch();
+  const isFromEvent = redirect?.startsWith("/e/") ?? false;
   const isFirstPersona = personas.length === 0;
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -278,7 +279,9 @@ function WizardPage() {
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">設定完了！</h2>
               <p className="text-sm text-gray-500">
-                なふだを作成して始めましょう。
+                {isFromEvent
+                  ? "なふだを作成してイベントに参加しましょう。"
+                  : "なふだを作成して始めましょう。"}
               </p>
               {submitError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -295,7 +298,7 @@ function WizardPage() {
                   戻る
                 </Button>
                 <Button type="submit" className="flex-1">
-                  なふだを作成
+                  {isFromEvent ? "作成してイベントへ" : "なふだを作成"}
                 </Button>
               </div>
             </div>
