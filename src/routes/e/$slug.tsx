@@ -64,7 +64,8 @@ export const Route = createFileRoute("/e/$slug")({
       }
       myUrlId = profile?.urlId ?? null;
     }
-    const isHost = !!session?.user && data?.event?.hostUserId === session.user.id;
+    const isHost =
+      !!session?.user && data?.event?.hostUserId === session.user.id;
     return {
       data,
       token: params.slug,
@@ -160,11 +161,20 @@ function EventPage() {
     <div className="min-h-screen flex flex-col">
       <div className="p-4 border-b flex items-center gap-3">
         <button
-          onClick={() => router.history.back()}
+          onClick={() => router.navigate({ to: "/" })}
           className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="戻る"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -219,7 +229,9 @@ function EventPage() {
                     {isCancelling ? "取り消し中..." : "参加を取り消す"}
                   </button>
                   {cancelError && (
-                    <p className="text-xs text-red-500 text-center">{cancelError}</p>
+                    <p className="text-xs text-red-500 text-center">
+                      {cancelError}
+                    </p>
                   )}
                 </>
               ) : (
@@ -232,12 +244,15 @@ function EventPage() {
                 </button>
               )}
               {checkinError && (
-                <p className="text-xs text-red-500 text-center">{checkinError}</p>
+                <p className="text-xs text-red-500 text-center">
+                  {checkinError}
+                </p>
               )}
             </div>
           ) : (
             <Link
               to="/profile/wizard"
+              search={{ redirect: `/e/${token}` }}
               className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
             >
               なふだを作って参加する
@@ -246,6 +261,7 @@ function EventPage() {
         ) : (
           <Link
             to="/login"
+            search={{ redirect: `/e/${token}` }}
             className="block w-full py-3 rounded-xl bg-black text-white text-center text-sm font-semibold hover:bg-gray-800 transition-colors"
           >
             ログインして参加する
