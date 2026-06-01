@@ -4,7 +4,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -262,7 +262,7 @@ function EditForm({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors, isDirty },
   } = methods;
@@ -288,15 +288,41 @@ function EditForm({
     router.history.back();
   };
 
-  const displayName = watch("displayName") ?? "";
-  const bio = watch("bio") ?? "";
-  const useAutoAvatar = watch("useAutoAvatar");
-  const avatarUrl = watch("avatarUrl") ?? "";
-  const displayNameVisibility = watch("displayNameVisibility");
-  const bioVisibility = watch("bioVisibility");
-  const avatarVisibility = watch("avatarVisibility");
-  const snsLinksVisibility = watch("snsLinksVisibility");
-  const oshiTagsVisibility = watch("oshiTagsVisibility");
+  const displayName =
+    useWatch({ control, name: "displayName", defaultValue: "" }) ?? "";
+  const bio = useWatch({ control, name: "bio", defaultValue: "" }) ?? "";
+  const useAutoAvatar = useWatch({
+    control,
+    name: "useAutoAvatar",
+    defaultValue: false,
+  });
+  const avatarUrl =
+    useWatch({ control, name: "avatarUrl", defaultValue: "" }) ?? "";
+  const displayNameVisibility = useWatch({
+    control,
+    name: "displayNameVisibility",
+    defaultValue: "public",
+  });
+  const bioVisibility = useWatch({
+    control,
+    name: "bioVisibility",
+    defaultValue: "public",
+  });
+  const avatarVisibility = useWatch({
+    control,
+    name: "avatarVisibility",
+    defaultValue: "public",
+  });
+  const snsLinksVisibility = useWatch({
+    control,
+    name: "snsLinksVisibility",
+    defaultValue: "public",
+  });
+  const oshiTagsVisibility = useWatch({
+    control,
+    name: "oshiTagsVisibility",
+    defaultValue: "public",
+  });
 
   const addSnsLink = () => {
     setSnsLinks((prev) => [
@@ -424,7 +450,12 @@ function EditForm({
     }
   };
 
-  const dojinRejectValue = watch("dojinReject");
+  const dojinRejectValue = useWatch({
+    control,
+    name: "dojinReject",
+    defaultValue: "false",
+  });
+  const label = useWatch({ control, name: "label", defaultValue: "" });
 
   return (
     <FormProvider {...methods}>
@@ -495,7 +526,7 @@ function EditForm({
                 className="pr-12"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                {(watch("label") ?? "").length}/20
+                {(label ?? "").length}/20
               </span>
             </div>
             {errors.label && (
