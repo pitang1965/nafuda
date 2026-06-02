@@ -1,6 +1,11 @@
 interface SnsLinkButtonProps {
   platform: string;
   url: string;
+  colorOverride?: {
+    border: string;
+    text: string;
+    hoverBg: string;
+  };
 }
 
 function extractHandle(platform: string, url: string): string {
@@ -159,7 +164,7 @@ function PlatformIcon({ platform }: { platform: string }) {
   }
 }
 
-export function SnsLinkButton({ platform, url }: SnsLinkButtonProps) {
+export function SnsLinkButton({ platform, url, colorOverride }: SnsLinkButtonProps) {
   const handle = extractHandle(platform, url);
 
   return (
@@ -167,10 +172,17 @@ export function SnsLinkButton({ platform, url }: SnsLinkButtonProps) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2.5 px-4 py-2.5 border rounded-lg text-sm hover:bg-gray-50 transition-colors"
+      className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm transition-colors"
+      style={
+        colorOverride
+          ? { border: `1px solid ${colorOverride.border}`, color: colorOverride.text }
+          : { border: '1px solid #e5e7eb', color: '#1f2937' }
+      }
+      onMouseEnter={colorOverride ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colorOverride.hoverBg } : undefined}
+      onMouseLeave={colorOverride ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '' } : undefined}
     >
       <PlatformIcon platform={platform} />
-      <span className="truncate text-gray-800">{handle}</span>
+      <span className="truncate">{handle}</span>
     </a>
   );
 }

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { eq, and, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -10,6 +10,8 @@ import { getPublicProfile } from "../../server/functions/profile";
 import { createConnection } from "../../server/functions/connection";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
+import { NafudaFrame } from "../../components/NafudaFrame";
+import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { auth } from "../../server/auth";
 import { db } from "../../server/db/client";
 import { urlIds, personas, connections } from "../../server/db/schema";
@@ -144,6 +146,18 @@ function PublicProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
+  const style = getNafudaStyle(profile?.styleId)
+
+  useEffect(() => {
+    if (!style?.fontUrl) return
+    if (document.querySelector(`link[data-nafuda-font="${style.id}"]`)) return
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = style.fontUrl
+    link.setAttribute('data-nafuda-font', style.id)
+    document.head.appendChild(link)
+  }, [style?.fontUrl, style?.id])
+
   if (!profile)
     return (
       <div className="p-6 text-sm text-gray-500">
@@ -196,13 +210,29 @@ function PublicProfilePage() {
     }
   };
 
+  const textColor = style?.textColor
+  const subtextColor = style?.subtextColor
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div
+      className="min-h-screen flex flex-col relative"
+      style={{
+        background: style?.background ?? undefined,
+        fontFamily: style?.fontFamily ?? undefined,
+        color: textColor ?? undefined,
+      }}
+    >
+      {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+
       {canGoBack && (
-        <div className="p-4 border-b flex items-center">
+        <div
+          className="p-4 flex items-center relative z-20"
+          style={style ? { borderBottom: `1px solid ${style.textColor}30` } : { borderBottom: '1px solid #e5e7eb' }}
+        >
           <button
             onClick={() => router.history.back()}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="transition-colors"
+            style={{ color: subtextColor ?? undefined }}
             aria-label="戻る"
           >
             <svg
@@ -220,19 +250,29 @@ function PublicProfilePage() {
           </button>
         </div>
       )}
-      <div className="flex-1 p-6 flex flex-col items-center gap-4">
+
+      <div className="flex-1 p-6 flex flex-col items-center gap-4 relative z-20">
         {profile.avatarUrl ? (
           <img
             src={profile.avatarUrl}
             alt=""
             className="w-20 h-20 rounded-full object-cover"
+            style={style ? { boxShadow: `0 0 0 3px ${style.textColor}40` } : undefined}
           />
         ) : (
           <InitialsAvatar name={profile.displayName} size={80} />
         )}
-        <h1 className="text-2xl font-bold">{profile.displayName}</h1>
+        <h1
+          className="text-2xl font-bold"
+          style={{ color: textColor ?? undefined }}
+        >
+          {profile.displayName}
+        </h1>
         {profile.bio && (
-          <p className="text-sm text-gray-600 text-center whitespace-pre-wrap max-w-sm">
+          <p
+            className="text-sm text-center whitespace-pre-wrap max-w-sm"
+            style={{ color: subtextColor ?? '#4b5563' }}
+          >
             {profile.bio}
           </p>
         )}
@@ -241,7 +281,12 @@ function PublicProfilePage() {
             {profile.oshiTags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs"
+                className="px-2 py-0.5 rounded-full text-xs"
+                style={
+                  style
+                    ? { background: style.tagBg, color: style.tagText }
+                    : { background: '#fce7f3', color: '#be185d' }
+                }
               >
                 {tag}
               </span>
@@ -255,6 +300,11 @@ function PublicProfilePage() {
                 key={link.id}
                 platform={link.platform}
                 url={link.url}
+                colorOverride={style ? {
+                  border: `${style.textColor}50`,
+                  text: style.textColor,
+                  hoverBg: `${style.textColor}15`,
+                } : undefined}
               />
             ))}
           </div>
@@ -265,11 +315,18 @@ function PublicProfilePage() {
           <div className="w-full max-w-sm mt-2">
             {connected ? (
               <div className="w-full flex flex-col items-center gap-1.5">
-                <div className="w-full text-center px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium">
+                <div
+                  className="w-full text-center px-6 py-3 rounded-xl text-sm font-medium"
+                  style={
+                    style
+                      ? { background: `${style.textColor}20`, color: style.subtextColor }
+                      : { background: '#f3f4f6', color: '#6b7280' }
+                  }
+                >
                   つながり済み ✓
                 </div>
                 {connMeta && (
-                  <p className="text-xs text-gray-400 text-center">
+                  <p className="text-xs text-center" style={{ color: subtextColor ?? '#9ca3af' }}>
                     {new Date(connMeta.connectedAt).toLocaleDateString(
                       "ja-JP",
                       { year: "numeric", month: "long", day: "numeric" },
@@ -304,7 +361,8 @@ function PublicProfilePage() {
 
         <Link
           to="/"
-          className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+          className="mt-4 text-xs underline underline-offset-2 transition-colors"
+          style={{ color: subtextColor ?? '#9ca3af' }}
         >
           なふだとは？
         </Link>

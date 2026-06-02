@@ -157,6 +157,7 @@ export const updatePersona = createServerFn({ method: "POST" })
       fieldVisibility: z
         .record(z.string(), z.enum(["public", "private"]))
         .optional(),
+      styleId: z.string().nullable().optional(), // undefined = 変更なし, null = スタイル解除
     }),
   )
   .handler(async ({ data }) => {
@@ -173,6 +174,7 @@ export const updatePersona = createServerFn({ method: "POST" })
     if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
     if (data.fieldVisibility !== undefined)
       updates.fieldVisibility = data.fieldVisibility;
+    if (data.styleId !== undefined) updates.styleId = data.styleId;
 
     await db
       .update(personas)
@@ -224,6 +226,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
       oshiTags: visibility.oshi_tags === "private" ? [] : persona.oshiTags,
       dojinReject: persona.dojinReject,
       snsLinks: links,
+      styleId: persona.styleId,
     };
   });
 

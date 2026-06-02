@@ -13,6 +13,7 @@ import {
   upsertSnsLink,
   deleteSnsLink,
 } from "../../../server/functions/profile";
+import { NAFUDA_STYLES } from "../../../lib/nafuda-styles";
 import {
   updateOshiTags,
   updateDojinReject,
@@ -185,6 +186,7 @@ function EditPage() {
       initialOshiTags={defaultPersona.oshiTags}
       initialDojinReject={defaultPersona.dojinReject}
       initialSnsLinks={defaultPersona.snsLinks}
+      initialStyleId={defaultPersona.styleId ?? null}
     />
   );
 }
@@ -203,6 +205,7 @@ function EditForm({
   initialOshiTags,
   initialDojinReject,
   initialSnsLinks,
+  initialStyleId,
 }: {
   personaId: string;
   initialDisplayName: string;
@@ -222,6 +225,7 @@ function EditForm({
     url: string;
     displayOrder: number;
   }[];
+  initialStyleId: string | null;
 }) {
   const navigate = useNavigate();
   const router = useRouter();
@@ -240,6 +244,10 @@ function EditForm({
   const [oshiSaving, setOshiSaving] = useState(false);
   const [oshiSaveError, setOshiSaveError] = useState<string | null>(null);
   const [oshiSaved, setOshiSaved] = useState(false);
+  const [selectedStyleId, setSelectedStyleId] = useState<string | null>(
+    initialStyleId,
+  );
+  const [styleDirty, setStyleDirty] = useState(false);
 
   const methods = useForm<EditForm>({
     resolver: zodResolver(EditSchema),
@@ -279,9 +287,10 @@ function EditForm({
         orig.displayOrder !== l.displayOrder
       );
     });
+  const anyDirty = isDirty || snsLinksDirty || styleDirty;
 
   const handleBack = () => {
-    if (isDirty || snsLinksDirty) {
+    if (anyDirty) {
       if (!window.confirm("保存されていない変更があります。戻りますか？"))
         return;
     }
@@ -415,6 +424,7 @@ function EditForm({
             sns_links: values.snsLinksVisibility,
             oshi_tags: values.oshiTagsVisibility,
           },
+          styleId: selectedStyleId,
         },
       });
 
@@ -753,6 +763,82 @@ function EditForm({
             >
               ＋ SNSリンクを追加
             </Button>
+          </div>
+
+          {/* なふだスタイル */}
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium">なふだスタイル</label>
+            <div className="grid grid-cols-3 gap-2">
+              {/* デフォルト（なし） */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedStyleId(null);
+                  setStyleDirty(true);
+                }}
+                className={`relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${
+                  !selectedStyleId
+                    ? "border-black"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="w-full h-12 rounded-lg bg-white border border-gray-200" />
+                <span className="text-xs text-gray-600">なし</span>
+                {!selectedStyleId && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M2 5l2 2 4-4"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                )}
+              </button>
+
+              {NAFUDA_STYLES.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedStyleId(s.id);
+                    setStyleDirty(true);
+                  }}
+                  className={`relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${
+                    selectedStyleId === s.id
+                      ? "border-black"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div
+                    className="w-full h-12 rounded-lg"
+                    style={{ background: s.background }}
+                  />
+                  <span className="text-xs text-gray-600">{s.name}</span>
+                  {selectedStyleId === s.id && (
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 5l2 2 4-4"
+                          stroke="white"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           <Button type="submit" disabled={saving} size="lg" className="w-full">

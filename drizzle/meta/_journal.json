@@ -71,6 +71,13 @@
       "when": 1780316592614,
       "tag": "0009_icy_mulholland_black",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780391837730,
+      "tag": "0010_skinny_black_knight",
+      "breakpoints": true
     }
   ]
 }
