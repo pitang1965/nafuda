@@ -294,7 +294,7 @@ function EditForm({
   const useAutoAvatar = useWatch({
     control,
     name: "useAutoAvatar",
-    defaultValue: false,
+    defaultValue: !initialAvatarUrl,
   });
   const avatarUrl =
     useWatch({ control, name: "avatarUrl", defaultValue: "" }) ?? "";
