@@ -214,25 +214,17 @@ function PublicProfilePage() {
   const subtextColor = style?.subtextColor
 
   return (
-    <div
-      className="min-h-screen flex flex-col relative"
-      style={{
-        background: style?.background ?? undefined,
-        fontFamily: style?.fontFamily ?? undefined,
-        color: textColor ?? undefined,
-      }}
-    >
-      {style?.frameId && <NafudaFrame frameId={style.frameId} />}
-
+    <div className={style ? "min-h-screen bg-gray-900" : "min-h-screen"}>
+      <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col">
       {canGoBack && (
         <div
-          className="p-4 flex items-center relative z-20"
-          style={style ? { borderBottom: `1px solid ${style.textColor}30` } : { borderBottom: '1px solid #e5e7eb' }}
+          className="p-4 flex items-center"
+          style={style ? { borderBottom: '1px solid rgba(255,255,255,0.12)' } : { borderBottom: '1px solid #e5e7eb' }}
         >
           <button
             onClick={() => router.history.back()}
             className="transition-colors"
-            style={{ color: subtextColor ?? undefined }}
+            style={{ color: style ? 'rgba(255,255,255,0.65)' : undefined }}
             aria-label="戻る"
           >
             <svg
@@ -251,7 +243,17 @@ function PublicProfilePage() {
         </div>
       )}
 
-      <div className="flex-1 p-6 flex flex-col items-center gap-4 relative z-20">
+      {/* なふだ領域 */}
+      <div
+        className="flex-1 relative"
+        style={{
+          background: style?.background ?? undefined,
+          fontFamily: style?.fontFamily ?? undefined,
+          color: textColor ?? undefined,
+        }}
+      >
+        {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+        <div className="p-6 flex flex-col items-center gap-4 relative z-20">
         {profile.avatarUrl ? (
           <img
             src={profile.avatarUrl}
@@ -366,6 +368,8 @@ function PublicProfilePage() {
         >
           なふだとは？
         </Link>
+      </div>
+      </div>{/* /なふだ領域 */}
       </div>
     </div>
   );

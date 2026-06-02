@@ -8,6 +8,8 @@ import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
+import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { NafudaFrame } from "../../components/NafudaFrame";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
@@ -38,6 +40,8 @@ function MePage() {
     resolveInitialPersonaId(personas),
   );
   const currentPersona = personas.find((p) => p.id === currentPersonaId);
+  const style = getNafudaStyle(currentPersona?.styleId ?? null);
+  const subtextColor = style?.subtextColor;
   const [qrOpen, setQrOpen] = useState(false);
   const [origin] = useState(() =>
     typeof window !== "undefined" ? window.location.origin : "",
@@ -51,6 +55,16 @@ function MePage() {
     if (currentPersonaId)
       localStorage.setItem(LAST_PERSONA_KEY, currentPersonaId);
   }, [currentPersonaId]);
+
+  useEffect(() => {
+    if (!style?.fontUrl) return;
+    if (document.querySelector(`link[data-nafuda-font="${style.id}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = style.fontUrl;
+    link.setAttribute("data-nafuda-font", style.id);
+    document.head.appendChild(link);
+  }, [style?.fontUrl, style?.id]);
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -79,10 +93,23 @@ function MePage() {
   const isPrivate = (field: string) => vis[field] === "private";
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="mx-auto sm:max-w-sm w-full min-h-screen bg-white flex flex-col sm:shadow-sm">
-        {/* Top bar with persona switcher */}
-        <div className="flex items-center justify-between p-4 border-b">
+    <div
+      className={
+        style ? "min-h-screen bg-gray-900" : "min-h-screen bg-gray-100"
+      }
+    >
+      <div
+        className={`mx-auto sm:max-w-sm w-full min-h-screen flex flex-col${style ? "" : " bg-white sm:shadow-sm"}`}
+      >
+        {/* Top bar - なふだ領域外 */}
+        <div
+          className="flex items-center justify-between p-4"
+          style={
+            style
+              ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
+              : { borderBottom: "1px solid #e5e7eb" }
+          }
+        >
           <PersonaSwitcher
             personas={personas}
             currentPersonaId={currentPersonaId}
@@ -93,18 +120,24 @@ function MePage() {
             <Link
               to="/profile/edit"
               search={{ personaId: currentPersonaId }}
-              className="text-sm text-gray-500 underline"
+              className="text-sm underline"
+              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
             >
               編集
             </Link>
-            <Link to="/events" className="text-sm text-gray-500 underline">
+            <Link
+              to="/events"
+              className="text-sm underline"
+              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
+            >
               イベント
             </Link>
             <Button
               variant="link"
               size="sm"
               onClick={handleLogout}
-              className="p-0 h-auto text-gray-500"
+              className="p-0 h-auto"
+              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
             >
               ログアウト
             </Button>
@@ -113,126 +146,162 @@ function MePage() {
 
         <PwaInstallBanner />
 
-        {/* Profile display */}
-        <div className="flex-1 p-6 flex flex-col items-center gap-4">
-          <div
-            className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
-          >
-            {currentPersona?.avatarUrl ? (
-              <img
-                src={currentPersona.avatarUrl}
-                alt=""
-                className="w-20 h-20 rounded-full object-cover"
-              />
-            ) : (
-              <InitialsAvatar
-                name={currentPersona?.displayName ?? "?"}
-                size={80}
-              />
-            )}
-            {isPrivate("avatar_url") && (
-              <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
-                🔒
-              </span>
-            )}
-          </div>
-
-          <div
-            className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
-          >
-            <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
-            {isPrivate("display_name") && <PrivateBadge />}
-          </div>
-
-          {!currentPersona?.label && (
-            <Link
-              to="/profile/edit"
-              search={{ personaId: currentPersonaId }}
-              className="text-xs text-gray-400 underline"
-            >
-              ラベルを設定する →
-            </Link>
-          )}
-
-          {currentPersona?.bio && (
+        {/* なふだ領域 */}
+        <div
+          className="flex-1 relative"
+          style={
+            style
+              ? {
+                  background: style.background,
+                  fontFamily: style.fontFamily,
+                  color: style.textColor,
+                }
+              : undefined
+          }
+        >
+          {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+          <div className="p-6 flex flex-col items-center gap-4 relative z-20">
             <div
-              className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
+              className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
             >
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                {currentPersona.bio}
-              </p>
-              {isPrivate("bio") && (
-                <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
-              )}
-            </div>
-          )}
-
-          {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
-            <div
-              className={`w-full max-w-xs ${isPrivate("oshi_tags") ? "opacity-50" : ""}`}
-            >
-              <div className="flex flex-wrap gap-1 justify-center">
-                {currentPersona.oshiTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              {isPrivate("oshi_tags") && (
-                <p className="text-xs text-gray-400 text-center mt-1">
-                  🔒 非公開
-                </p>
-              )}
-            </div>
-          )}
-
-          {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
-            <div
-              className={`flex flex-col gap-2 w-full max-w-xs ${isPrivate("sns_links") ? "opacity-50" : ""}`}
-            >
-              {currentPersona.snsLinks.map((link) => (
-                <SnsLinkButton
-                  key={link.id}
-                  platform={link.platform}
-                  url={link.url}
+              {currentPersona?.avatarUrl ? (
+                <img
+                  src={currentPersona.avatarUrl}
+                  alt=""
+                  className="w-20 h-20 rounded-full object-cover"
                 />
-              ))}
-              {isPrivate("sns_links") && (
-                <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
+              ) : (
+                <InitialsAvatar
+                  name={currentPersona?.displayName ?? "?"}
+                  size={80}
+                />
+              )}
+              {isPrivate("avatar_url") && (
+                <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
+                  🔒
+                </span>
               )}
             </div>
-          )}
 
-          <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
-            <Button
-              onClick={() => setQrOpen(true)}
-              size="lg"
-              className="w-full rounded-xl"
+            <div
+              className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
             >
-              QRコードを表示
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="w-full rounded-xl"
-            >
-              <Link to="/connections">つながりを見る</Link>
-            </Button>
-          </div>
+              <h1 className="text-xl font-bold">
+                {currentPersona?.displayName}
+              </h1>
+              {isPrivate("display_name") && <PrivateBadge />}
+            </div>
 
-          <div className="pt-6 pb-2">
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="text-xs text-gray-400 underline hover:text-red-500"
-            >
-              退会する
-            </button>
+            {!currentPersona?.label && (
+              <Link
+                to="/profile/edit"
+                search={{ personaId: currentPersonaId }}
+                className="text-xs underline"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                ラベルを設定する →
+              </Link>
+            )}
+
+            {currentPersona?.bio && (
+              <div
+                className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
+              >
+                <p
+                  className="text-sm whitespace-pre-wrap"
+                  style={{ color: subtextColor ?? "#4b5563" }}
+                >
+                  {currentPersona.bio}
+                </p>
+                {isPrivate("bio") && (
+                  <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
+                )}
+              </div>
+            )}
+
+            {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
+              <div
+                className={`w-full max-w-xs ${isPrivate("oshi_tags") ? "opacity-50" : ""}`}
+              >
+                <div className="flex flex-wrap gap-1 justify-center">
+                  {currentPersona.oshiTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 rounded-full text-xs"
+                      style={
+                        style
+                          ? { background: style.tagBg, color: style.tagText }
+                          : { background: "#fce7f3", color: "#be185d" }
+                      }
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                {isPrivate("oshi_tags") && (
+                  <p className="text-xs text-gray-400 text-center mt-1">
+                    🔒 非公開
+                  </p>
+                )}
+              </div>
+            )}
+
+            {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
+              <div
+                className={`flex flex-col gap-2 w-full max-w-xs ${isPrivate("sns_links") ? "opacity-50" : ""}`}
+              >
+                {currentPersona.snsLinks.map((link) => (
+                  <SnsLinkButton
+                    key={link.id}
+                    platform={link.platform}
+                    url={link.url}
+                    colorOverride={
+                      style
+                        ? {
+                            border: `${style.textColor}50`,
+                            text: style.textColor,
+                            hoverBg: `${style.textColor}15`,
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+                {isPrivate("sns_links") && (
+                  <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
+                )}
+              </div>
+            )}
+
+            <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
+              <Button
+                onClick={() => setQrOpen(true)}
+                size="lg"
+                className="w-full rounded-xl"
+              >
+                QRコードを表示
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="w-full rounded-xl text-gray-700 bg-white border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+              >
+                <Link to="/connections">つながりを見る</Link>
+              </Button>
+            </div>
+
+            <div className="pt-6 pb-2">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="text-xs underline hover:text-red-500"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                退会する
+              </button>
+            </div>
           </div>
         </div>
+        {/* /なふだ領域 */}
 
         {currentPersona && urlId && (
           <QRBottomSheet

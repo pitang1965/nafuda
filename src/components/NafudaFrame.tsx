@@ -157,19 +157,12 @@ const cornerStyle = (
   flipX: boolean,
   flipY: boolean,
 ) => ({
-  position: "fixed" as const,
+  position: "absolute" as const,
   ...pos,
   pointerEvents: "none" as const,
   zIndex: 10,
   transform: `scale(${flipX ? -1 : 1}, ${flipY ? -1 : 1})`,
-  transformOrigin:
-    flipX && flipY
-      ? "bottom right"
-      : flipX
-        ? "top right"
-        : flipY
-          ? "bottom left"
-          : "top left",
+  transformOrigin: "center",
 });
 
 export function NafudaFrame({ frameId }: { frameId: FrameId }) {
