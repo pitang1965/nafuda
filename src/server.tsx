@@ -86,7 +86,7 @@ async function handleRequest(request: Request): Promise<Response> {
       return new HTMLRewriter()
         .on("head", {
           element(el) {
-            el.append(tags, { html: true });
+            el.prepend(tags, { html: true });
           },
         })
         .transform(response);

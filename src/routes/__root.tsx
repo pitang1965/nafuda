@@ -53,9 +53,22 @@ function NotFound() {
   );
 }
 
+const BASE_URL = import.meta.env.VITE_BASE_URL ?? 'https://nafuda.me'
+const SITE_DESCRIPTION = 'なふだはQRコードをスキャンするだけで自己紹介・SNSリンク・プロフィールを手軽にシェアできるデジタル名刺サービスです。推し活・趣味・仕事など様々なシーンでご利用いただけます。今すぐ無料で始めましょう。'
+
 export const Route = createRootRoute({
   head: () => ({
-    meta: [{ title: "なふだ" }],
+    meta: [
+      { title: 'なふだ' },
+      { name: 'description', content: SITE_DESCRIPTION },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:title', content: 'なふだ — QRコードでつながるデジタル名刺' },
+      { property: 'og:description', content: SITE_DESCRIPTION },
+      { property: 'og:image', content: `${BASE_URL}/icons/icon-512.png` },
+      { property: 'og:url', content: BASE_URL },
+      { property: 'og:site_name', content: 'なふだ' },
+      { name: 'twitter:card', content: 'summary' },
+    ],
   }),
   component: () => (
     <RootDocument>
