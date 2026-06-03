@@ -29,7 +29,8 @@
       "Bash(find node_modules/.pnpm/@tanstack+start-plugin-core_*/node_modules/@tanstack/start-plugin-core -name \"*.js\")",
       "Bash(git tag -a v1.0.0 -m 'v1.0.0 MVP *)",
       "Bash(dir C:\\\\Users\\\\pitan\\\\dev\\\\nafuda /b /a)",
-      "PowerShell(Get-ChildItem C:\\\\Users\\\\pitan\\\\dev\\\\nafuda\\\\src -Recurse -File | Where-Object { $_.Extension -in '.ts', '.tsx' } | Select-Object Name, DirectoryName | Format-Table -AutoSize)"
+      "PowerShell(Get-ChildItem C:\\\\Users\\\\pitan\\\\dev\\\\nafuda\\\\src -Recurse -File | Where-Object { $_.Extension -in '.ts', '.tsx' } | Select-Object Name, DirectoryName | Format-Table -AutoSize)",
+      "Bash(pnpm list *)"
     ]
   }
 }

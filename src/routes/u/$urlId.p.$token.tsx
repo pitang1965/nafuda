@@ -95,7 +95,7 @@ const getSessionData = createServerFn({ method: "GET" })
     };
   });
 
-const BASE_URL = import.meta.env.VITE_BASE_URL ?? 'https://nafuda.me'
+const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
 // Specific persona by share token — public route, no auth required
 export const Route = createFileRoute("/u/$urlId/p/$token")({
@@ -114,28 +114,29 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     };
   },
   head: ({ loaderData }) => {
-    const { profile, urlId, shareToken } = loaderData
-    if (!profile) return {}
-    const title = `${profile.displayName}のなふだ`
-    const description = profile.bio ?? `${profile.displayName}のプロフィール`
-    const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`
-    const url = `${BASE_URL}/u/${urlId}/p/${shareToken}`
+    if (!loaderData) return {};
+    const { profile, urlId, shareToken } = loaderData;
+    if (!profile) return {};
+    const title = `${profile.displayName}のなふだ`;
+    const description = profile.bio ?? `${profile.displayName}のプロフィール`;
+    const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
+    const url = `${BASE_URL}/u/${urlId}/p/${shareToken}`;
     return {
       meta: [
         { title },
-        { name: 'description', content: description },
-        { property: 'og:type', content: 'profile' },
-        { property: 'og:title', content: title },
-        { property: 'og:description', content: description },
-        { property: 'og:image', content: image },
-        { property: 'og:url', content: url },
-        { property: 'og:site_name', content: 'なふだ' },
-        { name: 'twitter:card', content: 'summary' },
-        { name: 'twitter:title', content: title },
-        { name: 'twitter:description', content: description },
-        { name: 'twitter:image', content: image },
+        { name: "description", content: description },
+        { property: "og:type", content: "profile" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: image },
+        { property: "og:url", content: url },
+        { property: "og:site_name", content: "なふだ" },
+        { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: image },
       ],
-    }
+    };
   },
   component: PublicProfilePage,
 });
@@ -172,23 +173,21 @@ function PublicProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
-  const style = getNafudaStyle(profile?.styleId)
+  const style = getNafudaStyle(profile?.styleId);
 
   useEffect(() => {
-    if (!style?.fontUrl) return
-    if (document.querySelector(`link[data-nafuda-font="${style.id}"]`)) return
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = style.fontUrl
-    link.setAttribute('data-nafuda-font', style.id)
-    document.head.appendChild(link)
-  }, [style?.fontUrl, style?.id])
+    if (!style?.fontUrl) return;
+    if (document.querySelector(`link[data-nafuda-font="${style.id}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = style.fontUrl;
+    link.setAttribute("data-nafuda-font", style.id);
+    document.head.appendChild(link);
+  }, [style?.fontUrl, style?.id]);
 
   if (!profile)
     return (
-      <div className="p-6 text-sm text-gray-500">
-        なふだが見つかりません
-      </div>
+      <div className="p-6 text-sm text-gray-500">なふだが見つかりません</div>
     );
 
   const handleConnectClick = async () => {
@@ -236,167 +235,188 @@ function PublicProfilePage() {
     }
   };
 
-  const textColor = style?.textColor
-  const subtextColor = style?.subtextColor
+  const textColor = style?.textColor;
+  const subtextColor = style?.subtextColor;
 
   return (
     <div className={style ? "min-h-screen bg-gray-900" : "min-h-screen"}>
       <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col">
-      {canGoBack && (
-        <div
-          className="p-4 flex items-center"
-          style={style ? { borderBottom: '1px solid rgba(255,255,255,0.12)' } : { borderBottom: '1px solid #e5e7eb' }}
-        >
-          <button
-            onClick={() => router.history.back()}
-            className="transition-colors"
-            style={{ color: style ? 'rgba(255,255,255,0.65)' : undefined }}
-            aria-label="戻る"
+        {canGoBack && (
+          <div
+            className="p-4 flex items-center"
+            style={
+              style
+                ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
+                : { borderBottom: "1px solid #e5e7eb" }
+            }
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <button
+              onClick={() => router.history.back()}
+              className="transition-colors"
+              style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
+              aria-label="戻る"
             >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-        </div>
-      )}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          </div>
+        )}
 
-      {/* なふだ領域 */}
-      <div
-        className="flex-1 relative"
-        style={{
-          background: style?.background ?? undefined,
-          fontFamily: style?.fontFamily ?? undefined,
-          color: textColor ?? undefined,
-        }}
-      >
-        {style?.frameId && <NafudaFrame frameId={style.frameId} />}
-        <div className="p-6 flex flex-col items-center gap-4 relative z-20">
-        {profile.avatarUrl ? (
-          <img
-            src={profile.avatarUrl}
-            alt=""
-            className="w-20 h-20 rounded-full object-cover"
-            style={style ? { boxShadow: `0 0 0 3px ${style.textColor}40` } : undefined}
-          />
-        ) : (
-          <InitialsAvatar name={profile.displayName} size={80} />
-        )}
-        <h1
-          className="text-2xl font-bold"
-          style={{ color: textColor ?? undefined }}
+        {/* なふだ領域 */}
+        <div
+          className="flex-1 relative"
+          style={{
+            background: style?.background ?? undefined,
+            fontFamily: style?.fontFamily ?? undefined,
+            color: textColor ?? undefined,
+          }}
         >
-          {profile.displayName}
-        </h1>
-        {profile.bio && (
-          <p
-            className="text-sm text-center whitespace-pre-wrap max-w-sm"
-            style={{ color: subtextColor ?? '#4b5563' }}
-          >
-            {profile.bio}
-          </p>
-        )}
-        {profile.oshiTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 justify-center">
-            {profile.oshiTags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-0.5 rounded-full text-xs"
+          {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+          <div className="p-6 flex flex-col items-center gap-4 relative z-20">
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="w-20 h-20 rounded-full object-cover"
                 style={
                   style
-                    ? { background: style.tagBg, color: style.tagText }
-                    : { background: '#fce7f3', color: '#be185d' }
+                    ? { boxShadow: `0 0 0 3px ${style.textColor}40` }
+                    : undefined
                 }
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-        {profile.snsLinks.length > 0 && (
-          <div className="w-full max-w-sm flex flex-col gap-2">
-            {profile.snsLinks.map((link) => (
-              <SnsLinkButton
-                key={link.id}
-                platform={link.platform}
-                url={link.url}
-                title={link.title}
-                colorOverride={style ? {
-                  border: `${style.textColor}50`,
-                  text: style.textColor,
-                  hoverBg: `${style.textColor}15`,
-                } : undefined}
               />
-            ))}
-          </div>
-        )}
+            ) : (
+              <InitialsAvatar name={profile.displayName} size={80} />
+            )}
+            <h1
+              className="text-2xl font-bold"
+              style={{ color: textColor ?? undefined }}
+            >
+              {profile.displayName}
+            </h1>
+            {profile.bio && (
+              <p
+                className="text-sm text-center whitespace-pre-wrap max-w-sm"
+                style={{ color: subtextColor ?? "#4b5563" }}
+              >
+                {profile.bio}
+              </p>
+            )}
+            {profile.oshiTags.length > 0 && (
+              <div className="flex flex-wrap gap-1 justify-center">
+                {profile.oshiTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 rounded-full text-xs"
+                    style={
+                      style
+                        ? { background: style.tagBg, color: style.tagText }
+                        : { background: "#fce7f3", color: "#be185d" }
+                    }
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {profile.snsLinks.length > 0 && (
+              <div className="w-full max-w-sm flex flex-col gap-2">
+                {profile.snsLinks.map((link) => (
+                  <SnsLinkButton
+                    key={link.id}
+                    platform={link.platform}
+                    url={link.url}
+                    title={link.title}
+                    colorOverride={
+                      style
+                        ? {
+                            border: `${style.textColor}50`,
+                            text: style.textColor,
+                            hoverBg: `${style.textColor}15`,
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
 
-        {/* 「つながる」ボタン: 自分のプロフィールでは非表示 */}
-        {!isOwnProfile && (
-          <div className="w-full max-w-sm mt-2">
-            {connected ? (
-              <div className="w-full flex flex-col items-center gap-1.5">
-                <div
-                  className="w-full text-center px-6 py-3 rounded-xl text-sm font-medium"
-                  style={
-                    style
-                      ? { background: `${style.textColor}20`, color: style.subtextColor }
-                      : { background: '#f3f4f6', color: '#6b7280' }
-                  }
-                >
-                  つながり済み ✓
-                </div>
-                {connMeta && (
-                  <p className="text-xs text-center" style={{ color: subtextColor ?? '#9ca3af' }}>
-                    {new Date(connMeta.connectedAt).toLocaleDateString(
-                      "ja-JP",
-                      { year: "numeric", month: "long", day: "numeric" },
+            {/* 「つながる」ボタン: 自分のプロフィールでは非表示 */}
+            {!isOwnProfile && (
+              <div className="w-full max-w-sm mt-2">
+                {connected ? (
+                  <div className="w-full flex flex-col items-center gap-1.5">
+                    <div
+                      className="w-full text-center px-6 py-3 rounded-xl text-sm font-medium"
+                      style={
+                        style
+                          ? {
+                              background: `${style.textColor}20`,
+                              color: style.subtextColor,
+                            }
+                          : { background: "#f3f4f6", color: "#6b7280" }
+                      }
+                    >
+                      つながり済み ✓
+                    </div>
+                    {connMeta && (
+                      <p
+                        className="text-xs text-center"
+                        style={{ color: subtextColor ?? "#9ca3af" }}
+                      >
+                        {new Date(connMeta.connectedAt).toLocaleDateString(
+                          "ja-JP",
+                          { year: "numeric", month: "long", day: "numeric" },
+                        )}
+                        {connMeta.eventName && ` · ${connMeta.eventName}`}
+                        {!connMeta.eventName &&
+                          connMeta.venueName &&
+                          ` · ${connMeta.venueName}`}
+                      </p>
                     )}
-                    {connMeta.eventName && ` · ${connMeta.eventName}`}
-                    {!connMeta.eventName &&
-                      connMeta.venueName &&
-                      ` · ${connMeta.venueName}`}
+                  </div>
+                ) : showPicker ? (
+                  <PersonaPicker
+                    personas={session.myPersonas}
+                    onSelect={doConnect}
+                    onCancel={() => setShowPicker(false)}
+                  />
+                ) : (
+                  <button
+                    onClick={handleConnectClick}
+                    disabled={connecting}
+                    className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
+                  >
+                    {connecting ? "つながっています..." : "つながる"}
+                  </button>
+                )}
+                {error && (
+                  <p className="text-xs text-red-500 text-center mt-2">
+                    {error}
                   </p>
                 )}
               </div>
-            ) : showPicker ? (
-              <PersonaPicker
-                personas={session.myPersonas}
-                onSelect={doConnect}
-                onCancel={() => setShowPicker(false)}
-              />
-            ) : (
-              <button
-                onClick={handleConnectClick}
-                disabled={connecting}
-                className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
-              >
-                {connecting ? "つながっています..." : "つながる"}
-              </button>
             )}
-            {error && (
-              <p className="text-xs text-red-500 text-center mt-2">{error}</p>
-            )}
-          </div>
-        )}
 
-        <Link
-          to="/"
-          className="mt-4 text-xs underline underline-offset-2 transition-colors"
-          style={{ color: subtextColor ?? '#9ca3af' }}
-        >
-          なふだとは？
-        </Link>
-      </div>
-      </div>{/* /なふだ領域 */}
+            <Link
+              to="/"
+              className="mt-4 text-xs underline underline-offset-2 transition-colors"
+              style={{ color: subtextColor ?? "#9ca3af" }}
+            >
+              なふだとは？
+            </Link>
+          </div>
+        </div>
+        {/* /なふだ領域 */}
       </div>
     </div>
   );
