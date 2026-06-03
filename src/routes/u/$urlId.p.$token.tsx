@@ -12,6 +12,7 @@ import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { buildOgpDescription } from "../../lib/ogp";
 import { auth } from "../../server/auth";
 import { db } from "../../server/db/client";
 import { urlIds, personas, connections } from "../../server/db/schema";
@@ -118,7 +119,7 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     const { profile, urlId, shareToken } = loaderData;
     if (!profile) return {};
     const title = `${profile.displayName}のなふだ`;
-    const description = profile.bio ?? `${profile.displayName}のプロフィール`;
+    const description = buildOgpDescription(profile.displayName, profile.bio);
     const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
     const url = `${BASE_URL}/u/${urlId}/p/${shareToken}`;
     return {

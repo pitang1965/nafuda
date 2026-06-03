@@ -2,6 +2,7 @@ import {
   createStartHandler,
   defaultStreamHandler,
 } from "@tanstack/react-start/server";
+import { buildOgpDescription } from "./lib/ogp";
 
 const startFetch = createStartHandler(defaultStreamHandler);
 
@@ -64,7 +65,7 @@ async function handleRequest(request: Request): Promise<Response> {
 
     if (profile) {
       const title = `${profile.displayName}のなふだ`;
-      const description = profile.bio ?? `${profile.displayName}のプロフィール`;
+      const description = buildOgpDescription(profile.displayName, profile.bio);
       const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
       const ogUrl = `${BASE_URL}${pathname}`;
 
