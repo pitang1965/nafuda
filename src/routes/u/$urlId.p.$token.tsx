@@ -95,6 +95,8 @@ const getSessionData = createServerFn({ method: "GET" })
     };
   });
 
+const BASE_URL = import.meta.env.VITE_BASE_URL ?? 'https://nafuda.me'
+
 // Specific persona by share token — public route, no auth required
 export const Route = createFileRoute("/u/$urlId/p/$token")({
   loader: async ({ params }) => {
@@ -110,6 +112,30 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
       shareToken: params.token,
       isOwnProfile,
     };
+  },
+  head: ({ loaderData }) => {
+    const { profile, urlId, shareToken } = loaderData
+    if (!profile) return {}
+    const title = `${profile.displayName}のなふだ`
+    const description = profile.bio ?? `${profile.displayName}のプロフィール`
+    const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`
+    const url = `${BASE_URL}/u/${urlId}/p/${shareToken}`
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        { property: 'og:type', content: 'profile' },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:image', content: image },
+        { property: 'og:url', content: url },
+        { property: 'og:site_name', content: 'なふだ' },
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: image },
+      ],
+    }
   },
   component: PublicProfilePage,
 });
