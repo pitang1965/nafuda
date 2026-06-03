@@ -81,6 +81,7 @@ export const snsLinks = pgTable('sns_links', {
   // platform values: 'x' | 'instagram' | 'tiktok' | 'youtube' | 'discord' | 'line_openchat' | 'github' | 'spotify' | 'facebook' | 'other'
   platform: text('platform').notNull(),
   url: text('url').notNull(),
+  title: text('title'),
   displayOrder: smallint('display_order').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })

@@ -255,6 +255,7 @@ function MePage() {
                     key={link.id}
                     platform={link.platform}
                     url={link.url}
+                    title={link.title}
                     colorOverride={
                       style
                         ? {

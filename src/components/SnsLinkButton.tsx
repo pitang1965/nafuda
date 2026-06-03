@@ -1,6 +1,14 @@
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
+
 interface SnsLinkButtonProps {
   platform: string;
   url: string;
+  title?: string | null;
   colorOverride?: {
     border: string;
     text: string;
@@ -164,10 +172,10 @@ function PlatformIcon({ platform }: { platform: string }) {
   }
 }
 
-export function SnsLinkButton({ platform, url, colorOverride }: SnsLinkButtonProps) {
-  const handle = extractHandle(platform, url);
+export function SnsLinkButton({ platform, url, title, colorOverride }: SnsLinkButtonProps) {
+  const displayText = title?.trim() || extractHandle(platform, url);
 
-  return (
+  const anchor = (
     <a
       href={url}
       target="_blank"
@@ -182,7 +190,18 @@ export function SnsLinkButton({ platform, url, colorOverride }: SnsLinkButtonPro
       onMouseLeave={colorOverride ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '' } : undefined}
     >
       <PlatformIcon platform={platform} />
-      <span className="truncate">{handle}</span>
+      <span className="truncate">{displayText}</span>
     </a>
+  );
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{anchor}</TooltipTrigger>
+        <TooltipContent side="top">
+          <span className="max-w-xs block truncate">{url}</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

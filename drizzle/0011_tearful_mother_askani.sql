@@ -1,0 +1,1 @@
+ALTER TABLE "sns_links" ADD COLUMN "title" text;

@@ -252,6 +252,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "other",
       ]),
       url: z.url("有効なURLを入力してください"),
+      title: z.string().max(50).optional(),
       displayOrder: z.number().int().min(0),
     }),
   )
@@ -272,12 +273,15 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
       .limit(1);
     if (!persona[0]) throw new Error("Forbidden");
 
+    const title = data.title?.trim() || null;
+
     if (data.linkId) {
       await db
         .update(snsLinks)
         .set({
           platform: data.platform,
           url: data.url,
+          title,
           displayOrder: data.displayOrder,
         })
         .where(eq(snsLinks.id, data.linkId));
@@ -286,6 +290,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         personaId: data.personaId,
         platform: data.platform,
         url: data.url,
+        title,
         displayOrder: data.displayOrder,
       });
     }

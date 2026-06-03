@@ -302,6 +302,7 @@ function PublicProfilePage() {
                 key={link.id}
                 platform={link.platform}
                 url={link.url}
+                title={link.title}
                 colorOverride={style ? {
                   border: `${style.textColor}50`,
                   text: style.textColor,

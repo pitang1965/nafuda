@@ -86,6 +86,7 @@ interface SnsLinkState {
   id?: string;
   platform: Platform;
   url: string;
+  title: string;
   displayOrder: number;
   isNew: boolean;
 }
@@ -223,6 +224,7 @@ function EditForm({
     id: string;
     platform: string;
     url: string;
+    title?: string | null;
     displayOrder: number;
   }[];
   initialStyleId: string | null;
@@ -236,6 +238,7 @@ function EditForm({
       id: l.id,
       platform: l.platform as Platform,
       url: l.url,
+      title: l.title ?? "",
       displayOrder: l.displayOrder,
       isNew: false,
     })),
@@ -284,6 +287,7 @@ function EditForm({
         !orig ||
         orig.platform !== l.platform ||
         orig.url !== l.url ||
+        (orig.title ?? "") !== l.title ||
         orig.displayOrder !== l.displayOrder
       );
     });
@@ -337,6 +341,7 @@ function EditForm({
     setSnsLinks((prev) => [
       ...prev,
       {
+        title: "",
         platform: "x",
         url: "",
         displayOrder: prev.length,
@@ -366,7 +371,7 @@ function EditForm({
 
   const updateSnsLinkField = (
     index: number,
-    field: "platform" | "url",
+    field: "platform" | "url" | "title",
     value: string,
   ) => {
     setSnsLinks((prev) =>
@@ -406,6 +411,13 @@ function EditForm({
   };
 
   const onSubmit = async (values: EditForm) => {
+    const otherWithoutTitle = snsLinks.find(
+      (l) => l.platform === "other" && !l.title.trim() && l.url.trim(),
+    );
+    if (otherWithoutTitle) {
+      setSaveError("「その他」のSNSリンクには表示名を入力してください。");
+      return;
+    }
     setSaveError(null);
     setSaving(true);
     try {
@@ -447,11 +459,13 @@ function EditForm({
             linkId: link.isNew ? undefined : link.id,
             platform: link.platform,
             url: normalizeUrl(link.platform, link.url),
+            title: link.title.trim() || undefined,
             displayOrder: link.displayOrder,
           },
         });
       }
 
+      await router.invalidate();
       navigate({ to: "/me" });
     } catch {
       setSaveError("保存に失敗しました。もう一度お試しください。");
@@ -749,6 +763,18 @@ function EditForm({
                       updateSnsLinkField(index, "url", e.target.value)
                     }
                     placeholder={getSnsPlaceholder(link.platform)}
+                    className="bg-white"
+                  />
+                  <Input
+                    value={link.title}
+                    onChange={(e) =>
+                      updateSnsLinkField(index, "title", e.target.value)
+                    }
+                    placeholder={
+                      link.platform === "other"
+                        ? "表示名（必須）"
+                        : "表示名（省略可）"
+                    }
                     className="bg-white"
                   />
                 </div>
