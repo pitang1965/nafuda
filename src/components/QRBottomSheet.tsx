@@ -7,6 +7,10 @@ interface QRBottomSheetProps {
   onClose: () => void;
   url: string;
   label: string;
+  exchangeMode?: {
+    onExchanged: () => void;
+    onNotExchanged: () => void;
+  };
 }
 
 export function QRBottomSheet({
@@ -14,6 +18,7 @@ export function QRBottomSheet({
   onClose,
   url,
   label,
+  exchangeMode,
 }: QRBottomSheetProps) {
   const [mounted] = useState(() => typeof window !== "undefined");
   const [copied, setCopied] = useState(false);
@@ -25,7 +30,11 @@ export function QRBottomSheet({
   };
 
   return (
-    <Sheet isOpen={isOpen} onClose={onClose} detent="content">
+    <Sheet
+      isOpen={isOpen}
+      onClose={exchangeMode ? () => {} : onClose}
+      detent="content"
+    >
       <Sheet.Container>
         <Sheet.Header />
         <Sheet.Content>
@@ -57,10 +66,27 @@ export function QRBottomSheet({
                 {copied ? "コピーしました" : "タップしてコピー"}
               </span>
             </button>
+
+            {exchangeMode && (
+              <div className="w-full flex flex-col gap-2 pt-2">
+                <button
+                  onClick={exchangeMode.onExchanged}
+                  className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
+                >
+                  交換予定
+                </button>
+                <button
+                  onClick={exchangeMode.onNotExchanged}
+                  className="w-full px-4 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors"
+                >
+                  交換しない
+                </button>
+              </div>
+            )}
           </div>
         </Sheet.Content>
       </Sheet.Container>
-      <Sheet.Backdrop onTap={onClose} />
+      <Sheet.Backdrop onTap={exchangeMode ? () => {} : onClose} />
     </Sheet>
   );
 }

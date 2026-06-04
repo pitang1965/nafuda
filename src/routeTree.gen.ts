@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ESlugRouteImport } from './routes/e/$slug'
+import { Route as ConnectTokenRouteImport } from './routes/connect/$token'
 import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
 import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
 import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const ESlugRoute = ESlugRouteImport.update({
   id: '/e/$slug',
   path: '/e/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectTokenRoute = ConnectTokenRouteImport.update({
+  id: '/connect/$token',
+  path: '/connect/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedMeRoute = ProtectedMeRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
+  '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
   '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
+  '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
   '/events/new': typeof ProtectedEventsNewRoute
   '/profile/edit': typeof ProtectedProfileEditRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_protected/connections': typeof ProtectedConnectionsRoute
   '/_protected/me': typeof ProtectedMeRoute
+  '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
   '/_protected/events/new': typeof ProtectedEventsNewRoute
   '/_protected/profile/edit': typeof ProtectedProfileEditRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/connections'
     | '/me'
+    | '/connect/$token'
     | '/e/$slug'
     | '/events/new'
     | '/profile/edit'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/connections'
     | '/me'
+    | '/connect/$token'
     | '/e/$slug'
     | '/events/new'
     | '/profile/edit'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_protected/connections'
     | '/_protected/me'
+    | '/connect/$token'
     | '/e/$slug'
     | '/_protected/events/new'
     | '/_protected/profile/edit'
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ConnectTokenRoute: typeof ConnectTokenRoute
   ESlugRoute: typeof ESlugRoute
   ESlugEditRoute: typeof ESlugEditRoute
   UUrlIdPTokenRoute: typeof UUrlIdPTokenRoute
@@ -203,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/e/$slug'
       fullPath: '/e/$slug'
       preLoaderRoute: typeof ESlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect/$token': {
+      id: '/connect/$token'
+      path: '/connect/$token'
+      fullPath: '/connect/$token'
+      preLoaderRoute: typeof ConnectTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected/me': {
@@ -290,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ConnectTokenRoute: ConnectTokenRoute,
   ESlugRoute: ESlugRoute,
   ESlugEditRoute: ESlugEditRoute,
   UUrlIdPTokenRoute: UUrlIdPTokenRoute,

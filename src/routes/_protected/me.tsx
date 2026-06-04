@@ -1,6 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { getOwnProfile, deleteAccount } from "../../server/functions/profile";
+import {
+  createConnectionQrToken,
+  deleteConnectionQrToken,
+} from "../../server/functions/connection";
 import { authClient } from "../../lib/auth-client";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
@@ -42,7 +46,11 @@ function MePage() {
   const currentPersona = personas.find((p) => p.id === currentPersonaId);
   const style = getNafudaStyle(currentPersona?.styleId ?? null);
   const subtextColor = style?.subtextColor;
-  const [qrOpen, setQrOpen] = useState(false);
+  const [profileQrOpen, setProfileQrOpen] = useState(false);
+  const [connectQrOpen, setConnectQrOpen] = useState(false);
+  const [connectQrUrl, setConnectQrUrl] = useState<string | null>(null);
+  const [connectQrToken, setConnectQrToken] = useState<string | null>(null);
+  const [connectQrLoading, setConnectQrLoading] = useState(false);
   const [origin] = useState(() =>
     typeof window !== "undefined" ? window.location.origin : "",
   );
@@ -82,6 +90,36 @@ function MePage() {
       setDeleteError("退会処理に失敗しました。再度お試しください。");
       setIsDeleting(false);
     }
+  };
+
+  const handleExchangeNafuda = async () => {
+    if (!currentPersona) return;
+    setConnectQrLoading(true);
+    try {
+      const { token } = await createConnectionQrToken({
+        data: { fromPersonaId: currentPersona.id },
+      });
+      setConnectQrToken(token);
+      setConnectQrUrl(`${origin}/connect/${token}`);
+      setConnectQrOpen(true);
+    } finally {
+      setConnectQrLoading(false);
+    }
+  };
+
+  const handleExchanged = () => {
+    setConnectQrOpen(false);
+    setConnectQrUrl(null);
+    setConnectQrToken(null);
+  };
+
+  const handleNotExchanged = async () => {
+    if (connectQrToken) {
+      await deleteConnectionQrToken({ data: { token: connectQrToken } });
+    }
+    setConnectQrOpen(false);
+    setConnectQrUrl(null);
+    setConnectQrToken(null);
   };
 
   // No persona yet → redirect to wizard
@@ -275,11 +313,19 @@ function MePage() {
 
             <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
               <Button
-                onClick={() => setQrOpen(true)}
+                onClick={() => setProfileQrOpen(true)}
                 size="lg"
                 className="w-full rounded-xl"
               >
-                QRコードを表示
+                なふだを見せる
+              </Button>
+              <Button
+                onClick={handleExchangeNafuda}
+                disabled={connectQrLoading}
+                size="lg"
+                className="w-full rounded-xl"
+              >
+                {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
               </Button>
               <Button
                 variant="outline"
@@ -306,14 +352,26 @@ function MePage() {
 
         {currentPersona && urlId && (
           <QRBottomSheet
-            isOpen={qrOpen}
-            onClose={() => setQrOpen(false)}
+            isOpen={profileQrOpen}
+            onClose={() => setProfileQrOpen(false)}
             url={
               origin
                 ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}`
                 : ""
             }
-            label={`${currentPersona.displayName} のQRコード`}
+            label={`${currentPersona.displayName} のなふだ（閲覧用）`}
+          />
+        )}
+        {connectQrUrl && (
+          <QRBottomSheet
+            isOpen={connectQrOpen}
+            onClose={() => {}}
+            url={connectQrUrl}
+            label="相手にスキャンしてもらう（15分有効）"
+            exchangeMode={{
+              onExchanged: handleExchanged,
+              onNotExchanged: handleNotExchanged,
+            }}
           />
         )}
 

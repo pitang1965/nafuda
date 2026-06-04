@@ -1,15 +1,15 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { getMyConnections } from '../../server/functions/connection'
-import { InitialsAvatar } from '../../components/InitialsAvatar'
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { getMyConnections } from "../../server/functions/connection";
+import { InitialsAvatar } from "../../components/InitialsAvatar";
 
-export const Route = createFileRoute('/_protected/connections')({
+export const Route = createFileRoute("/_protected/connections")({
   loader: () => getMyConnections(),
   component: ConnectionsPage,
-})
+});
 
 function ConnectionsPage() {
-  const connections = Route.useLoaderData()
-  const router = useRouter()
+  const connections = Route.useLoaderData();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -19,7 +19,18 @@ function ConnectionsPage() {
           className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="戻る"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
         <h1 className="text-lg font-bold">つながり</h1>
       </div>
@@ -37,17 +48,17 @@ function ConnectionsPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-type Connection = Awaited<ReturnType<typeof getMyConnections>>[number]
+type Connection = Awaited<ReturnType<typeof getMyConnections>>[number];
 
 function ConnectionCard({ conn }: { conn: Connection }) {
-  const connectedDate = new Date(conn.connectedAt).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const connectedDate = new Date(conn.connectedAt).toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <Link
@@ -58,7 +69,11 @@ function ConnectionCard({ conn }: { conn: Connection }) {
       {/* アバター */}
       <div className="shrink-0">
         {conn.toAvatarUrl ? (
-          <img src={conn.toAvatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
+          <img
+            src={conn.toAvatarUrl}
+            alt=""
+            className="w-12 h-12 rounded-full object-cover"
+          />
         ) : (
           <InitialsAvatar name={conn.toDisplayName} size={48} />
         )}
@@ -66,7 +81,9 @@ function ConnectionCard({ conn }: { conn: Connection }) {
 
       {/* 情報 */}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 truncate">{conn.toDisplayName}</p>
+        <p className="font-medium text-gray-900 truncate">
+          {conn.toDisplayName}
+        </p>
         <p className="text-xs text-gray-400 mt-0.5">
           {conn.fromLabel || conn.fromDisplayName} として · {connectedDate}
         </p>
@@ -75,10 +92,18 @@ function ConnectionCard({ conn }: { conn: Connection }) {
         {conn.eventName && (
           <div className="mt-1.5 px-2 py-1 bg-pink-50 rounded text-xs text-pink-700">
             <span className="font-medium">{conn.eventName}</span>
-            {conn.venueName && <span className="text-pink-500"> @ {conn.venueName}</span>}
+            {conn.venueName && (
+              <span className="text-pink-500"> @ {conn.venueName}</span>
+            )}
             {conn.eventDate && (
               <span className="text-pink-400">
-                {' '}({new Date(conn.eventDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })})
+                {" "}
+                (
+                {new Date(conn.eventDate).toLocaleDateString("ja-JP", {
+                  month: "short",
+                  day: "numeric",
+                })}
+                )
               </span>
             )}
           </div>
@@ -88,7 +113,7 @@ function ConnectionCard({ conn }: { conn: Connection }) {
       {/* 矢印 */}
       <div className="shrink-0 text-gray-300 self-center">›</div>
     </Link>
-  )
+  );
 }
 
 function EmptyState() {
@@ -99,8 +124,8 @@ function EmptyState() {
         まだつながりがありません
       </p>
       <p className="text-xs text-gray-400 text-center">
-        相手のQRコードを読み取り、なふだページで「つながる」を押してみましょう
+        「なふだを交換する」で相手にQRコードをスキャンしてもらいましょう
       </p>
     </div>
-  )
+  );
 }
