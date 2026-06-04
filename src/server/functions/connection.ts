@@ -280,6 +280,24 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     return { alreadyConnected: false, connectedAt: new Date().toISOString() };
   });
 
+// つながりを削除する（自分の行のみ・非対称）
+export const deleteConnection = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ connectionId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+
+    await db
+      .delete(connections)
+      .where(
+        and(
+          eq(connections.id, data.connectionId),
+          eq(connections.fromUserId, session.user.id),
+        ),
+      );
+  });
+
 // 自分のつながり一覧（双方向モデル: 常に fromPersona が自分）
 export const getMyConnections = createServerFn({ method: "GET" }).handler(
   async () => {
