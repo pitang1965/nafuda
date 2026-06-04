@@ -1,6 +1,7 @@
 import { Sheet } from "react-modal-sheet";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
+import { useAnimate } from "motion/react";
 
 interface QRBottomSheetProps {
   isOpen: boolean;
@@ -22,6 +23,19 @@ export function QRBottomSheet({
 }: QRBottomSheetProps) {
   const [mounted] = useState(() => typeof window !== "undefined");
   const [copied, setCopied] = useState(false);
+  const [scope, animate] = useAnimate();
+
+  const handleBackdropTap = async () => {
+    if (!exchangeMode) {
+      onClose();
+      return;
+    }
+    await animate(
+      scope.current,
+      { x: [0, -12, 12, -8, 8, -4, 4, 0] },
+      { duration: 0.4 },
+    );
+  };
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(url);
@@ -34,11 +48,15 @@ export function QRBottomSheet({
       isOpen={isOpen}
       onClose={exchangeMode ? () => {} : onClose}
       detent="content"
+      disableDrag={!!exchangeMode}
     >
       <Sheet.Container>
-        <Sheet.Header />
+        {!exchangeMode && <Sheet.Header />}
         <Sheet.Content>
-          <div className="flex flex-col items-center gap-4 p-6 pb-10">
+          <div
+            ref={scope}
+            className="flex flex-col items-center gap-4 p-6 pb-10"
+          >
             <p className="text-sm text-gray-500">{label}</p>
             {!mounted || !url ? (
               <div className="w-[220px] h-[220px] bg-gray-100 rounded-lg animate-pulse" />
@@ -86,7 +104,7 @@ export function QRBottomSheet({
           </div>
         </Sheet.Content>
       </Sheet.Container>
-      <Sheet.Backdrop onTap={exchangeMode ? () => {} : onClose} />
+      <Sheet.Backdrop onTap={handleBackdropTap} />
     </Sheet>
   );
 }

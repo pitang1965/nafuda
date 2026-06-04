@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@media (min-width: 640px) {
+  .react-modal-sheet-container {
+    width: 384px !important;
+    left: calc(50% - 192px) !important;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
