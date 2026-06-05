@@ -3,7 +3,8 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { capture } from "../../lib/analytics";
 import {
   getConnectPageData,
   createConnectionFromQr,
@@ -30,6 +31,10 @@ function ConnectPage() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
+
+  useEffect(() => {
+    if (data.valid) capture("connect_page_viewed");
+  }, [data.valid]);
 
   if (!data.valid) {
     return (
@@ -65,6 +70,7 @@ function ConnectPage() {
       });
       return;
     }
+    capture("connect_button_tapped");
     if (session.myPersonas.length === 1) {
       await doConnect(session.myPersonas[0].id);
     } else {
@@ -80,6 +86,7 @@ function ConnectPage() {
       const result = await createConnectionFromQr({
         data: { connectionQrToken: token, fromPersonaId },
       });
+      capture("connection_completed");
       setConnected(true);
       setConnectedAt(result.connectedAt);
     } catch (err) {

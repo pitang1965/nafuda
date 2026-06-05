@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { capture } from "../../lib/analytics";
 import { useState, useEffect } from "react";
 import { getOwnProfile, deleteAccount } from "../../server/functions/profile";
 import {
@@ -102,6 +103,7 @@ function MePage() {
       setConnectQrToken(token);
       setConnectQrUrl(`${origin}/connect/${token}`);
       setConnectQrOpen(true);
+      capture("exchange_qr_shown");
     } finally {
       setConnectQrLoading(false);
     }

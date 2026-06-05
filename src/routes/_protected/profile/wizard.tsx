@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm, useWatch, FormProvider } from "react-hook-form";
+import { capture } from "@/lib/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -45,6 +46,10 @@ function WizardPage() {
   const [step, setStep] = useState(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  useEffect(() => {
+    capture("wizard_started", { is_first_persona: isFirstPersona });
+  }, [isFirstPersona]);
+
   const methods = useForm<WizardForm>({
     resolver: zodResolver(WizardSchema),
     defaultValues: {
@@ -57,17 +62,22 @@ function WizardPage() {
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = methods;
 
-  const displayName = watch("displayName") ?? "";
-  const label = watch("label") ?? "";
-  const useAutoAvatar = watch("useAutoAvatar");
-  const avatarUrl = watch("avatarUrl") ?? "";
+  const displayName =
+    useWatch({ control: methods.control, name: "displayName" }) ?? "";
+  const label = useWatch({ control: methods.control, name: "label" }) ?? "";
+  const useAutoAvatar = useWatch({
+    control: methods.control,
+    name: "useAutoAvatar",
+  });
+  const avatarUrl =
+    useWatch({ control: methods.control, name: "avatarUrl" }) ?? "";
 
   const handleProceedFromOshi = () => {
+    capture("wizard_step_completed", { step: 2 });
     setStep(3);
   };
 
@@ -83,6 +93,7 @@ function WizardPage() {
           oshiTags: values.oshiTags,
         },
       });
+      capture("wizard_completed", { is_first_persona: isFirstPersona });
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//")
           ? redirect
@@ -164,7 +175,10 @@ function WizardPage() {
               <Button
                 type="button"
                 onClick={() => {
-                  if (displayName.trim()) setStep(2);
+                  if (displayName.trim()) {
+                    capture("wizard_step_completed", { step: 1 });
+                    setStep(2);
+                  }
                 }}
                 disabled={!displayName.trim()}
                 size="lg"
@@ -265,7 +279,10 @@ function WizardPage() {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setStep(4)}
+                  onClick={() => {
+                    capture("wizard_step_completed", { step: 3 });
+                    setStep(4);
+                  }}
                   className="flex-1"
                 >
                   次へ

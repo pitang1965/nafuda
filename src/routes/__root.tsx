@@ -7,8 +7,13 @@ import {
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import "../index.css";
+import { initAnalytics } from "../lib/analytics";
 
 function RootDocument({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
   useEffect(() => {
     if ("serviceWorker" in navigator && typeof window !== "undefined") {
       window.addEventListener("load", () => {

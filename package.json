@@ -29,6 +29,7 @@
     "emblor": "^1.4.8",
     "lucide-react": "^1.17.0",
     "motion": "^12.38.0",
+    "posthog-js": "^1.380.1",
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.5",
