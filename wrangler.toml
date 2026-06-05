@@ -3,8 +3,5 @@ pages_build_output_dir = "dist/client"
 compatibility_date = "2026-04-23"
 compatibility_flags = [ "nodejs_compat" ]
 
-[vars]
-VITE_POSTHOG_KEY = "phc_zcgFaCQVCT68NPuPpnXnCSweL826tr4TDqpg2GFXs3dY"
-
 [observability]
 enabled = true
