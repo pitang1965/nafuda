@@ -5,10 +5,11 @@ QRコードを見せるだけでSNSつながりができる、イベント特化
 ## 技術スタック
 
 - **フレームワーク:** TanStack Start v1 (React SSR)
-- **デプロイ:** Cloudflare Workers
+- **デプロイ:** Cloudflare Pages + Workers
 - **DB:** Neon Postgres + Drizzle ORM
 - **認証:** Better Auth (Google / Facebook OAuth)
 - **スタイル:** Tailwind CSS + shadcn/ui
+- **アナリティクス:** PostHog（本番のみ・IP匿名化）
 
 ---
 
@@ -48,11 +49,18 @@ pnpm install
 3. アプリの設定 → ベーシック の「アプリID」と「app secret」を `.env.local` の該当箇所に記入する
 4. 公開前にアプリを**ライブモード**へ切り替え（開発モードはテストユーザーのみ有効）
 
-#### Cloudflare Workers (デプロイ時)
+#### PostHog (アナリティクス)
 
-1. Cloudflare Dashboard → マイプロフィール → APIトークン → トークンを作成 (Workers:Edit権限)
-2. (Workers有料プランの場合) Workers & Pages → Hyperdrive → 設定を作成 → NeonのPostgresに向ける
-   - HyperdriveのIDを `wrangler.toml` の `[[hyperdrive]]` セクションに記入
+1. [posthog.com](https://posthog.com) でプロジェクトを作成（US Cloud を選択）
+2. Project Settings → Project API Key で `phc_...` で始まるキーを取得
+3. `wrangler.toml` の `[vars]` セクションの `VITE_POSTHOG_KEY` に記入
+   - `*.pages.dev` ドメイン（Preview/Staging）では自動的に無効になります
+
+#### Cloudflare Pages (デプロイ時)
+
+1. Cloudflare Dashboard → Workers & Pages → プロジェクトを作成 → GitHub リポジトリと連携
+2. 本番環境変数（Production）を Settings → Environment Variables で設定
+3. ステージング環境は `staging` ブランチへのプッシュで自動生成される Preview URL を使用
 
 ### 3. 環境変数の設定
 
@@ -74,6 +82,9 @@ GOOGLE_CLIENT_SECRET=<Google Cloud Consoleで取得>
 # Facebook OAuth
 FACEBOOK_CLIENT_ID=<Facebook for Developersで取得>
 FACEBOOK_CLIENT_SECRET=<Facebook for Developersで取得>
+
+# PostHog (wrangler.toml の [vars] に記載するため .env.local は不要)
+# VITE_POSTHOG_KEY=phc_<PostHogで取得>
 ```
 
 > `.env.local` はGit管理外です。シークレットをコミットしないでください。
@@ -116,9 +127,20 @@ pnpm db:studio    # Drizzle Studio (DBブラウザ) を起動
 
 ## デプロイ
 
-```bash
-pnpm build
-npx wrangler deploy
-```
+### 本番（master ブランチ）
 
-本番環境の環境変数は Cloudflare Dashboard → Workers & Pages → 設定 → 環境変数 で設定してください。
+GitHub の `master` ブランチへのプッシュで Cloudflare Pages が自動デプロイします。
+
+### ステージング（staging ブランチ）
+
+`staging` ブランチへのプッシュで Cloudflare Pages Preview URL（`https://staging.nafuda-dxn.pages.dev`）に自動デプロイします。
+
+- アナリティクスは `*.pages.dev` ドメインでは自動無効
+- OAuth コールバック URL を Google / Facebook に登録する必要あり
+
+### 環境変数の管理
+
+| 変数 | 管理場所 |
+|---|---|
+| `VITE_POSTHOG_KEY` | `wrangler.toml` の `[vars]`（クライアント公開鍵のためコミット可） |
+| その他のシークレット | Cloudflare Dashboard → Environment Variables |
