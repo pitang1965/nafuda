@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/pr
 import { Route as ProtectedEventsNewRouteImport } from './routes/_protected/events/new'
 import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
 
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -91,6 +97,7 @@ const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/_protected/connections': typeof ProtectedConnectionsRoute
   '/_protected/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/privacy'
     | '/connections'
     | '/me'
     | '/connect/$token'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/privacy'
     | '/connections'
     | '/me'
     | '/connect/$token'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_protected'
     | '/login'
+    | '/privacy'
     | '/_protected/connections'
     | '/_protected/me'
     | '/connect/$token'
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   ConnectTokenRoute: typeof ConnectTokenRoute
   ESlugRoute: typeof ESlugRoute
   ESlugEditRoute: typeof ESlugEditRoute
@@ -190,6 +203,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -310,6 +330,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   ConnectTokenRoute: ConnectTokenRoute,
   ESlugRoute: ESlugRoute,
   ESlugEditRoute: ESlugEditRoute,
