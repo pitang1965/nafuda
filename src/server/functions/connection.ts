@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { eq, and, isNull, desc, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, gt, lt } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../db/client";
 import {
@@ -40,6 +40,16 @@ export const createConnectionQrToken = createServerFn({ method: "POST" })
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    // 同一ペルソナの期限切れトークンを掃除してから発行
+    await db
+      .delete(connectionQrTokens)
+      .where(
+        and(
+          eq(connectionQrTokens.fromPersonaId, data.fromPersonaId),
+          lt(connectionQrTokens.expiresAt, new Date()),
+        ),
+      );
 
     await db
       .insert(connectionQrTokens)
@@ -257,6 +267,11 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
           eventDate: activeCheckin.eventDate,
         }
       : { eventId: null, eventName: null, venueName: null, eventDate: null };
+
+    // 使用済みトークンを即時削除
+    await db
+      .delete(connectionQrTokens)
+      .where(eq(connectionQrTokens.token, data.connectionQrToken));
 
     // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）
     await db
