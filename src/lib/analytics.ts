@@ -1,8 +1,12 @@
 import posthog from "posthog-js";
 
+const isPreview =
+  typeof window !== "undefined" &&
+  window.location.hostname.endsWith(".pages.dev");
+
 export function initAnalytics() {
   const key = import.meta.env.VITE_POSTHOG_KEY;
-  if (!import.meta.env.PROD || !key) return;
+  if (!import.meta.env.PROD || !key || isPreview) return;
   posthog.init(key, {
     api_host: "https://us.i.posthog.com",
     persistence: "localStorage+cookie",
