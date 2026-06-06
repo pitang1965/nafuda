@@ -152,6 +152,53 @@ function MoonCorner() {
   );
 }
 
+function DiamondStar({
+  cx,
+  cy,
+  r = 8,
+  color = "#d4c8ff",
+  opacity = 0.9,
+}: {
+  cx: number;
+  cy: number;
+  r?: number;
+  color?: string;
+  opacity?: number;
+}) {
+  const pts = [0, 90, 180, 270]
+    .map((deg) => {
+      const outerRad = ((deg - 90) * Math.PI) / 180;
+      const innerRad = ((deg - 90 + 45) * Math.PI) / 180;
+      return [
+        `${cx + r * Math.cos(outerRad)},${cy + r * Math.sin(outerRad)}`,
+        `${cx + r * 0.25 * Math.cos(innerRad)},${cy + r * 0.25 * Math.sin(innerRad)}`,
+      ];
+    })
+    .flat()
+    .join(" ");
+  return <polygon points={pts} fill={color} opacity={opacity} />;
+}
+
+function StardustCorner() {
+  return (
+    <svg width="110" height="110" viewBox="0 0 110 110" fill="none">
+      <DiamondStar cx={26} cy={26} r={14} color="#d4c8ff" opacity={0.9} />
+      <DiamondStar cx={60} cy={16} r={8} color="#ffffff" opacity={0.8} />
+      <DiamondStar cx={16} cy={60} r={8} color="#ffffff" opacity={0.8} />
+      <DiamondStar cx={82} cy={26} r={5} color="#b8d4ff" opacity={0.7} />
+      <DiamondStar cx={26} cy={82} r={5} color="#b8d4ff" opacity={0.7} />
+      <DiamondStar cx={50} cy={42} r={4} color="#ffd4f8" opacity={0.6} />
+      <DiamondStar cx={42} cy={50} r={4} color="#ffd4f8" opacity={0.6} />
+      <circle cx={72} cy={12} r={2} fill="#ffffff" opacity={0.6} />
+      <circle cx={12} cy={72} r={2} fill="#ffffff" opacity={0.6} />
+      <circle cx={90} cy={48} r={1.5} fill="#d4c8ff" opacity={0.5} />
+      <circle cx={48} cy={90} r={1.5} fill="#d4c8ff" opacity={0.5} />
+      <circle cx={68} cy={40} r={1} fill="#ffffff" opacity={0.4} />
+      <circle cx={40} cy={68} r={1} fill="#ffffff" opacity={0.4} />
+    </svg>
+  );
+}
+
 const cornerStyle = (
   pos: { top?: 0; bottom?: 0; left?: 0; right?: 0 },
   flipX: boolean,
@@ -166,7 +213,12 @@ const cornerStyle = (
 });
 
 export function NafudaFrame({ frameId }: { frameId: FrameId }) {
-  const Corner = frameId === "sakura" ? SakuraCorner : MoonCorner;
+  const Corner =
+    frameId === "sakura"
+      ? SakuraCorner
+      : frameId === "stardust"
+        ? StardustCorner
+        : MoonCorner;
 
   return (
     <>

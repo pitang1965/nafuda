@@ -843,6 +843,11 @@ function EditForm({
                     className="w-full h-12 rounded-lg"
                     style={{ background: s.background }}
                   />
+                  {!s.isFree && (
+                    <span className="absolute top-1 left-1 text-[9px] font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-1 py-0.5 rounded leading-none">
+                      PRO
+                    </span>
+                  )}
                   <span className="text-xs text-gray-600">{s.name}</span>
                   {selectedStyleId === s.id && (
                     <span className="absolute top-1 right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center">

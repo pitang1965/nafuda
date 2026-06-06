@@ -4,6 +4,7 @@ import { getPublicProfile } from "../../server/functions/profile";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaFrame } from "../../components/NafudaFrame";
+import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { buildOgpDescription } from "../../lib/ogp";
 
@@ -113,6 +114,7 @@ function PublicProfilePage() {
           }}
         >
           {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+          {style?.holographic && <HolographicOverlay />}
           <div className="p-6 flex flex-col items-center gap-4 relative z-20">
             {profile.avatarUrl ? (
               <img
