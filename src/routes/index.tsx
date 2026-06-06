@@ -15,14 +15,9 @@ const features = [
     description: "イベント会場でQRを見せ合うだけ。その場でつながれる。",
   },
   {
-    icon: "🌟",
-    title: "推しタグで仲間を発見",
-    description: "同じアーティストを推す人がひと目でわかる。",
-  },
-  {
     icon: "🎪",
-    title: "イベントルームで盛り上がる",
-    description: "ライブ・握手会・オフ会の参加者と気軽に交流。",
+    title: "イベントで交流のきっかけを",
+    description: "ライブ・握手会・オフ会の参加者となふだを交換。出会いを記録に残せる。",
   },
   {
     icon: "🪄",
@@ -72,6 +67,47 @@ function LandingPage() {
             プライバシーポリシー
           </Link>
         </p>
+
+        {/* Screenshots */}
+        <div className="flex flex-col gap-10 w-full mt-10 mb-2">
+          <div className="flex flex-col items-center gap-3">
+            <img
+              src="/screenshot1.jpg"
+              alt="なふだの画面例"
+              className="w-full max-w-xs rounded-2xl shadow-lg"
+            />
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-800">
+                自分だけのなふだを作ろう
+              </p>
+              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                スタイルを選んで個性を演出。推し活用・仕事用など複数のなふだを使い分けられる。
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-3">
+            <a
+              href="https://nafuda.me/u/ffa2c0f0f4/p/5db65a7ecc006a102f7ba42790acff93"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="/demo-qrl.png"
+                alt="なふだのQRコード例"
+                className="w-48 h-48 rounded-2xl shadow-lg"
+              />
+            </a>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-800">
+                QRをスキャンして試してみる
+              </p>
+              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                推測されにくいURLで、必要な人にだけ情報を届けられる。
+              </p>
+            </div>
+          </div>
+        </div>
 
         <p className="text-xs text-gray-400 uppercase tracking-widest mb-4 self-start mt-8">
           できること
