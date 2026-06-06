@@ -97,30 +97,32 @@ export function HolographicOverlay() {
           transition: "opacity 0.12s ease",
         }}
       />
-      {/* iOS 13+ permission button */}
+      {/* iOS 13+ permission button — fixed で stacking context を脱出 */}
       {needsIOSPermission && (
         <div
           style={{
-            position: "absolute",
-            bottom: "1.5rem",
+            position: "fixed",
+            bottom: "5rem",
             left: 0,
             right: 0,
             display: "flex",
             justifyContent: "center",
             pointerEvents: "auto",
+            zIndex: 50,
           }}
         >
           <button
             onClick={handleIOSPermission}
             style={{
-              background: "rgba(255,255,255,0.12)",
+              background: "rgba(30,20,60,0.75)",
               color: "#e8e0ff",
-              border: "1px solid rgba(255,255,255,0.3)",
+              border: "1px solid rgba(200,180,255,0.4)",
               borderRadius: "9999px",
-              padding: "0.5rem 1.25rem",
-              fontSize: "0.75rem",
+              padding: "0.6rem 1.5rem",
+              fontSize: "0.8rem",
               cursor: "pointer",
-              backdropFilter: "blur(8px)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 0 16px rgba(180,150,255,0.3)",
             }}
           >
             ✦ きらきらを有効にする
