@@ -80,10 +80,10 @@ function WizardPage() {
     setStep(3);
   };
 
-  const onSubmit = async (values: WizardForm) => {
+  const onSubmit = async (values: WizardForm, dest: "me" | "edit" = "edit") => {
     setSubmitError(null);
     try {
-      await createPersona({
+      const persona = await createPersona({
         data: {
           displayName: values.displayName,
           label: values.label || null,
@@ -93,11 +93,13 @@ function WizardPage() {
         },
       });
       capture("wizard_completed", { is_first_persona: isFirstPersona });
-      const safeRedirect =
-        redirect?.startsWith("/") && !redirect.startsWith("//")
-          ? redirect
-          : "/me";
-      window.location.href = safeRedirect;
+      if (redirect?.startsWith("/") && !redirect.startsWith("//")) {
+        window.location.href = redirect;
+      } else if (dest === "edit") {
+        window.location.href = `/profile/edit?personaId=${persona.id}`;
+      } else {
+        window.location.href = "/me";
+      }
     } catch {
       setSubmitError("エラーが発生しました。もう一度お試しください。");
     }
@@ -123,7 +125,10 @@ function WizardPage() {
       </div>
 
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          className="flex flex-col gap-6"
+        >
           {/* Step 1: Display name */}
           {step === 1 && (
             <div className="flex flex-col gap-4">
@@ -289,30 +294,63 @@ function WizardPage() {
           {/* Step 4: Confirm + submit */}
           {step === 4 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">設定完了！</h2>
+              <h2 className="text-xl font-bold">
+                {isFromEvent ? "設定完了！" : "もうひといきです！"}
+              </h2>
               <p className="text-sm text-gray-500">
                 {isFromEvent
                   ? "なふだを作成してイベントに参加しましょう。"
-                  : "なふだを作成して始めましょう。"}
+                  : "SNSリンクや自己紹介を追加すると、より伝わるなふだになります。"}
               </p>
               {submitError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                   {submitError}
                 </div>
               )}
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(3)}
-                  className="flex-1"
-                >
-                  戻る
-                </Button>
-                <Button type="submit" className="flex-1">
-                  {isFromEvent ? "作成してイベントへ" : "なふだを作成"}
-                </Button>
-              </div>
+              {isFromEvent ? (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(3)}
+                    className="flex-1"
+                  >
+                    戻る
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => handleSubmit((v) => onSubmit(v, "me"))()}
+                    className="flex-1"
+                  >
+                    作成してイベントへ
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => handleSubmit((v) => onSubmit(v, "edit"))()}
+                    className="w-full"
+                  >
+                    編集画面で仕上げる
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSubmit((v) => onSubmit(v, "me"))()}
+                    className="w-full"
+                  >
+                    あとで編集する
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="text-sm text-gray-400 hover:text-gray-600 underline underline-offset-2 mt-1"
+                  >
+                    ← 戻る
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </form>
