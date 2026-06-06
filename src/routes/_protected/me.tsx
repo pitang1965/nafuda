@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
+import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
@@ -233,6 +234,7 @@ function MePage() {
         >
           {style?.frameId && <NafudaFrame frameId={style.frameId} />}
           {style?.holographic && <HolographicOverlay />}
+          {style?.petalsFall && <CherryBlossomOverlay />}
           <div className="p-6 flex flex-col items-center gap-4 relative z-20">
             <div
               className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}

@@ -20,6 +20,7 @@ export interface NafudaStyleDef {
   frameId: FrameId | null;
   isFree: boolean;
   holographic?: boolean;
+  petalsFall?: boolean;
 }
 
 export const NAFUDA_STYLES: NafudaStyleDef[] = [
@@ -50,6 +51,7 @@ export const NAFUDA_STYLES: NafudaStyleDef[] = [
       "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap",
     frameId: "sakura",
     isFree: true,
+    petalsFall: true,
   },
   {
     id: "moon",
