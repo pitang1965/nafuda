@@ -60,7 +60,7 @@ export function QRBottomSheet({
           >
             <p className="text-sm text-gray-500">{label}</p>
             {!mounted || !url ? (
-              <div className="w-[220px] h-[220px] bg-gray-100 rounded-lg animate-pulse" />
+              <div className="w-55 h-55 bg-gray-100 rounded-lg animate-pulse" />
             ) : (
               <QRCodeSVG
                 value={url}
@@ -75,7 +75,7 @@ export function QRBottomSheet({
               onClick={handleCopy}
               className="flex flex-col items-center gap-1 group"
             >
-              <p className="text-xs text-gray-400 break-all text-center max-w-[240px] group-hover:text-gray-600 transition-colors">
+              <p className="text-xs text-gray-400 break-all text-center max-w-60 group-hover:text-gray-600 transition-colors">
                 {url}
               </p>
               <span

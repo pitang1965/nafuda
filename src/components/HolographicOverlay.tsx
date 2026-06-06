@@ -1,28 +1,59 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function HolographicOverlay() {
   const tiltLayerRef = useRef<HTMLDivElement>(null);
+  const [needsIOSPermission, setNeedsIOSPermission] = useState(false);
+  const [listening, setListening] = useState(false);
 
   useEffect(() => {
+    const needsPermission =
+      typeof (
+        DeviceOrientationEvent as unknown as {
+          requestPermission?: () => Promise<string>;
+        }
+      ).requestPermission === "function";
+
+    if (needsPermission) {
+      setNeedsIOSPermission(true);
+    } else {
+      setListening(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!listening) return;
     const el = tiltLayerRef.current;
     if (!el) return;
 
     const onOrientation = (e: DeviceOrientationEvent) => {
-      const gamma = e.gamma ?? 0; // left-right tilt, -90 to 90
-      const beta = e.beta ?? 45; // front-back tilt, -180 to 180
-
+      const gamma = e.gamma ?? 0;
+      const beta = e.beta ?? 45;
       const x = Math.max(0, Math.min(100, ((gamma + 45) / 90) * 100));
       const y = Math.max(0, Math.min(100, ((beta - 15) / 60) * 100));
       const angle = gamma * 4;
       const intensity = Math.min(Math.abs(gamma) / 15, 1);
-
       el.style.background = `conic-gradient(from ${angle}deg at ${x}% ${y}%, hsl(280,100%,75%), hsl(320,100%,72%), hsl(0,100%,72%), hsl(45,100%,72%), hsl(180,100%,75%), hsl(230,100%,78%), hsl(280,100%,75%))`;
       el.style.opacity = String(0.1 + intensity * 0.28);
     };
 
     window.addEventListener("deviceorientation", onOrientation);
     return () => window.removeEventListener("deviceorientation", onOrientation);
-  }, []);
+  }, [listening]);
+
+  const handleIOSPermission = async () => {
+    try {
+      const state = await (
+        DeviceOrientationEvent as unknown as {
+          requestPermission: () => Promise<string>;
+        }
+      ).requestPermission();
+      if (state === "granted") {
+        setListening(true);
+      }
+    } finally {
+      setNeedsIOSPermission(false);
+    }
+  };
 
   return (
     <div
@@ -66,6 +97,36 @@ export function HolographicOverlay() {
           transition: "opacity 0.12s ease",
         }}
       />
+      {/* iOS 13+ permission button */}
+      {needsIOSPermission && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "1.5rem",
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "auto",
+          }}
+        >
+          <button
+            onClick={handleIOSPermission}
+            style={{
+              background: "rgba(255,255,255,0.12)",
+              color: "#e8e0ff",
+              border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: "9999px",
+              padding: "0.5rem 1.25rem",
+              fontSize: "0.75rem",
+              cursor: "pointer",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            ✦ きらきらを有効にする
+          </button>
+        </div>
+      )}
     </div>
   );
 }
