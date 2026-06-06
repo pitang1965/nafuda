@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { capture } from "@/lib/analytics";
@@ -109,6 +109,11 @@ function WizardPage() {
 
   return (
     <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
+      <div className="mb-4">
+        <Link to="/me" className="text-sm text-gray-400 hover:text-gray-600">
+          ← トップに戻る
+        </Link>
+      </div>
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {steps.map((label, i) => (
