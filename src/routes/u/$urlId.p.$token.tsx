@@ -27,7 +27,8 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     if (!profile) return {};
     const title = `${profile.displayName}のなふだ`;
     const description = buildOgpDescription(profile.displayName, profile.bio);
-    const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
+    const rawImage = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
+    const image = rawImage.startsWith("/") ? `${BASE_URL}${rawImage}` : rawImage;
     const url = `${BASE_URL}/u/${params.urlId}/p/${params.token}`;
     return {
       meta: [
