@@ -52,6 +52,10 @@ export function usePwaInstall() {
   const isIos =
     typeof navigator !== "undefined" &&
     /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isIosSafari =
+    isIos &&
+    typeof navigator !== "undefined" &&
+    !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
   const isInStandaloneMode =
     typeof navigator !== "undefined" &&
     "standalone" in navigator &&
@@ -60,6 +64,7 @@ export function usePwaInstall() {
   return {
     canInstall: !!installPrompt,
     isIos: isIos && !isInStandaloneMode,
+    isIosSafari: isIosSafari && !isInStandaloneMode,
     isInstalled,
     promptInstall,
   };

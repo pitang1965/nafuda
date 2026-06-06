@@ -4,9 +4,12 @@ import { usePwaInstall } from "../hooks/usePwaInstall";
 const STORAGE_KEY = "pwa-banner-dismissed";
 
 export function PwaInstallBanner() {
-  const { canInstall, isIos, isInstalled, promptInstall } = usePwaInstall();
+  const { canInstall, isIos, isIosSafari, isInstalled, promptInstall } =
+    usePwaInstall();
   const [dismissed, setDismissed] = useState(
-    () => typeof window !== "undefined" && sessionStorage.getItem(STORAGE_KEY) === "1",
+    () =>
+      typeof window !== "undefined" &&
+      sessionStorage.getItem(STORAGE_KEY) === "1",
   );
 
   const dismiss = () => {
@@ -20,7 +23,9 @@ export function PwaInstallBanner() {
     return (
       <div className="mx-4 mb-4 flex items-center justify-between p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
         <span>
-          Safari の共有ボタン（↑）→「ホーム画面に追加」でオフライン表示できます
+          {isIosSafari
+            ? "Safari の共有ボタン（↑）→「ホーム画面に追加」でオフライン表示できます"
+            : "ブラウザのメニュー→「ホーム画面に追加」でオフライン表示できます"}
         </span>
         <button
           onClick={dismiss}
