@@ -2,6 +2,7 @@ import {
   createFileRoute,
   useNavigate,
   useRouter,
+  Link,
 } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { capture } from "../../lib/analytics";
@@ -32,9 +33,53 @@ function ConnectPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
+  const doConnect = async (fromPersonaId: string) => {
+    setShowPicker(false);
+    setConnecting(true);
+    setError(null);
+    try {
+      const result = await createConnectionFromQr({
+        data: { connectionQrToken: token, fromPersonaId },
+      });
+      capture("connection_completed");
+      setConnected(true);
+      setConnectedAt(result.connectedAt);
+      sessionStorage.removeItem("pendingConnect");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
   useEffect(() => {
     if (data.valid) capture("connect_page_viewed");
   }, [data.valid]);
+
+  // ログイン・ウィザード完了後に自動接続する
+  useEffect(() => {
+    if (!data.valid) return;
+    const { session } = data;
+    const pendingToken = sessionStorage.getItem("pendingConnect");
+    if (pendingToken !== token) return;
+    if (connected) {
+      sessionStorage.removeItem("pendingConnect");
+      return;
+    }
+    if (!session?.user) return;
+    if (session.myPersonas.length === 0) {
+      navigate({
+        to: "/profile/wizard",
+        search: { redirect: `/connect/${token}` },
+      });
+      return;
+    }
+    if (session.myPersonas.length === 1) {
+      doConnect(session.myPersonas[0].id);
+    } else {
+      setShowPicker(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data.valid) {
     return (
@@ -57,6 +102,7 @@ function ConnectPage() {
 
   const handleConnectClick = async () => {
     if (!session?.user) {
+      sessionStorage.setItem("pendingConnect", token);
       await navigate({
         to: "/login",
         search: { redirect: `/connect/${token}` },
@@ -64,6 +110,7 @@ function ConnectPage() {
       return;
     }
     if (session.myPersonas.length === 0) {
+      sessionStorage.setItem("pendingConnect", token);
       await navigate({
         to: "/profile/wizard",
         search: { redirect: `/connect/${token}` },
@@ -75,24 +122,6 @@ function ConnectPage() {
       await doConnect(session.myPersonas[0].id);
     } else {
       setShowPicker(true);
-    }
-  };
-
-  const doConnect = async (fromPersonaId: string) => {
-    setShowPicker(false);
-    setConnecting(true);
-    setError(null);
-    try {
-      const result = await createConnectionFromQr({
-        data: { connectionQrToken: token, fromPersonaId },
-      });
-      capture("connection_completed");
-      setConnected(true);
-      setConnectedAt(result.connectedAt);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "エラーが発生しました");
-    } finally {
-      setConnecting(false);
     }
   };
 
@@ -193,7 +222,7 @@ function ConnectPage() {
             {/* つながるボタン */}
             <div className="w-full max-w-sm mt-4">
               {connected ? (
-                <div className="flex flex-col items-center gap-1.5">
+                <div className="flex flex-col items-center gap-3">
                   <div
                     className="w-full text-center px-6 py-3 rounded-xl text-sm font-medium"
                     style={
@@ -216,6 +245,12 @@ function ConnectPage() {
                       })}
                     </p>
                   )}
+                  <Link
+                    to="/me"
+                    className="w-full text-center px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors block"
+                  >
+                    マイなふだを見る
+                  </Link>
                 </div>
               ) : showPicker ? (
                 <PersonaPicker
