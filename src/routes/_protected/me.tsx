@@ -5,6 +5,7 @@ import { getOwnProfile, deleteAccount } from "../../server/functions/profile";
 import {
   createConnectionQrToken,
   deleteConnectionQrToken,
+  checkQrConnectionStatus,
 } from "../../server/functions/connection";
 import { authClient } from "../../lib/auth-client";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
@@ -52,6 +53,10 @@ function MePage() {
   const [connectQrUrl, setConnectQrUrl] = useState<string | null>(null);
   const [connectQrToken, setConnectQrToken] = useState<string | null>(null);
   const [connectQrLoading, setConnectQrLoading] = useState(false);
+  const [connectQrSince, setConnectQrSince] = useState<string | null>(null);
+  const [connectionNotification, setConnectionNotification] = useState<{
+    displayName: string;
+  } | null>(null);
   const [origin] = useState(() =>
     typeof window !== "undefined" ? window.location.origin : "",
   );
@@ -74,6 +79,29 @@ function MePage() {
     link.setAttribute("data-nafuda-font", style.id);
     document.head.appendChild(link);
   }, [style?.fontUrl, style?.id]);
+
+  // QR表示中に接続成立をポーリングで検知する
+  useEffect(() => {
+    if (!connectQrOpen || !connectQrToken || !currentPersona || !connectQrSince)
+      return;
+    const token = connectQrToken;
+    const fromPersonaId = currentPersona.id;
+    const since = connectQrSince;
+    const poll = async () => {
+      try {
+        const result = await checkQrConnectionStatus({
+          data: { token, fromPersonaId, since },
+        });
+        if (result.status === "connected") {
+          setConnectionNotification({ displayName: result.displayName });
+        }
+      } catch {
+        // ポーリングエラーは無視
+      }
+    };
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [connectQrOpen, connectQrToken, currentPersona, connectQrSince]);
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -102,6 +130,7 @@ function MePage() {
       });
       setConnectQrToken(token);
       setConnectQrUrl(`${origin}/connect/${token}`);
+      setConnectQrSince(new Date().toISOString());
       setConnectQrOpen(true);
       capture("exchange_qr_shown");
     } finally {
@@ -109,19 +138,21 @@ function MePage() {
     }
   };
 
-  const handleExchanged = () => {
+  const closeConnectQr = () => {
     setConnectQrOpen(false);
     setConnectQrUrl(null);
     setConnectQrToken(null);
+    setConnectQrSince(null);
+    setConnectionNotification(null);
   };
+
+  const handleExchanged = () => closeConnectQr();
 
   const handleNotExchanged = async () => {
     if (connectQrToken) {
       await deleteConnectionQrToken({ data: { token: connectQrToken } });
     }
-    setConnectQrOpen(false);
-    setConnectQrUrl(null);
-    setConnectQrToken(null);
+    closeConnectQr();
   };
 
   // No persona yet → redirect to wizard
@@ -373,6 +404,7 @@ function MePage() {
             exchangeMode={{
               onExchanged: handleExchanged,
               onNotExchanged: handleNotExchanged,
+              connectionNotification,
             }}
           />
         )}

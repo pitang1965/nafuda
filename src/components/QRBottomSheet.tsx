@@ -11,6 +11,7 @@ interface QRBottomSheetProps {
   exchangeMode?: {
     onExchanged: () => void;
     onNotExchanged: () => void;
+    connectionNotification?: { displayName: string } | null;
   };
 }
 
@@ -85,22 +86,40 @@ export function QRBottomSheet({
               </span>
             </button>
 
-            {exchangeMode && (
-              <div className="w-full flex flex-col gap-2 pt-2">
-                <button
-                  onClick={exchangeMode.onExchanged}
-                  className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
-                >
-                  交換予定
-                </button>
-                <button
-                  onClick={exchangeMode.onNotExchanged}
-                  className="w-full px-4 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors"
-                >
-                  交換しない
-                </button>
-              </div>
-            )}
+            {exchangeMode &&
+              (exchangeMode.connectionNotification ? (
+                <div className="w-full flex flex-col items-center gap-3 pt-2">
+                  <p className="text-2xl">🎉</p>
+                  <p className="text-base font-bold text-gray-800">
+                    つながりました！
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {exchangeMode.connectionNotification.displayName}{" "}
+                    さんとつながりました
+                  </p>
+                  <button
+                    onClick={exchangeMode.onExchanged}
+                    className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={exchangeMode.onExchanged}
+                    className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
+                  >
+                    交換予定
+                  </button>
+                  <button
+                    onClick={exchangeMode.onNotExchanged}
+                    className="w-full px-4 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors"
+                  >
+                    交換しない
+                  </button>
+                </div>
+              ))}
           </div>
         </Sheet.Content>
       </Sheet.Container>

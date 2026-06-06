@@ -295,6 +295,63 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     return { alreadyConnected: false, connectedAt: new Date().toISOString() };
   });
 
+// QRを見せた側がリアルタイムで接続成立を確認するためのポーリング用
+export const checkQrConnectionStatus = createServerFn({ method: "GET" })
+  .inputValidator(
+    z.object({
+      token: z.string(),
+      fromPersonaId: z.uuid(),
+      since: z.string(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const [personaRow] = await db
+      .select({ userId: personas.userId })
+      .from(personas)
+      .where(eq(personas.id, data.fromPersonaId))
+      .limit(1);
+    if (personaRow?.userId !== session.user.id)
+      throw new Error("権限がありません");
+
+    const [tokenRow] = await db
+      .select({ id: connectionQrTokens.fromPersonaId })
+      .from(connectionQrTokens)
+      .where(eq(connectionQrTokens.token, data.token))
+      .limit(1);
+
+    if (tokenRow) return { status: "pending" as const };
+
+    const sinceDate = new Date(data.since);
+    const [recentConn] = await db
+      .select({ toPersonaId: connections.toPersonaId })
+      .from(connections)
+      .where(
+        and(
+          eq(connections.fromPersonaId, data.fromPersonaId),
+          gt(connections.connectedAt, sinceDate),
+        ),
+      )
+      .orderBy(desc(connections.connectedAt))
+      .limit(1);
+
+    if (!recentConn) return { status: "expired" as const };
+
+    const [toPersona] = await db
+      .select({ displayName: personas.displayName })
+      .from(personas)
+      .where(eq(personas.id, recentConn.toPersonaId))
+      .limit(1);
+
+    return {
+      status: "connected" as const,
+      displayName: toPersona?.displayName ?? "相手",
+    };
+  });
+
 // つながりを削除する（自分の行のみ・非対称）
 export const deleteConnection = createServerFn({ method: "POST" })
   .inputValidator(z.object({ connectionId: z.uuid() }))
