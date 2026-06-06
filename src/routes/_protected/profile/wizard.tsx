@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { capture } from "@/lib/analytics";
@@ -42,7 +42,6 @@ function WizardPage() {
   const { redirect } = Route.useSearch();
   const isFromEvent = redirect?.startsWith("/e/") ?? false;
   const isFirstPersona = personas.length === 0;
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -97,12 +96,8 @@ function WizardPage() {
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//")
           ? redirect
-          : null;
-      if (safeRedirect) {
-        window.location.href = safeRedirect;
-      } else {
-        navigate({ to: "/me" });
-      }
+          : "/me";
+      window.location.href = safeRedirect;
     } catch {
       setSubmitError("エラーが発生しました。もう一度お試しください。");
     }
@@ -139,7 +134,7 @@ function WizardPage() {
               <div>
                 <Input
                   {...register("displayName")}
-                  placeholder="ぴたんこ🐾"
+                  placeholder="ゆきたん⭐"
                   className="h-12"
                 />
                 {errors.displayName && (

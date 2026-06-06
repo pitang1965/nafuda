@@ -11,7 +11,7 @@ const getSession = createServerFn({ method: "GET" }).handler(async () => {
 const features = [
   {
     icon: "🪪",
-    title: "デジタル名刺をQRで交換",
+    title: "QRコードで名刺交換",
     description: "イベント会場でQRを見せ合うだけ。その場でつながれる。",
   },
   {
@@ -23,6 +23,12 @@ const features = [
     icon: "🎪",
     title: "イベントルームで盛り上がる",
     description: "ライブ・握手会・オフ会の参加者と気軽に交流。",
+  },
+  {
+    icon: "🪄",
+    title: "シーンで使い分ける",
+    description:
+      "推し活用・仕事用を別々のなふだに。見せたい情報だけを見せられる。",
   },
 ];
 
@@ -40,14 +46,22 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-pink-50 to-white flex flex-col items-center px-4 py-12">
       <div className="max-w-md w-full flex flex-col items-center">
-        <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
-        <p className="text-sm text-gray-400 mb-10">推し活をもっと楽しく</p>
+        <p className="text-2xl font-bold text-pink-500 tracking-widest mb-3">
+          なふだ
+        </p>
+        <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center leading-snug">
+          出会いに、文脈を。
+        </h1>
+        <p className="text-sm text-gray-500 mb-10 text-center leading-relaxed">
+          ライブ会場で隣の人と話が弾んだ。でもSNS交換って気まずい——
+          そんなとき、QRをかざすだけ。推しも、現場も、ふたりの記録に残る。
+        </p>
 
         <Link
           to="/login"
           className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-full shadow-md transition-colors mb-12 text-base text-center block"
         >
-          ログイン
+          はじめる
         </Link>
 
         <p className="text-xs text-gray-400 text-center">
