@@ -13,8 +13,16 @@ const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
 // 閲覧専用: なふだを見せる（コネクション生成しない）
 export const Route = createFileRoute("/u/$urlId/p/$token")({
-  loader: ({ params }) =>
-    getPublicProfile({ data: { shareToken: params.token } }),
+  loader: async ({ params }) => {
+    const profile = await getPublicProfile({
+      data: { shareToken: params.token },
+    });
+    if (!profile) return null;
+    const avatarUrl = profile.avatarUrl?.startsWith("/")
+      ? `${BASE_URL}${profile.avatarUrl}`
+      : profile.avatarUrl;
+    return { ...profile, avatarUrl };
+  },
   head: ({ loaderData: profile, params }) => {
     if (!profile) return {};
     const title = `${profile.displayName}のなふだ`;
