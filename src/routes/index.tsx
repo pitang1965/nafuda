@@ -74,6 +74,9 @@ function LandingPage() {
             <img
               src="/screenshot1.jpg"
               alt="なふだの画面例"
+              width={526}
+              height={770}
+              fetchPriority="high"
               className="w-full max-w-xs rounded-2xl shadow-lg"
             />
             <div className="text-center">
@@ -95,6 +98,9 @@ function LandingPage() {
               <img
                 src="/demo-qrl.png"
                 alt="なふだのQRコード例"
+                width={300}
+                height={349}
+                loading="lazy"
                 className="w-48 h-48 rounded-2xl shadow-lg"
               />
             </a>

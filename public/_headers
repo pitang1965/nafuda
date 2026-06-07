@@ -10,5 +10,14 @@
 /workbox-*.js
   Cache-Control: public, max-age=31536000, immutable
 
+/screenshot1.jpg
+  Cache-Control: public, max-age=2592000
+
+/demo-qrl.png
+  Cache-Control: public, max-age=2592000
+
+/demo-mint.jpg
+  Cache-Control: public, max-age=86400
+
 /*
   Cache-Control: no-cache

@@ -1,21 +1,24 @@
-import posthog from "posthog-js";
+import type { PostHog } from "posthog-js";
 
 const isPreview =
   typeof window !== "undefined" &&
   window.location.hostname.endsWith(".pages.dev");
 
-export function initAnalytics() {
+let ph: PostHog | null = null;
+
+export async function initAnalytics() {
   const key = import.meta.env.VITE_POSTHOG_KEY;
   if (!import.meta.env.PROD || !key || isPreview) return;
+  const { default: posthog } = await import("posthog-js");
   posthog.init(key, {
     api_host: "https://us.i.posthog.com",
     persistence: "localStorage+cookie",
     ip: false,
     capture_pageview: true,
   });
+  ph = posthog;
 }
 
 export function capture(event: string, properties?: Record<string, unknown>) {
-  if (!import.meta.env.PROD) return;
-  posthog.capture(event, properties);
+  ph?.capture(event, properties);
 }
