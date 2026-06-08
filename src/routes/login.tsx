@@ -28,7 +28,7 @@ function LoginPage() {
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight">なふだ</h1>
         <p className="mt-2 text-sm text-gray-500">
-          QRを見せるだけで、つながれる
+          SNSをまとめて、出会いも記録する
         </p>
       </div>
 

@@ -10,14 +10,21 @@ const getSession = createServerFn({ method: "GET" }).handler(async () => {
 
 const features = [
   {
+    icon: "🔗",
+    title: "SNSリンクをひとつにまとめる",
+    description:
+      "X・Instagram・YouTubeなど、バラバラなリンクを1枚のなふだに。SNSのbioリンクはこれひとつで。",
+  },
+  {
     icon: "🪪",
-    title: "QRコードで名刺交換",
+    title: "QRで名刺交換",
     description: "イベント会場でQRを見せ合うだけ。その場でつながれる。",
   },
   {
-    icon: "🎪",
-    title: "イベントで交流のきっかけを",
-    description: "ライブ・握手会・オフ会の参加者となふだを交換。出会いを記録に残せる。",
+    icon: "🗂",
+    title: "出会いの文脈を残す",
+    description:
+      "いつ・どこで出会ったか、自動で記録。ライブ・オフ会・握手会の思い出に。",
   },
   {
     icon: "🪄",
@@ -45,11 +52,11 @@ function LandingPage() {
           なふだ
         </p>
         <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center leading-snug">
-          出会いに、文脈を。
+          SNSをひとつに。出会いに、文脈を。
         </h1>
         <p className="text-sm text-gray-500 mb-10 text-center leading-relaxed">
-          ライブ会場で隣の人と話が弾んだ。でもSNS交換って気まずい——
-          そんなとき、QRをかざすだけ。推しも、現場も、ふたりの記録に残る。
+          X・Instagram・YouTubeなど、バラバラなリンクを1枚のなふだにまとめられる。
+          イベントで出会った人とのつながりも、いつ・どこでという文脈ごと記録に残せる。
         </p>
 
         <Link
