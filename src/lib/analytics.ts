@@ -15,6 +15,7 @@ export async function initAnalytics() {
     persistence: "localStorage+cookie",
     ip: false,
     capture_pageview: true,
+    disable_surveys: true,
   });
   ph = posthog;
 }

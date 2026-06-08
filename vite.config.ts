@@ -38,6 +38,9 @@ export default defineConfig(({ command }) => ({
     viteReact(),
     nafudaPwaPlugin(),
   ],
+  build: {
+    target: ['es2020', 'chrome87', 'firefox78', 'safari14', 'edge88'],
+  },
   optimizeDeps: {
     exclude: ['@better-auth/kysely-adapter'],
   },
