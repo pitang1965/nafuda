@@ -2,11 +2,15 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { auth } from "../../server/auth";
-import { getEventParticipants, updateEvent, deleteEvent } from "../../server/functions/event";
+import {
+  getEventParticipants,
+  updateEvent,
+  deleteEvent,
+} from "../../server/functions/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -54,10 +58,20 @@ function EditEventPage() {
 
   const eventDateStr = new Date(event.eventDate).toISOString().slice(0, 10);
   const eventTimeStr = event.showTime
-    ? new Date(event.eventDate).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false })
+    ? new Date(event.eventDate).toLocaleTimeString("ja-JP", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
     : "";
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: event.name,
@@ -69,7 +83,7 @@ function EditEventPage() {
     },
   });
 
-  const showTime = watch("showTime");
+  const showTime = useWatch({ control, name: "showTime", defaultValue: false });
 
   const onSubmit = async (formData: FormValues) => {
     setSubmitError(null);
@@ -86,7 +100,10 @@ function EditEventPage() {
           description: formData.description || null,
         },
       });
-      await router.navigate({ to: "/e/$slug", params: { slug: event.shareToken } });
+      await router.navigate({
+        to: "/e/$slug",
+        params: { slug: event.shareToken },
+      });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "更新に失敗しました");
     } finally {
@@ -109,33 +126,63 @@ function EditEventPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-4 border-b flex items-center gap-3">
-        <Button variant="ghost" size="icon-sm" onClick={() => router.history.back()} aria-label="戻る">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => router.history.back()}
+          aria-label="戻る"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Button>
         <h1 className="text-lg font-bold">イベントを編集</h1>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
+      <main className="flex-1 p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="name">イベント名</label>
+              <label className="text-sm font-medium" htmlFor="name">
+                イベント名
+              </label>
               <Input id="name" type="text" {...register("name")} />
-              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="venueName">会場名</label>
+              <label className="text-sm font-medium" htmlFor="venueName">
+                会場名
+              </label>
               <Input id="venueName" type="text" {...register("venueName")} />
-              {errors.venueName && <p className="text-xs text-red-500">{errors.venueName.message}</p>}
+              {errors.venueName && (
+                <p className="text-xs text-red-500">
+                  {errors.venueName.message}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="eventDate">日付</label>
+              <label className="text-sm font-medium" htmlFor="eventDate">
+                日付
+              </label>
               <Input id="eventDate" type="date" {...register("eventDate")} />
-              {errors.eventDate && <p className="text-xs text-red-500">{errors.eventDate.message}</p>}
+              {errors.eventDate && (
+                <p className="text-xs text-red-500">
+                  {errors.eventDate.message}
+                </p>
+              )}
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -148,14 +195,19 @@ function EditEventPage() {
 
             {showTime && (
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" htmlFor="eventTime">開始時刻</label>
+                <label className="text-sm font-medium" htmlFor="eventTime">
+                  開始時刻
+                </label>
                 <Input id="eventTime" type="time" {...register("eventTime")} />
               </div>
             )}
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="description">
-                説明 <span className="text-xs text-gray-400 font-normal">（任意）</span>
+                説明{" "}
+                <span className="text-xs text-gray-400 font-normal">
+                  （任意）
+                </span>
               </label>
               <textarea
                 id="description"
@@ -165,7 +217,11 @@ function EditEventPage() {
                 placeholder="イベントの詳細・注意事項など"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
               />
-              {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+              {errors.description && (
+                <p className="text-xs text-red-500">
+                  {errors.description.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -173,9 +229,16 @@ function EditEventPage() {
             URLは変更されません。既存のQRコードは引き続き有効です。
           </p>
 
-          {submitError && <p className="text-sm text-red-600 px-1">{submitError}</p>}
+          {submitError && (
+            <p className="text-sm text-red-600 px-1">{submitError}</p>
+          )}
 
-          <Button type="submit" disabled={isSubmitting} size="lg" className="w-full rounded-xl">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            size="lg"
+            className="w-full rounded-xl"
+          >
             {isSubmitting ? "保存中..." : "保存する"}
           </Button>
         </form>
@@ -188,7 +251,7 @@ function EditEventPage() {
             このイベントを削除する
           </button>
         </div>
-      </div>
+      </main>
 
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -206,12 +269,18 @@ function EditEventPage() {
               />
               <span className="text-sm">削除することに同意します</span>
             </label>
-            {deleteError && <p className="text-sm text-red-500 mb-3">{deleteError}</p>}
+            {deleteError && (
+              <p className="text-sm text-red-500 mb-3">{deleteError}</p>
+            )}
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => { setShowDeleteModal(false); setDeleteAgreed(false); setDeleteError(null); }}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteAgreed(false);
+                  setDeleteError(null);
+                }}
                 disabled={isDeleting}
               >
                 キャンセル
