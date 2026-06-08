@@ -116,7 +116,7 @@ function EditEventPage() {
     setDeleteError(null);
     try {
       await deleteEvent({ data: { token: event.shareToken } });
-      await router.navigate({ to: "/events" });
+      await router.navigate({ to: "/events", replace: true });
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "削除に失敗しました");
       setIsDeleting(false);
