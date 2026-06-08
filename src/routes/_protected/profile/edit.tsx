@@ -148,12 +148,12 @@ function EditPage() {
 
   if (!defaultPersona || !urlId) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
         <p className="text-sm text-gray-500">なふだがまだ設定されていません</p>
         <Button onClick={() => navigate({ to: "/profile/wizard" })} size="lg">
           なふだを作成する
         </Button>
-      </div>
+      </main>
     );
   }
 
@@ -483,7 +483,7 @@ function EditForm({
 
   return (
     <FormProvider {...methods}>
-      <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto gap-6">
+      <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto gap-6">
         <div className="flex items-center gap-3">
           <Button
             type="button"
@@ -844,7 +844,7 @@ function EditForm({
                     style={{ background: s.background }}
                   />
                   {!s.isFree && (
-                    <span className="absolute top-1 left-1 text-[9px] font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-1 py-0.5 rounded leading-none">
+                    <span className="absolute top-1 left-1 text-[9px] font-bold bg-linear-to-r from-yellow-400 to-amber-500 text-white px-1 py-0.5 rounded leading-none">
                       PRO
                     </span>
                   )}
@@ -876,7 +876,7 @@ function EditForm({
             {saving ? "保存中..." : "保存する"}
           </Button>
         </form>
-      </div>
+      </main>
     </FormProvider>
   );
 }

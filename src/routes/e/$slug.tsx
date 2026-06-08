@@ -166,7 +166,7 @@ function EventPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center">
+      <main className="min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center">
         <h1 className="text-2xl font-semibold text-gray-700">
           イベントが見つかりません
         </h1>
@@ -174,7 +174,7 @@ function EventPage() {
         <Link to="/" className="text-sm text-blue-500 underline">
           トップへ戻る
         </Link>
-      </div>
+      </main>
     );
   }
 
@@ -214,7 +214,7 @@ function EventPage() {
           )}
         </div>
 
-        <div className="p-6 flex flex-col gap-6">
+        <main className="p-6 flex flex-col gap-6">
           {/* イベント情報ヘッダー */}
           <div className="flex flex-col gap-1">
             <p className="text-sm text-gray-500">{data.event.venueName}</p>
@@ -352,7 +352,7 @@ function EventPage() {
             url={currentUrl}
             label={`${data.event.name} のQRコード`}
           />
-        </div>
+        </main>
       </div>
     </div>
   );

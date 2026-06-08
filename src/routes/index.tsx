@@ -39,7 +39,7 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-linear-to-b from-pink-50 to-white flex flex-col items-center px-4 py-12">
+    <main className="min-h-screen bg-linear-to-b from-pink-50 to-white flex flex-col items-center px-4 py-12">
       <div className="max-w-md w-full flex flex-col items-center">
         <p className="text-2xl font-bold text-pink-500 tracking-widest mb-3">
           なふだ
@@ -135,6 +135,6 @@ function LandingPage() {
           ))}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

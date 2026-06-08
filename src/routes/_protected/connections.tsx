@@ -51,7 +51,7 @@ function ConnectionsPage() {
         <h1 className="text-lg font-bold">つながり</h1>
       </div>
 
-      <div className="flex-1 p-4">
+      <main className="flex-1 p-4">
         {connections.length === 0 ? (
           <EmptyState />
         ) : (
@@ -65,7 +65,7 @@ function ConnectionsPage() {
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -24,7 +24,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6 bg-white">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6 bg-white">
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight">なふだ</h1>
         <p className="mt-2 text-sm text-gray-500">
@@ -67,7 +67,7 @@ function LoginPage() {
       </Link>
 
       <OAuthErrorMessage />
-    </div>
+    </main>
   );
 }
 

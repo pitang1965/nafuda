@@ -83,14 +83,14 @@ function ConnectPage() {
 
   if (!data.valid) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
         <p className="text-2xl">⏰</p>
         <p className="text-sm text-gray-500 text-center">
           このQRコードは期限切れか無効です。
           <br />
           相手に新しいQRコードを表示してもらってください。
         </p>
-      </div>
+      </main>
     );
   }
 
@@ -159,7 +159,7 @@ function ConnectPage() {
           </div>
         )}
 
-        <div
+        <main
           className="flex-1 relative"
           style={{
             background: style?.background ?? undefined,
@@ -272,7 +272,7 @@ function ConnectPage() {
               )}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

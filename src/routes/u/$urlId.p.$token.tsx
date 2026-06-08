@@ -77,7 +77,7 @@ function PublicProfilePage() {
 
   if (!profile)
     return (
-      <div className="p-6 text-sm text-gray-500">なふだが見つかりません</div>
+      <main className="p-6 text-sm text-gray-500">なふだが見つかりません</main>
     );
 
   return (
@@ -115,7 +115,7 @@ function PublicProfilePage() {
         )}
 
         {/* なふだ領域 */}
-        <div
+        <main
           className="flex-1 relative"
           style={{
             background: style?.background ?? undefined,
@@ -202,7 +202,7 @@ function PublicProfilePage() {
               なふだとは？
             </Link>
           </div>
-        </div>
+        </main>
         {/* /なふだ領域 */}
       </div>
     </div>

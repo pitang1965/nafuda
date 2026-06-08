@@ -220,7 +220,7 @@ function MePage() {
         <PwaInstallBanner />
 
         {/* なふだ領域 */}
-        <div
+        <main
           className="flex-1 relative"
           style={
             style
@@ -384,7 +384,7 @@ function MePage() {
               </button>
             </div>
           </div>
-        </div>
+        </main>
         {/* /なふだ領域 */}
 
         {currentPersona && urlId && (
@@ -495,7 +495,7 @@ function RedirectToWizard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
         <p className="text-sm text-gray-400">ようこそ！</p>
@@ -565,6 +565,6 @@ function RedirectToWizard() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

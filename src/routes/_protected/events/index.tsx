@@ -75,7 +75,7 @@ function MyEventsPage() {
         </Link>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col gap-8 max-w-lg mx-auto w-full">
+      <main className="flex-1 p-6 flex flex-col gap-8 max-w-lg mx-auto w-full">
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             作成したイベント
@@ -117,7 +117,7 @@ function MyEventsPage() {
             ))
           )}
         </section>
-      </div>
+      </main>
     </div>
   );
 }

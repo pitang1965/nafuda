@@ -25,7 +25,7 @@ function Section({
 
 function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center px-4 py-10">
+    <main className="min-h-screen bg-gray-50 flex justify-center px-4 py-10">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm px-6 py-8">
         <div className="mb-8">
           <Link to="/" className="text-xs text-gray-400 hover:text-gray-600">
@@ -213,6 +213,6 @@ function PrivacyPage() {
           </p>
         </Section>
       </div>
-    </div>
+    </main>
   );
 }

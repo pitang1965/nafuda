@@ -108,7 +108,7 @@ function WizardPage() {
   const steps = ["表示名", "推し / 趣味タグ", "アバター", "完了"];
 
   return (
-    <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
+    <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
       <div className="mb-4">
         <Link to="/me" className="text-sm text-gray-400 hover:text-gray-600">
           ← トップに戻る
@@ -360,6 +360,6 @@ function WizardPage() {
           )}
         </form>
       </FormProvider>
-    </div>
+    </main>
   );
 }
