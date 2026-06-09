@@ -109,10 +109,13 @@ export const events = pgTable("events", {
   slug: text("slug").notNull().unique(), // 重複検出用内部識別子 例: "animejapan-20260405"
   shareToken: text("share_token").notNull().unique(), // 公開URL用ランダムトークン（推測不可）
   name: text("name").notNull(),
-  venueName: text("venue_name").notNull(),
+  venueName: text("venue_name"), // 即時イベントは null 可
   eventDate: timestamp("event_date", { withTimezone: true }).notNull(),
   showTime: boolean("show_time").notNull().default(false),
   description: text("description"),
+  isInstant: boolean("is_instant").notNull().default(false),
+  // GPS: point mode 'xy' → { x: longitude, y: latitude }。即時イベント作成時に自動取得
+  gpsCoordinates: point("gps_coordinates", { mode: "xy" }),
   hostUserId: text("host_user_id"),
   hostPersonaId: uuid("host_persona_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -175,6 +178,7 @@ export const connections = pgTable(
     eventName: text("event_name"), // 非正規化: JOIN不要で表示できるよう保存
     venueName: text("venue_name"), // 非正規化
     eventDate: timestamp("event_date", { withTimezone: true }),
+    privateMemo: text("private_memo"), // 自分だけが見る相手へのメモ
     connectedAt: timestamp("connected_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

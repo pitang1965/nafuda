@@ -399,3 +399,63 @@ export const getMyEvents = createServerFn({ method: 'GET' })
 
     return { hostedEvents, participatedEvents: participatedRows }
   })
+
+// 「なふだを交換する」フロー中に即時イベントを作成してチェックインする
+export const createInstantEventAndCheckin = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({
+    eventName: z.string().min(1).max(100),
+    personaId: z.uuid(),
+    gpsCoordinates: z.object({ x: z.number(), y: z.number() }).optional(),
+  }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) throw new Error('Unauthorized')
+
+    const [personaRow] = await db.select({ id: personas.id, userId: personas.userId })
+      .from(personas)
+      .where(eq(personas.id, data.personaId))
+      .limit(1)
+    if (!personaRow) throw new Error('Persona not found')
+    if (personaRow.userId !== session.user.id) throw new Error('Forbidden')
+
+    // 既存アクティブチェックインをチェックアウト
+    await db.update(eventCheckins)
+      .set({ checkedOutAt: new Date() })
+      .where(and(
+        eq(eventCheckins.personaId, data.personaId),
+        isNull(eventCheckins.checkedOutAt),
+      ))
+
+    const now = new Date()
+    // slug: instant-{timestamp}-{random4hex}
+    const randomSuffix = Array.from(crypto.getRandomValues(new Uint8Array(2)))
+      .map(b => b.toString(16).padStart(2, '0')).join('')
+    const slug = `instant-${now.getTime()}-${randomSuffix}`
+
+    const [newEvent] = await db.insert(events)
+      .values({
+        slug,
+        shareToken: generateShareToken(),
+        name: data.eventName,
+        venueName: null,
+        eventDate: now,
+        showTime: false,
+        isInstant: true,
+        gpsCoordinates: data.gpsCoordinates ?? null,
+        hostUserId: session.user.id,
+        hostPersonaId: data.personaId,
+      })
+      .returning()
+
+    const [newCheckin] = await db.insert(eventCheckins)
+      .values({
+        eventId: newEvent.id,
+        personaId: data.personaId,
+        userId: session.user.id,
+        gpsCoordinates: data.gpsCoordinates ?? null,
+      })
+      .returning()
+
+    return { event: newEvent, checkin: newCheckin }
+  })

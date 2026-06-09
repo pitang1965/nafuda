@@ -242,6 +242,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     if (issuerPersonaRow?.userId === session.user.id)
       throw new Error("自分自身にはつながれません");
 
+    // 文脈はQR発行側（A）のアクティブチェックインから取得する
     const [activeCheckin] = await db
       .select({
         eventId: eventCheckins.eventId,
@@ -253,7 +254,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
       .where(
         and(
-          eq(eventCheckins.personaId, scannerPersonaRow.id),
+          eq(eventCheckins.personaId, issuerPersonaId),
           isNull(eventCheckins.checkedOutAt),
         ),
       )

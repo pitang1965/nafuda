@@ -7,11 +7,13 @@ import {
   deleteConnectionQrToken,
   checkQrConnectionStatus,
 } from "../../server/functions/connection";
+import { createInstantEventAndCheckin } from "../../server/functions/event";
 import { authClient } from "../../lib/auth-client";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
+import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
@@ -62,6 +64,9 @@ function MePage() {
   const [origin] = useState(() =>
     typeof window !== "undefined" ? window.location.origin : "",
   );
+  const [exchangeContextOpen, setExchangeContextOpen] = useState(false);
+  const [exchangeContextSubmitting, setExchangeContextSubmitting] =
+    useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteAgreed, setDeleteAgreed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -123,18 +128,58 @@ function MePage() {
     }
   };
 
-  const handleExchangeNafuda = async () => {
+  const handleExchangeNafuda = () => {
     if (!currentPersona) return;
+    setExchangeContextOpen(true);
+  };
+
+  const openQr = async () => {
+    if (!currentPersona) return;
+    const { token } = await createConnectionQrToken({
+      data: { fromPersonaId: currentPersona.id },
+    });
+    setConnectQrToken(token);
+    setConnectQrUrl(`${origin}/connect/${token}`);
+    setConnectQrSince(new Date().toISOString());
+    setConnectQrOpen(true);
+    capture("exchange_qr_shown");
+  };
+
+  const handleContextSubmit = async (
+    eventName: string,
+    gpsCoordinates: { x: number; y: number } | null,
+  ) => {
+    if (!currentPersona) return;
+    setExchangeContextSubmitting(true);
+    try {
+      await createInstantEventAndCheckin({
+        data: {
+          eventName,
+          personaId: currentPersona.id,
+          gpsCoordinates: gpsCoordinates ?? undefined,
+        },
+      });
+      setExchangeContextOpen(false);
+      setConnectQrLoading(true);
+      try {
+        await openQr();
+      } finally {
+        setConnectQrLoading(false);
+      }
+    } catch (err) {
+      throw err;
+    } finally {
+      setExchangeContextSubmitting(false);
+    }
+  };
+
+  const handleContextSkip = async (
+    _gpsCoordinates: { x: number; y: number } | null,
+  ) => {
+    setExchangeContextOpen(false);
     setConnectQrLoading(true);
     try {
-      const { token } = await createConnectionQrToken({
-        data: { fromPersonaId: currentPersona.id },
-      });
-      setConnectQrToken(token);
-      setConnectQrUrl(`${origin}/connect/${token}`);
-      setConnectQrSince(new Date().toISOString());
-      setConnectQrOpen(true);
-      capture("exchange_qr_shown");
+      await openQr();
     } finally {
       setConnectQrLoading(false);
     }
@@ -399,6 +444,12 @@ function MePage() {
             label={`${currentPersona.displayName} のなふだ（閲覧用）`}
           />
         )}
+        <ExchangeContextSheet
+          isOpen={exchangeContextOpen}
+          isSubmitting={exchangeContextSubmitting}
+          onSubmit={handleContextSubmit}
+          onSkip={handleContextSkip}
+        />
         {connectQrUrl && (
           <QRBottomSheet
             isOpen={connectQrOpen}

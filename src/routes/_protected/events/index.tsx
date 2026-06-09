@@ -18,7 +18,7 @@ function formatDate(date: Date | string) {
 
 interface EventCardProps {
   name: string;
-  venueName: string;
+  venueName: string | null;
   eventDate: Date | string;
   shareToken: string;
 }

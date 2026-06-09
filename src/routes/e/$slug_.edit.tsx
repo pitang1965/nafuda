@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { auth } from "../../server/auth";
@@ -75,7 +75,7 @@ function EditEventPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: event.name,
-      venueName: event.venueName,
+      venueName: event.venueName ?? "",
       eventDate: eventDateStr,
       eventTime: eventTimeStr,
       showTime: event.showTime,
@@ -85,7 +85,7 @@ function EditEventPage() {
 
   const showTime = useWatch({ control, name: "showTime", defaultValue: false });
 
-  const onSubmit = async (formData: FormValues) => {
+  const onSubmit: SubmitHandler<FormValues> = async (formData) => {
     setSubmitError(null);
     setIsSubmitting(true);
     try {
