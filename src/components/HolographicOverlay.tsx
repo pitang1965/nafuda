@@ -60,7 +60,6 @@ export function HolographicOverlay() {
       style={{
         position: "absolute",
         inset: 0,
-        zIndex: 2,
         pointerEvents: "none",
       }}
     >
