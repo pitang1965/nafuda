@@ -8,7 +8,21 @@ interface ExchangeContextSheetProps {
     eventName: string,
     gpsCoordinates: { x: number; y: number } | null,
   ) => void;
-  onSkip: (gpsCoordinates: { x: number; y: number } | null) => void;
+  onSkip: () => void;
+}
+
+function getGpsCoordinates(): Promise<{ x: number; y: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ x: pos.coords.longitude, y: pos.coords.latitude }),
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 30000 },
+    );
+  });
 }
 
 export function ExchangeContextSheet({
@@ -18,47 +32,28 @@ export function ExchangeContextSheet({
   onSkip,
 }: ExchangeContextSheetProps) {
   const [eventName, setEventName] = useState("");
-  const [gpsCoordinates, setGpsCoordinates] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
       setEventName("");
-      setGpsCoordinates(null);
       return;
     }
-    // シートが開いたら GPS を取得を試みる
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGpsCoordinates({
-            x: pos.coords.longitude,
-            y: pos.coords.latitude,
-          });
-        },
-        () => {
-          // 拒否または失敗 → null のまま続行
-        },
-        { timeout: 5000, maximumAge: 30000 },
-      );
-    }
-    // 少し遅らせてからフォーカス（シートのアニメーション後）
     const t = setTimeout(() => inputRef.current?.focus(), 300);
     return () => clearTimeout(t);
   }, [isOpen]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const name = eventName.trim();
     if (!name || isSubmitting) return;
-    onSubmit(name, gpsCoordinates);
+    // 送信ボタンを押したタイミングで GPS を取得（スキップ時は一切リクエストしない）
+    const gps = await getGpsCoordinates();
+    onSubmit(name, gps);
   };
 
   const handleSkip = () => {
     if (isSubmitting) return;
-    onSkip(gpsCoordinates);
+    onSkip();
   };
 
   return (

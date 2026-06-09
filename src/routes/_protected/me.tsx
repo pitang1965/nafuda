@@ -173,9 +173,7 @@ function MePage() {
     }
   };
 
-  const handleContextSkip = async (
-    _gpsCoordinates: { x: number; y: number } | null,
-  ) => {
+  const handleContextSkip = async () => {
     setExchangeContextOpen(false);
     setConnectQrLoading(true);
     try {
