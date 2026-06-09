@@ -1,6 +1,8 @@
 import { Sheet } from "react-modal-sheet";
 import { useState, useEffect, useRef } from "react";
 
+type GeoPermission = "granted" | "denied" | "prompt" | "unknown";
+
 interface ExchangeContextSheetProps {
   isOpen: boolean;
   isSubmitting: boolean;
@@ -25,6 +27,22 @@ function getGpsCoordinates(): Promise<{ x: number; y: number } | null> {
   });
 }
 
+const GPS_STATUS: Record<
+  GeoPermission,
+  { label: string; className: string } | null
+> = {
+  granted: { label: "📍 現在地を保存します", className: "text-green-600" },
+  denied: {
+    label: "📍 位置情報がブロックされています（保存されません）",
+    className: "text-gray-400",
+  },
+  prompt: {
+    label: "📍 送信時に位置情報の許可を確認します",
+    className: "text-blue-500",
+  },
+  unknown: null,
+};
+
 export function ExchangeContextSheet({
   isOpen,
   isSubmitting,
@@ -32,12 +50,26 @@ export function ExchangeContextSheet({
   onSkip,
 }: ExchangeContextSheetProps) {
   const [eventName, setEventName] = useState("");
+  const [geoPermission, setGeoPermission] = useState<GeoPermission>("unknown");
+  const [isGettingGps, setIsGettingGps] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
       setEventName("");
+      setGeoPermission("unknown");
       return;
+    }
+    // ダイアログを出さずに許可状態だけ確認する
+    if (navigator.permissions) {
+      navigator.permissions
+        .query({ name: "geolocation" })
+        .then((result) => {
+          setGeoPermission(result.state as GeoPermission);
+          result.onchange = () =>
+            setGeoPermission(result.state as GeoPermission);
+        })
+        .catch(() => setGeoPermission("unknown"));
     }
     const t = setTimeout(() => inputRef.current?.focus(), 300);
     return () => clearTimeout(t);
@@ -45,16 +77,28 @@ export function ExchangeContextSheet({
 
   const handleSubmit = async () => {
     const name = eventName.trim();
-    if (!name || isSubmitting) return;
-    // 送信ボタンを押したタイミングで GPS を取得（スキップ時は一切リクエストしない）
-    const gps = await getGpsCoordinates();
-    onSubmit(name, gps);
+    if (!name || isSubmitting || isGettingGps) return;
+    setIsGettingGps(true);
+    try {
+      const gps = await getGpsCoordinates();
+      onSubmit(name, gps);
+    } finally {
+      setIsGettingGps(false);
+    }
   };
 
   const handleSkip = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isGettingGps) return;
     onSkip();
   };
+
+  const gpsStatus = GPS_STATUS[geoPermission];
+  const busy = isSubmitting || isGettingGps;
+  const buttonLabel = isGettingGps
+    ? "📍 位置情報を取得中…"
+    : isSubmitting
+      ? "作成中…"
+      : "チェックインして QR を表示";
 
   return (
     <Sheet isOpen={isOpen} onClose={handleSkip} detent="content" disableDrag>
@@ -75,19 +119,24 @@ export function ExchangeContextSheet({
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="例：バーナイト＠立川"
               maxLength={100}
-              disabled={isSubmitting}
+              disabled={busy}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 disabled:opacity-50"
             />
+            {gpsStatus && (
+              <p className={`text-xs ${gpsStatus.className}`}>
+                {gpsStatus.label}
+              </p>
+            )}
             <button
               onClick={handleSubmit}
-              disabled={!eventName.trim() || isSubmitting}
+              disabled={!eventName.trim() || busy}
               className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "作成中…" : "チェックインして QR を表示"}
+              {buttonLabel}
             </button>
             <button
               onClick={handleSkip}
-              disabled={isSubmitting}
+              disabled={busy}
               className="w-full px-4 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors disabled:opacity-40"
             >
               スキップ
