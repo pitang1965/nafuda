@@ -5,9 +5,13 @@ import { getOshiSuggestions } from "../server/functions/oshi";
 
 interface OshiTagInputProps {
   name?: string; // RHF field name, defaults to 'oshiTags'
+  onPendingChange?: (hasPending: boolean) => void;
 }
 
-export function OshiTagInput({ name = "oshiTags" }: OshiTagInputProps) {
+export function OshiTagInput({
+  name = "oshiTags",
+  onPendingChange,
+}: OshiTagInputProps) {
   const { setValue, watch } = useFormContext();
   const rawTags: string[] = watch(name) ?? [];
 
@@ -36,27 +40,33 @@ export function OshiTagInput({ name = "oshiTags" }: OshiTagInputProps) {
             newTags.map((t) => t.text),
             { shouldDirty: true, shouldValidate: true },
           );
+          // Tag confirmed (Enter pressed) — clear pending state
+          if (newTags.length > prev.length) onPendingChange?.(false);
           return newTags;
         });
       },
-      [setValue, name],
+      [setValue, name, onPendingChange],
     );
 
-  const handleInputChange = useCallback((value: string) => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    if (!value || value.length < 1) {
-      setSuggestions([]);
-      return;
-    }
-    debounceTimerRef.current = setTimeout(async () => {
-      try {
-        const results = await getOshiSuggestions({ data: { query: value } });
-        setSuggestions(results.map((s) => ({ id: s, text: s })));
-      } catch {
+  const handleInputChange = useCallback(
+    (value: string) => {
+      onPendingChange?.(value.length > 0);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (!value || value.length < 1) {
         setSuggestions([]);
+        return;
       }
-    }, 300);
-  }, []);
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          const results = await getOshiSuggestions({ data: { query: value } });
+          setSuggestions(results.map((s) => ({ id: s, text: s })));
+        } catch {
+          setSuggestions([]);
+        }
+      }, 300);
+    },
+    [onPendingChange],
+  );
 
   return (
     <TagInput

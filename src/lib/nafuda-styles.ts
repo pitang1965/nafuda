@@ -108,7 +108,7 @@ export const NAFUDA_STYLES: NafudaStyleDef[] = [
     fontUrl:
       "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap",
     frameId: "stardust",
-    isFree: false,
+    isFree: true,
     holographic: true,
   },
 ];

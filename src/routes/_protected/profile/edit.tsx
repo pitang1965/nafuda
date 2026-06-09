@@ -244,9 +244,7 @@ function EditForm({
     })),
   );
   const [deletedLinkIds, setDeletedLinkIds] = useState<string[]>([]);
-  const [oshiSaving, setOshiSaving] = useState(false);
-  const [oshiSaveError, setOshiSaveError] = useState<string | null>(null);
-  const [oshiSaved, setOshiSaved] = useState(false);
+  const [hasPendingOshiInput, setHasPendingOshiInput] = useState(false);
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(
     initialStyleId,
   );
@@ -291,7 +289,8 @@ function EditForm({
         orig.displayOrder !== l.displayOrder
       );
     });
-  const anyDirty = isDirty || snsLinksDirty || styleDirty;
+  const anyDirty =
+    isDirty || snsLinksDirty || styleDirty || hasPendingOshiInput;
 
   const handleBack = () => {
     if (anyDirty) {
@@ -302,40 +301,31 @@ function EditForm({
   };
 
   const displayName =
-    useWatch({ control, name: "displayName", defaultValue: "" }) ?? "";
+    useWatch({
+      control,
+      name: "displayName",
+      defaultValue: initialDisplayName,
+    }) ?? "";
   const bio = useWatch({ control, name: "bio", defaultValue: "" }) ?? "";
   const useAutoAvatar = useWatch({
     control,
     name: "useAutoAvatar",
     defaultValue: !initialAvatarUrl,
   });
-  const avatarUrl =
-    useWatch({ control, name: "avatarUrl", defaultValue: "" }) ?? "";
-  const displayNameVisibility = useWatch({
-    control,
-    name: "displayNameVisibility",
-    defaultValue: "public",
-  });
-  const bioVisibility = useWatch({
-    control,
-    name: "bioVisibility",
-    defaultValue: "public",
-  });
-  const avatarVisibility = useWatch({
-    control,
-    name: "avatarVisibility",
-    defaultValue: "public",
-  });
-  const snsLinksVisibility = useWatch({
-    control,
-    name: "snsLinksVisibility",
-    defaultValue: "public",
-  });
-  const oshiTagsVisibility = useWatch({
-    control,
-    name: "oshiTagsVisibility",
-    defaultValue: "public",
-  });
+  const [avatarUrlInput, setAvatarUrlInput] = useState(initialAvatarUrl);
+  const [displayNameVisibility, setDisplayNameVisibility] = useState(
+    initialDisplayNameVisibility,
+  );
+  const [bioVisibility, setBioVisibility] = useState(initialBioVisibility);
+  const [avatarVisibility, setAvatarVisibility] = useState(
+    initialAvatarVisibility,
+  );
+  const [snsLinksVisibility, setSnsLinksVisibility] = useState(
+    initialSnsLinksVisibility,
+  );
+  const [oshiTagsVisibility, setOshiTagsVisibility] = useState(
+    initialOshiTagsVisibility,
+  );
 
   const addSnsLink = () => {
     setSnsLinks((prev) => [
@@ -379,37 +369,6 @@ function EditForm({
     );
   };
 
-  // Save oshi tags separately (explicit save button)
-  const handleSaveOshiTags = async () => {
-    setOshiSaveError(null);
-    setOshiSaving(true);
-    setOshiSaved(false);
-    try {
-      const tags = methods.getValues("oshiTags");
-      await updateOshiTags({ data: { personaId, tags } });
-      setOshiSaved(true);
-      setTimeout(() => setOshiSaved(false), 2000);
-    } catch {
-      setOshiSaveError("保存に失敗しました。もう一度お試しください。");
-    } finally {
-      setOshiSaving(false);
-    }
-  };
-
-  // dojin_reject — immediate save on radio change (feels instant per CONTEXT.md)
-  const handleDojinRejectChange = async (value: "true" | "false") => {
-    setValue("dojinReject", value);
-    try {
-      await updateDojinReject({
-        data: { personaId, dojinReject: value === "true" },
-      });
-    } catch {
-      setSaveError(
-        "同担設定の保存に失敗しました。「保存する」ボタンで再試行してください。",
-      );
-    }
-  };
-
   const onSubmit = async (values: EditForm) => {
     const otherWithoutTitle = snsLinks.find(
       (l) => l.platform === "other" && !l.title.trim() && l.url.trim(),
@@ -440,7 +399,8 @@ function EditForm({
         },
       });
 
-      // Save dojinReject (guaranteed save — fallback if immediate onChange save failed)
+      await updateOshiTags({ data: { personaId, tags: values.oshiTags } });
+
       await updateDojinReject({
         data: { personaId, dojinReject: values.dojinReject === "true" },
       });
@@ -474,11 +434,6 @@ function EditForm({
     }
   };
 
-  const dojinRejectValue = useWatch({
-    control,
-    name: "dojinReject",
-    defaultValue: "false",
-  });
   const label = useWatch({ control, name: "label", defaultValue: "" });
 
   return (
@@ -523,7 +478,10 @@ function EditForm({
               <label className="text-sm font-medium">表示名</label>
               <VisibilityToggle
                 value={displayNameVisibility}
-                onChange={(v) => setValue("displayNameVisibility", v)}
+                onChange={(v) => {
+                  setDisplayNameVisibility(v);
+                  setValue("displayNameVisibility", v, { shouldDirty: true });
+                }}
               />
             </div>
             <Input {...register("displayName")} />
@@ -564,7 +522,10 @@ function EditForm({
               <label className="text-sm font-medium">自己紹介</label>
               <VisibilityToggle
                 value={bioVisibility}
-                onChange={(v) => setValue("bioVisibility", v)}
+                onChange={(v) => {
+                  setBioVisibility(v);
+                  setValue("bioVisibility", v, { shouldDirty: true });
+                }}
               />
             </div>
             <div className="relative">
@@ -590,23 +551,47 @@ function EditForm({
               <label className="text-sm font-medium">アバター</label>
               <VisibilityToggle
                 value={avatarVisibility}
-                onChange={(v) => setValue("avatarVisibility", v)}
+                onChange={(v) => {
+                  setAvatarVisibility(v);
+                  setValue("avatarVisibility", v, { shouldDirty: true });
+                }}
               />
             </div>
             <div className="flex items-center gap-3">
-              {!useAutoAvatar && avatarUrl ? (
+              {useAutoAvatar ? (
+                <InitialsAvatar name={displayName || "?"} size={48} />
+              ) : avatarUrlInput ? (
                 <img
-                  src={avatarUrl}
+                  src={avatarUrlInput}
                   alt=""
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <InitialsAvatar name={displayName || "?"} size={48} />
+                <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    className="text-gray-400"
+                  >
+                    <path
+                      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                </div>
               )}
               <label className="flex items-center gap-2 cursor-pointer">
                 <Switch
                   checked={useAutoAvatar}
-                  onCheckedChange={(v) => setValue("useAutoAvatar", v)}
+                  onCheckedChange={(v) =>
+                    setValue("useAutoAvatar", v, { shouldDirty: true })
+                  }
                 />
                 <span className="text-sm">イニシャルアバターを使う</span>
               </label>
@@ -614,7 +599,14 @@ function EditForm({
             {!useAutoAvatar && (
               <div>
                 <Input
-                  {...register("avatarUrl")}
+                  value={avatarUrlInput}
+                  onChange={(e) => {
+                    setAvatarUrlInput(e.target.value);
+                    setValue("avatarUrl", e.target.value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }}
                   placeholder="https://example.com/avatar.png"
                 />
                 {errors.avatarUrl && (
@@ -632,7 +624,10 @@ function EditForm({
               <label className="text-sm font-medium">推し / 趣味タグ</label>
               <VisibilityToggle
                 value={oshiTagsVisibility}
-                onChange={(v) => setValue("oshiTagsVisibility", v)}
+                onChange={(v) => {
+                  setOshiTagsVisibility(v);
+                  setValue("oshiTagsVisibility", v, { shouldDirty: true });
+                }}
               />
             </div>
             <p className="text-xs text-gray-500">
@@ -642,24 +637,15 @@ function EditForm({
               </kbd>{" "}
               で追加、×で削除。
             </p>
-            <OshiTagInput name="oshiTags" />
-            {oshiSaveError && (
-              <p className="text-xs text-red-600">{oshiSaveError}</p>
+            <OshiTagInput
+              name="oshiTags"
+              onPendingChange={setHasPendingOshiInput}
+            />
+            {hasPendingOshiInput && (
+              <p className="text-xs text-amber-600">
+                Enter で確定してから保存してください
+              </p>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleSaveOshiTags}
-              disabled={oshiSaving}
-              className="self-start"
-            >
-              {oshiSaving
-                ? "保存中..."
-                : oshiSaved
-                  ? "保存しました"
-                  : "推し / 趣味タグを保存"}
-            </Button>
           </div>
 
           {/* Dojin reject — immediate save on radio change */}
@@ -670,8 +656,7 @@ function EditForm({
                 <input
                   type="radio"
                   value="false"
-                  checked={dojinRejectValue === "false"}
-                  onChange={() => void handleDojinRejectChange("false")}
+                  {...register("dojinReject")}
                   className="mt-0.5"
                 />
                 <span className="text-sm">
@@ -682,8 +667,7 @@ function EditForm({
                 <input
                   type="radio"
                   value="true"
-                  checked={dojinRejectValue === "true"}
-                  onChange={() => void handleDojinRejectChange("true")}
+                  {...register("dojinReject")}
                   className="mt-0.5"
                 />
                 <span className="text-sm">
@@ -699,7 +683,10 @@ function EditForm({
               <label className="text-sm font-medium">SNSリンク</label>
               <VisibilityToggle
                 value={snsLinksVisibility}
-                onChange={(v) => setValue("snsLinksVisibility", v)}
+                onChange={(v) => {
+                  setSnsLinksVisibility(v);
+                  setValue("snsLinksVisibility", v, { shouldDirty: true });
+                }}
               />
             </div>
 
