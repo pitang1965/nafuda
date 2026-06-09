@@ -8,8 +8,22 @@ export const Route = createFileRoute("/_protected/events/")({
   component: MyEventsPage,
 });
 
-function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("ja-JP", {
+function formatEventDate(
+  date: Date | string,
+  showTime: boolean,
+  isInstant: boolean,
+) {
+  const d = new Date(date);
+  if (showTime || isInstant) {
+    return d.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return d.toLocaleDateString("ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -20,10 +34,19 @@ interface EventCardProps {
   name: string;
   venueName: string | null;
   eventDate: Date | string;
+  showTime: boolean;
+  isInstant: boolean;
   shareToken: string;
 }
 
-function EventCard({ name, venueName, eventDate, shareToken }: EventCardProps) {
+function EventCard({
+  name,
+  venueName,
+  eventDate,
+  showTime,
+  isInstant,
+  shareToken,
+}: EventCardProps) {
   return (
     <Link
       to="/e/$slug"
@@ -33,7 +56,7 @@ function EventCard({ name, venueName, eventDate, shareToken }: EventCardProps) {
       <p className="font-semibold leading-snug">{name}</p>
       <p className="text-sm text-muted-foreground mt-0.5">{venueName}</p>
       <p className="text-xs text-muted-foreground mt-1">
-        {formatDate(eventDate)}
+        {formatEventDate(eventDate, showTime, isInstant)}
       </p>
     </Link>
   );
@@ -91,6 +114,8 @@ function MyEventsPage() {
                 name={event.name}
                 venueName={event.venueName}
                 eventDate={event.eventDate}
+                showTime={event.showTime}
+                isInstant={event.isInstant}
                 shareToken={event.shareToken}
               />
             ))
@@ -112,6 +137,8 @@ function MyEventsPage() {
                 name={event.name}
                 venueName={event.venueName}
                 eventDate={event.eventDate}
+                showTime={event.showTime}
+                isInstant={event.isInstant}
                 shareToken={event.shareToken}
               />
             ))
