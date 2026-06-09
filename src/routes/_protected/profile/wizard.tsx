@@ -8,11 +8,9 @@ import {
   createPersona,
   getOwnProfile,
 } from "../../../server/functions/profile";
-import { InitialsAvatar } from "../../../components/InitialsAvatar";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_protected/profile/wizard")({
   validateSearch: z.object({
@@ -22,7 +20,7 @@ export const Route = createFileRoute("/_protected/profile/wizard")({
   component: WizardPage,
 });
 
-// Steps: 1=表示名, 2=推しタグ, 3=アバター, 4=完了
+// Steps: 1=表示名, 2=推しタグ, 3=完了
 
 const WizardSchema = z.object({
   displayName: z
@@ -31,8 +29,6 @@ const WizardSchema = z.object({
     .max(50, "50文字以下"),
   label: z.string().max(20, "20文字以下").optional().or(z.literal("")),
   oshiTags: z.array(z.string()),
-  avatarUrl: z.url("有効なURLを入力してください").optional().or(z.literal("")),
-  useAutoAvatar: z.boolean(),
 });
 
 type WizardForm = z.infer<typeof WizardSchema>;
@@ -52,7 +48,6 @@ function WizardPage() {
   const methods = useForm<WizardForm>({
     resolver: zodResolver(WizardSchema),
     defaultValues: {
-      useAutoAvatar: true,
       oshiTags: [],
       label: isFirstPersona ? "メイン" : "",
     },
@@ -61,19 +56,12 @@ function WizardPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = methods;
 
   const displayName =
     useWatch({ control: methods.control, name: "displayName" }) ?? "";
   const label = useWatch({ control: methods.control, name: "label" }) ?? "";
-  const useAutoAvatar = useWatch({
-    control: methods.control,
-    name: "useAutoAvatar",
-  });
-  const avatarUrl =
-    useWatch({ control: methods.control, name: "avatarUrl" }) ?? "";
 
   const handleProceedFromOshi = () => {
     capture("wizard_step_completed", { step: 2 });
@@ -87,7 +75,6 @@ function WizardPage() {
         data: {
           displayName: values.displayName,
           label: values.label || null,
-          avatarUrl: values.useAutoAvatar ? null : values.avatarUrl || null,
           isDefault: isFirstPersona,
           oshiTags: values.oshiTags,
         },
@@ -105,7 +92,7 @@ function WizardPage() {
     }
   };
 
-  const steps = ["表示名", "推し / 趣味タグ", "アバター", "完了"];
+  const steps = ["表示名", "推し / 趣味タグ", "完了"];
 
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
@@ -233,71 +220,8 @@ function WizardPage() {
             </div>
           )}
 
-          {/* Step 3: Avatar */}
+          {/* Step 3: Confirm + submit */}
           {step === 3 && (
-            <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">アバターを設定しましょう</h2>
-              <div className="flex justify-center">
-                {!useAutoAvatar && avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt=""
-                    className="w-20 h-20 rounded-full object-cover"
-                  />
-                ) : (
-                  <InitialsAvatar name={displayName || "?"} size={80} />
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Switch
-                    checked={useAutoAvatar}
-                    onCheckedChange={(v) => setValue("useAutoAvatar", v)}
-                  />
-                  <span className="text-sm">
-                    イニシャルアバターを使う（表示名の頭文字＋カラー）
-                  </span>
-                </label>
-                {!useAutoAvatar && (
-                  <div>
-                    <Input
-                      {...register("avatarUrl")}
-                      placeholder="https://example.com/avatar.png"
-                      className="h-12"
-                    />
-                    {errors.avatarUrl && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.avatarUrl.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(2)}
-                  className="flex-1"
-                >
-                  戻る
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    capture("wizard_step_completed", { step: 3 });
-                    setStep(4);
-                  }}
-                  className="flex-1"
-                >
-                  次へ
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Confirm + submit */}
-          {step === 4 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
                 {isFromEvent ? "設定完了！" : "もうひといきです！"}
@@ -317,7 +241,7 @@ function WizardPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(2)}
                     className="flex-1"
                   >
                     戻る
@@ -349,7 +273,7 @@ function WizardPage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(2)}
                     className="text-sm text-gray-400 hover:text-gray-600 underline underline-offset-2 mt-1"
                   >
                     ← 戻る

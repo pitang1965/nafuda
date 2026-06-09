@@ -3,5 +3,12 @@ main = "src/server.tsx"
 compatibility_date = "2026-04-23"
 compatibility_flags = [ "nodejs_compat" ]
 
+[[r2_buckets]]
+binding = "AVATARS_BUCKET"
+bucket_name = "nafuda-avatars"
+
+[vars]
+R2_PUBLIC_URL = "https://pub-005c2707053246c7961f7082094d34f8.r2.dev"
+
 [observability]
 enabled = true

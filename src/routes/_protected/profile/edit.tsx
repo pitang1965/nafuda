@@ -18,11 +18,10 @@ import {
   updateOshiTags,
   updateDojinReject,
 } from "../../../server/functions/oshi";
-import { InitialsAvatar } from "../../../components/InitialsAvatar";
+import { AvatarUpload } from "../../../components/AvatarUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -98,8 +97,6 @@ const EditSchema = z.object({
     .max(50, "50文字以下"),
   label: z.string().max(20, "20文字以下").optional().or(z.literal("")),
   bio: z.string().max(200, "200文字以下").optional().or(z.literal("")),
-  avatarUrl: z.url("有効なURLを入力してください").optional().or(z.literal("")),
-  useAutoAvatar: z.boolean(),
   displayNameVisibility: z.enum(["public", "private"]),
   bioVisibility: z.enum(["public", "private"]),
   avatarVisibility: z.enum(["public", "private"]),
@@ -256,8 +253,6 @@ function EditForm({
       displayName: initialDisplayName,
       label: initialLabel,
       bio: initialBio,
-      avatarUrl: initialAvatarUrl,
-      useAutoAvatar: !initialAvatarUrl,
       displayNameVisibility: initialDisplayNameVisibility,
       bioVisibility: initialBioVisibility,
       avatarVisibility: initialAvatarVisibility,
@@ -300,6 +295,7 @@ function EditForm({
     router.history.back();
   };
 
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl || null);
   const displayName =
     useWatch({
       control,
@@ -307,12 +303,6 @@ function EditForm({
       defaultValue: initialDisplayName,
     }) ?? "";
   const bio = useWatch({ control, name: "bio", defaultValue: "" }) ?? "";
-  const useAutoAvatar = useWatch({
-    control,
-    name: "useAutoAvatar",
-    defaultValue: !initialAvatarUrl,
-  });
-  const [avatarUrlInput, setAvatarUrlInput] = useState(initialAvatarUrl);
   const [displayNameVisibility, setDisplayNameVisibility] = useState(
     initialDisplayNameVisibility,
   );
@@ -387,7 +377,6 @@ function EditForm({
           displayName: values.displayName,
           label: values.label || null,
           bio: values.bio || null,
-          avatarUrl: values.useAutoAvatar ? null : values.avatarUrl || null,
           fieldVisibility: {
             display_name: values.displayNameVisibility,
             bio: values.bioVisibility,
@@ -558,64 +547,18 @@ function EditForm({
               />
             </div>
             <div className="flex items-center gap-3">
-              {useAutoAvatar ? (
-                <InitialsAvatar name={displayName || "?"} size={48} />
-              ) : avatarUrlInput ? (
-                <img
-                  src={avatarUrlInput}
-                  alt=""
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    className="text-gray-400"
-                  >
-                    <path
-                      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                </div>
-              )}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                  checked={useAutoAvatar}
-                  onCheckedChange={(v) =>
-                    setValue("useAutoAvatar", v, { shouldDirty: true })
-                  }
-                />
-                <span className="text-sm">イニシャルアバターを使う</span>
-              </label>
+              <AvatarUpload
+                personaId={personaId}
+                displayName={displayName}
+                currentAvatarUrl={avatarUrl}
+                onAvatarChange={setAvatarUrl}
+              />
+              <p className="text-xs text-gray-500">
+                タップして写真を選択
+                <br />
+                切り取り後に保存されます
+              </p>
             </div>
-            {!useAutoAvatar && (
-              <div>
-                <Input
-                  value={avatarUrlInput}
-                  onChange={(e) => {
-                    setAvatarUrlInput(e.target.value);
-                    setValue("avatarUrl", e.target.value, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  }}
-                  placeholder="https://example.com/avatar.png"
-                />
-                {errors.avatarUrl && (
-                  <p className="text-xs text-red-600">
-                    {errors.avatarUrl.message}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Oshi tags */}
