@@ -47,6 +47,17 @@ function EventCard({
   isInstant,
   shareToken,
 }: EventCardProps) {
+  const dateStr = formatEventDate(eventDate, showTime, isInstant);
+
+  if (isInstant) {
+    return (
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <p className="font-semibold leading-snug">{name}</p>
+        <p className="text-xs text-muted-foreground mt-1">{dateStr}</p>
+      </div>
+    );
+  }
+
   return (
     <Link
       to="/e/$slug"
@@ -54,10 +65,10 @@ function EventCard({
       className="block rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow"
     >
       <p className="font-semibold leading-snug">{name}</p>
-      <p className="text-sm text-muted-foreground mt-0.5">{venueName}</p>
-      <p className="text-xs text-muted-foreground mt-1">
-        {formatEventDate(eventDate, showTime, isInstant)}
-      </p>
+      {venueName && (
+        <p className="text-sm text-muted-foreground mt-0.5">{venueName}</p>
+      )}
+      <p className="text-xs text-muted-foreground mt-1">{dateStr}</p>
     </Link>
   );
 }
@@ -65,6 +76,9 @@ function EventCard({
 function MyEventsPage() {
   const { hostedEvents, participatedEvents } = Route.useLoaderData();
   const router = useRouter();
+
+  const plannedEvents = hostedEvents.filter((e) => !e.isInstant);
+  const instantEvents = hostedEvents.filter((e) => e.isInstant);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -103,24 +117,43 @@ function MyEventsPage() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             作成したイベント
           </h2>
-          {hostedEvents.length === 0 ? (
+          {plannedEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               まだイベントを作成していません
             </p>
           ) : (
-            hostedEvents.map((event) => (
+            plannedEvents.map((event) => (
               <EventCard
                 key={event.id}
                 name={event.name}
                 venueName={event.venueName}
                 eventDate={event.eventDate}
                 showTime={event.showTime}
-                isInstant={event.isInstant}
+                isInstant={false}
                 shareToken={event.shareToken}
               />
             ))
           )}
         </section>
+
+        {instantEvents.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              出会いの記録
+            </h2>
+            {instantEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                name={event.name}
+                venueName={event.venueName}
+                eventDate={event.eventDate}
+                showTime={false}
+                isInstant={true}
+                shareToken={event.shareToken}
+              />
+            ))}
+          </section>
+        )}
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
