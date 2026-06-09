@@ -40,11 +40,15 @@ export default defineConfig(({ command }) => ({
   ],
   build: {
     target: ['es2020', 'chrome87', 'firefox78', 'safari14', 'edge88'],
+    rollupOptions: {
+      external: ['cloudflare:workers'],
+    },
   },
   optimizeDeps: {
     exclude: ['@better-auth/kysely-adapter'],
   },
   ssr: {
     noExternal: ['emblor', 'react-hook-form'],
+    external: ['cloudflare:workers'],
   },
 }))
