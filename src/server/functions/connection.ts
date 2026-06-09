@@ -249,6 +249,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
         eventName: events.name,
         venueName: events.venueName,
         eventDate: events.eventDate,
+        isInstant: events.isInstant,
       })
       .from(eventCheckins)
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
@@ -260,6 +261,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       )
       .limit(1);
 
+    const noCtx = { eventId: null, eventName: null, venueName: null, eventDate: null };
     const eventCtx = activeCheckin
       ? {
           eventId: activeCheckin.eventId,
@@ -267,7 +269,11 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
           venueName: activeCheckin.venueName,
           eventDate: activeCheckin.eventDate,
         }
-      : { eventId: null, eventName: null, venueName: null, eventDate: null };
+      : noCtx;
+
+    // 即時イベントはA（発行側）のみに文脈を付与する。企画イベントは双方に付与。
+    const issuerCtx = eventCtx;
+    const scannerCtx = activeCheckin?.isInstant ? noCtx : eventCtx;
 
     // 使用済みトークンを即時削除
     await db
@@ -282,13 +288,13 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
           fromPersonaId: scannerPersonaRow.id,
           toPersonaId: issuerPersonaId,
           fromUserId: session.user.id,
-          ...eventCtx,
+          ...scannerCtx,
         },
         {
           fromPersonaId: issuerPersonaId,
           toPersonaId: scannerPersonaRow.id,
           fromUserId: issuerPersonaRow!.userId,
-          ...eventCtx,
+          ...issuerCtx,
         },
       ])
       .onConflictDoNothing();

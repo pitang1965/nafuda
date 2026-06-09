@@ -82,10 +82,12 @@ function ConnectionCard({
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const connectedDate = new Date(conn.connectedAt).toLocaleDateString("ja-JP", {
+  const connectedDate = new Date(conn.connectedAt).toLocaleString("ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   const handleDelete = async () => {
