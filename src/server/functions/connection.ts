@@ -359,6 +359,60 @@ export const checkQrConnectionStatus = createServerFn({ method: "GET" })
     };
   });
 
+// つながりの文脈・プライベートメモを編集する（自分の行のみ）
+export const updateConnection = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      connectionId: z.uuid(),
+      eventName: z.string().max(100).optional(),
+      venueName: z.string().max(100).optional(),
+      privateMemo: z.string().max(500).optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const [row] = await db
+      .select({ eventId: connections.eventId })
+      .from(connections)
+      .where(
+        and(
+          eq(connections.id, data.connectionId),
+          eq(connections.fromUserId, session.user.id),
+        ),
+      )
+      .limit(1);
+    if (!row) throw new Error("つながりが見つかりません");
+
+    // イベント参照のある文脈は事実の記録として固定（編集不可）
+    const contextLocked = row.eventId !== null;
+    if (
+      contextLocked &&
+      (data.eventName !== undefined || data.venueName !== undefined)
+    )
+      throw new Error("イベント由来の文脈は編集できません");
+
+    const updates: {
+      eventName?: string | null;
+      venueName?: string | null;
+      privateMemo?: string | null;
+    } = {};
+    if (data.eventName !== undefined)
+      updates.eventName = data.eventName.trim() || null;
+    if (data.venueName !== undefined)
+      updates.venueName = data.venueName.trim() || null;
+    if (data.privateMemo !== undefined)
+      updates.privateMemo = data.privateMemo.trim() || null;
+    if (Object.keys(updates).length === 0) return;
+
+    await db
+      .update(connections)
+      .set(updates)
+      .where(eq(connections.id, data.connectionId));
+  });
+
 // つながりを削除する（自分の行のみ・非対称）
 export const deleteConnection = createServerFn({ method: "POST" })
   .inputValidator(z.object({ connectionId: z.uuid() }))
@@ -393,9 +447,11 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
       .select({
         connectionId: connections.id,
         connectedAt: connections.connectedAt,
+        eventId: connections.eventId,
         eventName: connections.eventName,
         venueName: connections.venueName,
         eventDate: connections.eventDate,
+        privateMemo: connections.privateMemo,
         fromDisplayName: fromPersona.displayName,
         fromLabel: fromPersona.label,
         toDisplayName: toPersona.displayName,
