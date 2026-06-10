@@ -18,6 +18,15 @@ import { auth } from "../auth";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
+// SNSリンクのURL: http(s) のみ許可。z.url() は javascript:/data: を通すため
+// スキームを明示的に絞り格納型XSSを防ぐ
+const httpUrl = z
+  .url("有効なURLを入力してください")
+  .refine(
+    (v) => /^https?:\/\//i.test(v),
+    "http または https のURLを入力してください",
+  );
+
 async function generateUniqueUrlId(): Promise<string> {
   while (true) {
     const bytes = new Uint8Array(10);
@@ -251,7 +260,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "pixiv",
         "other",
       ]),
-      url: z.url("有効なURLを入力してください"),
+      url: httpUrl,
       title: z.string().max(50).optional(),
       displayOrder: z.number().int().min(0),
     }),
@@ -276,6 +285,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
     const title = data.title?.trim() || null;
 
     if (data.linkId) {
+      // linkId が自分の persona に属することを確認（他人のリンク書き換え防止）
       await db
         .update(snsLinks)
         .set({
@@ -284,7 +294,12 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
           title,
           displayOrder: data.displayOrder,
         })
-        .where(eq(snsLinks.id, data.linkId));
+        .where(
+          and(
+            eq(snsLinks.id, data.linkId),
+            eq(snsLinks.personaId, data.personaId),
+          ),
+        );
     } else {
       await db.insert(snsLinks).values({
         personaId: data.personaId,
@@ -302,6 +317,18 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
+
+    // linkId → persona → user を辿り所有者を検証（他人のリンク削除防止）
+    const [owned] = await db
+      .select({ id: snsLinks.id })
+      .from(snsLinks)
+      .innerJoin(personas, eq(snsLinks.personaId, personas.id))
+      .where(
+        and(eq(snsLinks.id, data.linkId), eq(personas.userId, session.user.id)),
+      )
+      .limit(1);
+    if (!owned) throw new Error("Forbidden");
+
     await db.delete(snsLinks).where(eq(snsLinks.id, data.linkId));
   });
 
