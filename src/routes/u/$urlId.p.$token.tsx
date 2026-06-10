@@ -8,6 +8,7 @@ import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { buildOgpDescription } from "../../lib/ogp";
+import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
@@ -28,7 +29,9 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     const title = `${profile.displayName}のなふだ`;
     const description = buildOgpDescription(profile.displayName, profile.bio);
     const rawImage = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
-    const image = rawImage.startsWith("/") ? `${BASE_URL}${rawImage}` : rawImage;
+    const image = rawImage.startsWith("/")
+      ? `${BASE_URL}${rawImage}`
+      : rawImage;
     const url = `${BASE_URL}/u/${params.urlId}/p/${params.token}`;
     return {
       meta: [
@@ -82,7 +85,8 @@ function PublicProfilePage() {
 
   return (
     <div className={style ? "min-h-screen bg-gray-900" : "min-h-screen"}>
-      <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col">
+      <PwaInstallBanner sticky />
+      <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col pb-16">
         {canGoBack && (
           <div
             className="p-4 flex items-center"

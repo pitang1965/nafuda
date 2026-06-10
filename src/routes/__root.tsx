@@ -28,11 +28,21 @@ function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="ja">
       <head>
+        {/* beforeinstallprompt はReactハイドレーション前に発火するため、ここで早期キャプチャ */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaPrompt=e;});`,
+          }}
+        />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <HeadContent />
       </head>
       <body>
@@ -60,21 +70,25 @@ function NotFound() {
   );
 }
 
-const BASE_URL = import.meta.env.VITE_BASE_URL ?? 'https://nafuda.me'
-const SITE_DESCRIPTION = 'なふだはQRコードをスキャンするだけで自己紹介・SNSリンク・プロフィールを手軽にシェアできるデジタル名刺サービスです。推し活・趣味・仕事など様々なシーンでご利用いただけます。今すぐ無料で始めましょう。'
+const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
+const SITE_DESCRIPTION =
+  "なふだはQRコードをスキャンするだけで自己紹介・SNSリンク・プロフィールを手軽にシェアできるデジタル名刺サービスです。推し活・趣味・仕事など様々なシーンでご利用いただけます。今すぐ無料で始めましょう。";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      { title: 'なふだ' },
-      { name: 'description', content: SITE_DESCRIPTION },
-      { property: 'og:type', content: 'website' },
-      { property: 'og:title', content: 'なふだ — QRコードでつながるデジタル名刺' },
-      { property: 'og:description', content: SITE_DESCRIPTION },
-      { property: 'og:image', content: `${BASE_URL}/icons/icon-512.png` },
-      { property: 'og:url', content: BASE_URL },
-      { property: 'og:site_name', content: 'なふだ' },
-      { name: 'twitter:card', content: 'summary' },
+      { title: "なふだ" },
+      { name: "description", content: SITE_DESCRIPTION },
+      { property: "og:type", content: "website" },
+      {
+        property: "og:title",
+        content: "なふだ — QRコードでつながるデジタル名刺",
+      },
+      { property: "og:description", content: SITE_DESCRIPTION },
+      { property: "og:image", content: `${BASE_URL}/icons/icon-512.png` },
+      { property: "og:url", content: BASE_URL },
+      { property: "og:site_name", content: "なふだ" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => (

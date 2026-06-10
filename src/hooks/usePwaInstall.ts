@@ -9,9 +9,31 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+const STORAGE_KEY = "pwa-banner-dismissed";
+const DISMISS_DAYS = 7;
+
+export function isPwaBannerDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  const val = localStorage.getItem(STORAGE_KEY);
+  if (!val) return false;
+  return Date.now() < parseInt(val, 10) + DISMISS_DAYS * 86400000;
+}
+
+export function dismissPwaBanner(): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STORAGE_KEY, String(Date.now()));
+  }
+}
+
 export function usePwaInstall() {
   const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+    useState<BeforeInstallPromptEvent | null>(() => {
+      if (typeof window === "undefined") return null;
+      return (
+        (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt ??
+        null
+      );
+    });
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
@@ -24,9 +46,19 @@ export function usePwaInstall() {
       return;
     }
 
+    // グローバルキャプチャで既に取得済みの場合はstateに反映
+    const captured = (window as { __pwaPrompt?: BeforeInstallPromptEvent })
+      .__pwaPrompt;
+    if (captured && !installPrompt) {
+      setInstallPrompt(captured);
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e as BeforeInstallPromptEvent);
+      const prompt = e as BeforeInstallPromptEvent;
+      (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt =
+        prompt;
+      setInstallPrompt(prompt);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
