@@ -49,6 +49,8 @@ export default defineConfig(({ command }) => ({
   },
   ssr: {
     noExternal: ['emblor', 'react-hook-form'],
-    external: ['cloudflare:workers'],
+    // Dev では workerd が cloudflare: モジュールを解決するため external 指定は
+    // 不要（プラグインの環境検証で拒否される）。ビルド時のみ必要。
+    ...(command === 'build' ? { external: ['cloudflare:workers'] } : {}),
   },
 }))
