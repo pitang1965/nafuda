@@ -180,7 +180,7 @@ function PublicProfilePage() {
               <div className="w-full max-w-sm flex flex-col gap-2">
                 {profile.snsLinks.map((link) => (
                   <SnsLinkButton
-                    key={link.id}
+                    key={`${link.platform}-${link.displayOrder}-${link.url}`}
                     platform={link.platform}
                     url={link.url}
                     title={link.title}

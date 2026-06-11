@@ -271,9 +271,14 @@ export const getActiveCheckin = createServerFn({ method: "GET" })
   });
 
 // Get event participants by shareToken — public endpoint (no auth required)
+// ただし参加者の永続プロフィールURL（shareToken/urlId）はログインユーザーにのみ返す
 export const getEventParticipants = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    const isAuthenticated = !!session?.user;
+
     const eventRow = await db
       .select()
       .from(events)
@@ -302,11 +307,17 @@ export const getEventParticipants = createServerFn({ method: "POST" })
       .orderBy(desc(eventCheckins.checkedInAt));
 
     const seen = new Set<string>();
-    const participants = rows.filter((r) => {
-      if (seen.has(r.personaId)) return false;
-      seen.add(r.personaId);
-      return true;
-    });
+    const participants = rows
+      .filter((r) => {
+        if (seen.has(r.personaId)) return false;
+        seen.add(r.personaId);
+        return true;
+      })
+      .map((r) =>
+        isAuthenticated
+          ? r
+          : { ...r, shareToken: null as string | null, urlId: null },
+      );
 
     return { event: eventRow[0], participants };
   });

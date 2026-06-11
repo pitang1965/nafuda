@@ -219,11 +219,17 @@ export const getPublicProfile = createServerFn({ method: "GET" })
     >;
 
     // CRITICAL: filter SNS links at query level — do not fetch then hide client-side
+    // id (linkId) は返さない: 匿名収集→削除APIへの攻撃面になるため
     const links =
       visibility.sns_links === "private"
         ? []
         : await db
-            .select()
+            .select({
+              platform: snsLinks.platform,
+              url: snsLinks.url,
+              title: snsLinks.title,
+              displayOrder: snsLinks.displayOrder,
+            })
             .from(snsLinks)
             .where(eq(snsLinks.personaId, persona.id))
             .orderBy(snsLinks.displayOrder);
