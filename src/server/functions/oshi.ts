@@ -7,7 +7,9 @@ import { personas } from '../db/schema'
 import { auth } from '../auth'
 
 // Get oshi tag suggestions for autocomplete
-// Returns top 20 most-used tags matching the query prefix across all public personas
+// Returns top 20 most-used tags matching the query prefix across all personas.
+// Only the anonymous tag text + count is returned (no persona/identity linkage),
+// so this is not personal data even for personas that mark oshi_tags private.
 export const getOshiSuggestions = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ query: z.string().min(1).max(50) }))
   .handler(async ({ data }) => {
@@ -18,7 +20,6 @@ export const getOshiSuggestions = createServerFn({ method: 'GET' })
       FROM (
         SELECT UNNEST(oshi_tags) as tag
         FROM personas
-        WHERE is_public = true
       ) t
       WHERE tag ILIKE ${data.query + '%'}
       GROUP BY tag
