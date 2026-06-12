@@ -21,6 +21,7 @@ import {
 import { AvatarUpload } from "../../../components/AvatarUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
@@ -657,35 +658,40 @@ function EditForm({
                         </option>
                       ))}
                     </select>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-1">
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon-xs"
+                        size="icon"
+                        className="size-11"
                         onClick={() => moveSnsLink(index, "up")}
                         disabled={index === 0}
+                        aria-label="上に移動"
                       >
-                        ↑
+                        <ArrowUp className="size-5" />
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon-xs"
+                        size="icon"
+                        className="size-11"
                         onClick={() => moveSnsLink(index, "down")}
                         disabled={index === snsLinks.length - 1}
+                        aria-label="下に移動"
                       >
-                        ↓
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon-xs"
-                        onClick={() => removeSnsLink(index)}
-                        className="text-red-600 hover:bg-red-50 hover:text-red-600"
-                      >
-                        ✕
+                        <ArrowDown className="size-5" />
                       </Button>
                     </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-11 ml-3 text-red-600 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => removeSnsLink(index)}
+                      aria-label="削除"
+                    >
+                      <X className="size-5" />
+                    </Button>
                   </div>
                   <Input
                     value={link.url}
