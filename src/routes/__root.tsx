@@ -72,17 +72,17 @@ function NotFound() {
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 const SITE_DESCRIPTION =
-  "なふだはQRコードをスキャンするだけで自己紹介・SNSリンク・プロフィールを手軽にシェアできるデジタル名刺サービスです。推し活・趣味・仕事など様々なシーンでご利用いただけます。今すぐ無料で始めましょう。";
+  "なふだは、勉強会・オフ会・飲みの席など“仕事じゃない”出会いのためのSNS名刺アプリ。QRコードを見せるだけで、X・Instagramなどのつながりを、いつ・どこで出会ったかの文脈ごと残せます。推し活にもぴったり。今すぐ無料で始めましょう。";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      { title: "なふだ" },
+      { title: "なふだ｜“仕事じゃない”出会いのSNS名刺アプリ" },
       { name: "description", content: SITE_DESCRIPTION },
       { property: "og:type", content: "website" },
       {
         property: "og:title",
-        content: "なふだ — QRコードでつながるデジタル名刺",
+        content: "なふだ — “仕事じゃない”出会いのSNS名刺アプリ",
       },
       { property: "og:description", content: SITE_DESCRIPTION },
       { property: "og:image", content: `${BASE_URL}/icons/icon-512.png` },

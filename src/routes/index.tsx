@@ -30,7 +30,7 @@ const features = [
     icon: "🪄",
     title: "シーンで使い分ける",
     description:
-      "推し活用・仕事用を別々のなふだに。見せたい情報だけを見せられる。",
+      "推し活用・オフ会用・飲み会用を別々のなふだに。見せたい情報だけを見せられる。",
   },
 ];
 
@@ -52,11 +52,11 @@ function LandingPage() {
           なふだ
         </p>
         <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center leading-snug">
-          SNSをひとつに。出会いに、文脈を。
+          その場で会った“仕事じゃない”人と、SNSでつながる。
         </h1>
         <p className="text-sm text-gray-500 mb-10 text-center leading-relaxed">
-          X・Instagram・YouTubeなど、バラバラなリンクを1枚のなふだにまとめられる。
-          イベントで出会った人とのつながりも、いつ・どこでという文脈ごと記録に残せる。
+          勉強会、オフ会、飲みの席。紙の名刺は出さないけど、また会いたい人がいる。
+          QRを見せるだけで、SNSのつながりを、いつ・どこでという文脈ごと残せる。
         </p>
 
         <Link
@@ -91,7 +91,7 @@ function LandingPage() {
                 自分だけのなふだを作ろう
               </p>
               <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                スタイルを選んで個性を演出。推し活用・仕事用など複数のなふだを使い分けられる。
+                スタイルを選んで個性を演出。推し活用・オフ会用など複数のなふだを使い分けられる。
               </p>
             </div>
           </div>
