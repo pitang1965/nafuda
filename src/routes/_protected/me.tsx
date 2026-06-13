@@ -32,22 +32,11 @@ function PrivateBadge() {
 
 const LAST_PERSONA_KEY = "nafuda_last_persona_id";
 
-function resolveInitialPersonaId(
-  personas: { id: string; isDefault: boolean }[],
-): string {
-  const saved =
-    typeof window !== "undefined"
-      ? localStorage.getItem(LAST_PERSONA_KEY)
-      : null;
-  if (saved && personas.some((p) => p.id === saved)) return saved;
-  return personas.find((p) => p.isDefault)?.id ?? personas[0]?.id ?? "";
-}
-
 function MePage() {
-  const { urlId, personas } = Route.useLoaderData();
+  const { urlId, personas, initialPersonaId } = Route.useLoaderData();
   const navigate = useNavigate();
-  const [currentPersonaId, setCurrentPersonaId] = useState(() =>
-    resolveInitialPersonaId(personas),
+  const [currentPersonaId, setCurrentPersonaId] = useState(
+    () => initialPersonaId ?? "",
   );
   const currentPersona = personas.find((p) => p.id === currentPersonaId);
   const style = getNafudaStyle(currentPersona?.styleId ?? null);
@@ -72,9 +61,11 @@ function MePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // 前回使ったなふだをCookieに保存する。次回 /me 表示時にSSRが読み取り、
+  // 正しいなふだを最初から描画できる（localStorageだとSSRから見えずフラッシュする）。
   useEffect(() => {
     if (currentPersonaId)
-      localStorage.setItem(LAST_PERSONA_KEY, currentPersonaId);
+      document.cookie = `${LAST_PERSONA_KEY}=${currentPersonaId}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
   }, [currentPersonaId]);
 
   useEffect(() => {

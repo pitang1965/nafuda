@@ -79,8 +79,23 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
       {},
     );
 
+    // 前回使ったなふだをCookieから解決する。SSR時点で確定させることで、
+    // /me 初回描画でデフォルトなふだが一瞬表示されるフラッシュを防ぐ。
+    const savedPersonaId = (request.headers.get("cookie") ?? "")
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("nafuda_last_persona_id="))
+      ?.slice("nafuda_last_persona_id=".length);
+    const defaultPersonaId =
+      myPersonas.find((p) => p.isDefault)?.id ?? myPersonas[0]?.id ?? null;
+    const initialPersonaId =
+      savedPersonaId && myPersonas.some((p) => p.id === savedPersonaId)
+        ? savedPersonaId
+        : defaultPersonaId;
+
     return {
       urlId: urlIdRow[0]?.urlId ?? null,
+      initialPersonaId,
       personas: myPersonas.map((p) => ({
         ...p,
         snsLinks: linksByPersona[p.id] ?? [],
