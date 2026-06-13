@@ -78,6 +78,9 @@ export const personas = pgTable("personas", {
   avatarUrl: text("avatar_url"), // null = use initials avatar
   bio: text("bio"), // null = no bio set (max 200 chars enforced at app layer)
   label: text("label"), // 自分だけが見る識別名（最大20文字）、公開プロフィールには出ない
+  // 用途タイプ: アプリが見せ方/編集体験を切り替える機械可読な分類。値は src/lib/purpose.ts のレジストリで管理。
+  // null = 用途タイプ導入前の既存なふだ（従来表示で互換維持）。新規作成は常に non-null（最低 'other'）。
+  purpose: text("purpose"),
   oshiTags: text("oshi_tags").array().notNull().default([]),
   dojinReject: boolean("dojin_reject").notNull().default(false),
   // fieldVisibility: { sns_links: 'public'|'private', oshi_tags: 'public'|'private', avatar_url: 'public'|'private' }

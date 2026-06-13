@@ -8,6 +8,12 @@ import {
   createPersona,
   getOwnProfile,
 } from "../../../server/functions/profile";
+import {
+  PURPOSE_CONFIGS,
+  PURPOSE_PICKER_ORDER,
+  purposeLabelPlaceholder,
+  type PurposeId,
+} from "@/lib/purpose";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +26,7 @@ export const Route = createFileRoute("/_protected/profile/wizard")({
   component: WizardPage,
 });
 
-// Steps: 1=表示名, 2=推しタグ, 3=完了
+// Steps: 1=用途タイプ, 2=表示名/ラベル, 3=推しタグ, 4=完了
 
 const WizardSchema = z.object({
   displayName: z
@@ -39,6 +45,7 @@ function WizardPage() {
   const isFromEvent = redirect?.startsWith("/e/") ?? false;
   const isFirstPersona = personas.length === 0;
   const [step, setStep] = useState(1);
+  const [purpose, setPurpose] = useState<PurposeId | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,7 +56,7 @@ function WizardPage() {
     resolver: zodResolver(WizardSchema),
     defaultValues: {
       oshiTags: [],
-      label: isFirstPersona ? "メイン" : "",
+      label: "",
     },
   });
 
@@ -63,23 +70,42 @@ function WizardPage() {
     useWatch({ control: methods.control, name: "displayName" }) ?? "";
   const label = useWatch({ control: methods.control, name: "label" }) ?? "";
 
+  // 用途タイプを選んだら、ラベルが未編集のときだけ初期値を seed する。
+  // 一度でもユーザーがラベルを触っていたら上書きしない（ADR-0010）。
+  const handleSelectPurpose = (p: PurposeId) => {
+    setPurpose(p);
+    if (!methods.getFieldState("label", methods.formState).isDirty) {
+      methods.setValue("label", PURPOSE_CONFIGS[p].labelSeed, {
+        shouldDirty: false,
+      });
+    }
+  };
+
   const handleProceedFromOshi = () => {
-    capture("wizard_step_completed", { step: 2 });
-    setStep(3);
+    capture("wizard_step_completed", { step: 3 });
+    setStep(4);
   };
 
   const onSubmit = async (values: WizardForm, dest: "me" | "edit" = "edit") => {
+    if (!purpose) {
+      setStep(1);
+      return;
+    }
     setSubmitError(null);
     try {
       const persona = await createPersona({
         data: {
           displayName: values.displayName,
           label: values.label || null,
+          purpose,
           isDefault: isFirstPersona,
           oshiTags: values.oshiTags,
         },
       });
-      capture("wizard_completed", { is_first_persona: isFirstPersona });
+      capture("wizard_completed", {
+        is_first_persona: isFirstPersona,
+        purpose,
+      });
       if (redirect?.startsWith("/") && !redirect.startsWith("//")) {
         window.location.href = redirect;
       } else if (dest === "edit") {
@@ -92,7 +118,7 @@ function WizardPage() {
     }
   };
 
-  const steps = ["表示名", "推し / 趣味タグ", "完了"];
+  const steps = ["用途", "表示名", "推し / 趣味タグ", "完了"];
 
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
@@ -121,8 +147,55 @@ function WizardPage() {
           onSubmit={(e) => e.preventDefault()}
           className="flex flex-col gap-6"
         >
-          {/* Step 1: Display name */}
+          {/* Step 1: Purpose */}
           {step === 1 && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-bold">何のためのなふだ？</h2>
+              <p className="text-sm text-gray-500">
+                用途を選ぶと、なふだの見せ方がそれに合わせて変わります。あとから変更できます。
+              </p>
+              <div className="flex flex-col gap-2">
+                {PURPOSE_PICKER_ORDER.map((id) => {
+                  const cfg = PURPOSE_CONFIGS[id];
+                  const selected = purpose === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleSelectPurpose(id)}
+                      className={`flex items-center gap-3 p-4 rounded-xl border text-left transition
+                      ${selected ? "border-black bg-gray-50 ring-1 ring-black" : "border-gray-200 hover:border-gray-400"}`}
+                    >
+                      <span className="text-2xl">{cfg.emoji}</span>
+                      <span className="flex flex-col">
+                        <span className="font-bold">{cfg.label}</span>
+                        <span className="text-xs text-gray-500">
+                          {cfg.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (purpose) {
+                    capture("wizard_step_completed", { step: 1, purpose });
+                    setStep(2);
+                  }
+                }}
+                disabled={!purpose}
+                size="lg"
+                className="w-full"
+              >
+                次へ
+              </Button>
+            </div>
+          )}
+
+          {/* Step 2: Display name + label */}
+          {step === 2 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">表示名を決めましょう</h2>
               <p className="text-sm text-gray-500">
@@ -150,7 +223,7 @@ function WizardPage() {
                 <div className="relative mt-1">
                   <Input
                     {...register("label")}
-                    placeholder="例: 推し活用・仕事用"
+                    placeholder={purposeLabelPlaceholder(purpose)}
                     maxLength={20}
                     className="h-12 pr-12"
                   />
@@ -164,25 +237,34 @@ function WizardPage() {
                   </p>
                 )}
               </div>
-              <Button
-                type="button"
-                onClick={() => {
-                  if (displayName.trim()) {
-                    capture("wizard_step_completed", { step: 1 });
-                    setStep(2);
-                  }
-                }}
-                disabled={!displayName.trim()}
-                size="lg"
-                className="w-full"
-              >
-                次へ
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="flex-1"
+                >
+                  戻る
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (displayName.trim()) {
+                      capture("wizard_step_completed", { step: 2 });
+                      setStep(3);
+                    }
+                  }}
+                  disabled={!displayName.trim()}
+                  className="flex-1"
+                >
+                  次へ
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* Step 2: Oshi tags */}
-          {step === 2 && (
+          {/* Step 3: Oshi tags */}
+          {step === 3 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
                 趣味・推し・ジャンルを登録しましょう{" "}
@@ -204,7 +286,7 @@ function WizardPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(2)}
                   className="flex-1"
                 >
                   戻る
@@ -220,8 +302,8 @@ function WizardPage() {
             </div>
           )}
 
-          {/* Step 3: Confirm + submit */}
-          {step === 3 && (
+          {/* Step 4: Confirm + submit */}
+          {step === 4 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
                 {isFromEvent ? "設定完了！" : "もうひといきです！"}
@@ -241,7 +323,7 @@ function WizardPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(3)}
                     className="flex-1"
                   >
                     戻る
@@ -273,7 +355,7 @@ function WizardPage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(3)}
                     className="text-sm text-gray-400 hover:text-gray-600 underline underline-offset-2 mt-1"
                   >
                     ← 戻る

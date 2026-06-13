@@ -15,6 +15,14 @@ import {
 } from "../../../server/functions/profile";
 import { NAFUDA_STYLES } from "../../../lib/nafuda-styles";
 import {
+  PURPOSE_CONFIGS,
+  PURPOSE_PICKER_ORDER,
+  purposeLabelPlaceholder,
+  orderPlatformsByPurpose,
+  isPurposeId,
+  type PurposeId,
+} from "@/lib/purpose";
+import {
   updateOshiTags,
   updateDojinReject,
 } from "../../../server/functions/oshi";
@@ -165,6 +173,7 @@ function EditPage() {
       personaId={defaultPersona.id}
       initialDisplayName={defaultPersona.displayName}
       initialLabel={defaultPersona.label ?? ""}
+      initialPurpose={defaultPersona.purpose ?? null}
       initialBio={defaultPersona.bio ?? ""}
       initialAvatarUrl={defaultPersona.avatarUrl ?? ""}
       initialDisplayNameVisibility={
@@ -194,6 +203,7 @@ function EditForm({
   personaId,
   initialDisplayName,
   initialLabel,
+  initialPurpose,
   initialBio,
   initialAvatarUrl,
   initialDisplayNameVisibility,
@@ -209,6 +219,7 @@ function EditForm({
   personaId: string;
   initialDisplayName: string;
   initialLabel: string;
+  initialPurpose: string | null;
   initialBio: string;
   initialAvatarUrl: string;
   initialDisplayNameVisibility: "public" | "private";
@@ -247,6 +258,12 @@ function EditForm({
     initialStyleId,
   );
   const [styleDirty, setStyleDirty] = useState(false);
+  const [purpose, setPurpose] = useState<PurposeId | null>(
+    isPurposeId(initialPurpose) ? initialPurpose : null,
+  );
+  const [purposeDirty, setPurposeDirty] = useState(false);
+  // 用途タイプに応じて SNS プラットフォームのサジェスト順を並べ替える
+  const orderedPlatforms = orderPlatformsByPurpose(PLATFORMS, purpose);
 
   const methods = useForm<EditForm>({
     resolver: zodResolver(EditSchema),
@@ -286,7 +303,11 @@ function EditForm({
       );
     });
   const anyDirty =
-    isDirty || snsLinksDirty || styleDirty || hasPendingOshiInput;
+    isDirty ||
+    snsLinksDirty ||
+    styleDirty ||
+    purposeDirty ||
+    hasPendingOshiInput;
 
   const handleBack = () => {
     if (anyDirty) {
@@ -323,12 +344,22 @@ function EditForm({
       ...prev,
       {
         title: "",
-        platform: "x",
+        // 用途タイプのサジェスト筆頭を新規リンクの初期プラットフォームにする
+        platform: (orderedPlatforms[0]?.value ?? "x") as Platform,
         url: "",
         displayOrder: prev.length,
         isNew: true,
       },
     ]);
+  };
+
+  const handleSelectPurpose = (p: PurposeId) => {
+    setPurpose(p);
+    setPurposeDirty(true);
+    // 既存ラベルは絶対に上書きしない。空のときだけ用途由来の初期値を seed する（ADR-0010）
+    if (!methods.getValues("label")) {
+      setValue("label", PURPOSE_CONFIGS[p].labelSeed, { shouldDirty: true });
+    }
   };
 
   const removeSnsLink = (index: number) => {
@@ -377,6 +408,7 @@ function EditForm({
           personaId,
           displayName: values.displayName,
           label: values.label || null,
+          purpose,
           bio: values.bio || null,
           fieldVisibility: {
             display_name: values.displayNameVisibility,
@@ -493,7 +525,7 @@ function EditForm({
             <div className="relative">
               <Input
                 {...register("label")}
-                placeholder="例: 推し活用・仕事用"
+                placeholder={purposeLabelPlaceholder(purpose)}
                 maxLength={20}
                 className="pr-12"
               />
@@ -503,6 +535,39 @@ function EditForm({
             </div>
             {errors.label && (
               <p className="text-xs text-red-600">{errors.label.message}</p>
+            )}
+          </div>
+
+          {/* Purpose（用途タイプ） */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">
+              用途タイプ{" "}
+              <span className="text-xs text-gray-400 font-normal">
+                （見せ方が変わります）
+              </span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {PURPOSE_PICKER_ORDER.map((id) => {
+                const cfg = PURPOSE_CONFIGS[id];
+                const selected = purpose === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => handleSelectPurpose(id)}
+                    className={`flex items-center gap-2 p-3 rounded-lg border text-left transition
+                    ${selected ? "border-black bg-gray-50 ring-1 ring-black" : "border-gray-200 hover:border-gray-400"}`}
+                  >
+                    <span className="text-xl">{cfg.emoji}</span>
+                    <span className="text-sm font-medium">{cfg.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {purpose === null && (
+              <p className="text-xs text-gray-400">
+                未選択（従来表示）。選ぶとこのなふだの見せ方が用途に合わせて変わります。
+              </p>
             )}
           </div>
 
@@ -652,7 +717,7 @@ function EditForm({
                       }
                       className="flex-1 px-2 py-1.5 border rounded text-sm bg-white outline-none"
                     >
-                      {PLATFORMS.map((p) => (
+                      {orderedPlatforms.map((p) => (
                         <option key={p.value} value={p.value}>
                           {p.label}
                         </option>

@@ -113,6 +113,7 @@ export const createPersona = createServerFn({ method: "POST" })
         .min(1, "表示名を入力してください")
         .max(50, "50文字以下"),
       label: z.string().max(20).optional().nullable(),
+      purpose: z.string().max(32).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
       avatarUrl: z.url().optional().nullable(),
       isDefault: z.boolean().default(false),
@@ -158,6 +159,7 @@ export const createPersona = createServerFn({ method: "POST" })
         userId: session.user.id,
         displayName: data.displayName,
         label: data.label ?? null,
+        purpose: data.purpose ?? null,
         bio: data.bio ?? null,
         shareToken,
         avatarUrl: data.avatarUrl ?? null,
@@ -176,6 +178,7 @@ export const updatePersona = createServerFn({ method: "POST" })
       personaId: z.uuid(),
       displayName: z.string().min(1).max(50).optional(),
       label: z.string().max(20).optional().nullable(),
+      purpose: z.string().max(32).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
       avatarUrl: z.url().optional().nullable(),
       fieldVisibility: z
@@ -194,6 +197,7 @@ export const updatePersona = createServerFn({ method: "POST" })
     };
     if (data.displayName !== undefined) updates.displayName = data.displayName;
     if (data.label !== undefined) updates.label = data.label;
+    if (data.purpose !== undefined) updates.purpose = data.purpose;
     if (data.bio !== undefined) updates.bio = data.bio;
     if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
     if (data.fieldVisibility !== undefined)
@@ -254,6 +258,8 @@ export const getPublicProfile = createServerFn({ method: "GET" })
       bio: visibility.bio === "private" ? null : persona.bio,
       avatarUrl: visibility.avatar_url === "private" ? null : persona.avatarUrl,
       oshiTags: visibility.oshi_tags === "private" ? [] : persona.oshiTags,
+      // 用途タイプはタグ見出しの出し分けに使う（値自体は公開情報ではないが、効果が見える）
+      purpose: persona.purpose,
       dojinReject: persona.dojinReject,
       snsLinks: links,
       styleId: persona.styleId,

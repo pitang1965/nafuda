@@ -7,6 +7,7 @@ import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { purposeTagHeading } from "../../lib/purpose";
 import { buildOgpDescription } from "../../lib/ogp";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 
@@ -160,8 +161,17 @@ function PublicProfilePage() {
               </p>
             )}
             {profile.oshiTags.length > 0 && (
-              <div className="flex flex-wrap gap-1 justify-center">
-                {profile.oshiTags.map((tag) => (
+              <div className="flex flex-col items-center gap-1">
+                {purposeTagHeading(profile.purpose) && (
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: subtextColor ?? "#6b7280" }}
+                  >
+                    {purposeTagHeading(profile.purpose)}
+                  </span>
+                )}
+                <div className="flex flex-wrap gap-1 justify-center">
+                  {profile.oshiTags.map((tag) => (
                   <span
                     key={tag}
                     className="px-2 py-0.5 rounded-full text-xs"
@@ -173,7 +183,8 @@ function PublicProfilePage() {
                   >
                     {tag}
                   </span>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
             {profile.snsLinks.length > 0 && (
