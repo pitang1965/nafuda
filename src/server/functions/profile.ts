@@ -402,3 +402,58 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
     await db.delete(userTable).where(eq(userTable.id, userId));
   },
 );
+
+// なふだ（ペルソナ）を1枚だけ削除する。退会(ADR-0005)とは別概念で、
+// アカウント・UrlId・他のなふだは残る。最後の1枚は削除不可（ADR-0011）。
+export const deletePersona = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ personaId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+    const userId = session.user.id;
+
+    // 自分のなふだ一覧（最古順）。所有チェックと最後の1枚ガードに使う
+    const myPersonas = await db
+      .select({ id: personas.id, isDefault: personas.isDefault })
+      .from(personas)
+      .where(eq(personas.userId, userId))
+      .orderBy(personas.createdAt);
+
+    const target = myPersonas.find((p) => p.id === data.personaId);
+    if (!target) throw new Error("Forbidden");
+
+    // 最後の1枚は削除させない（全削除は退会に委ねる — ADR-0011）
+    if (myPersonas.length <= 1) {
+      throw new Error("最後のなふだは削除できません");
+    }
+
+    const personaIds = [data.personaId];
+
+    // FK 制約順: connections（相手側の鏡像行も含む）→ event_checkins → sns_links → personas
+    // connection_qr_tokens は onDelete: cascade で自動削除される
+    await db
+      .delete(connections)
+      .where(
+        or(
+          inArray(connections.fromPersonaId, personaIds),
+          inArray(connections.toPersonaId, personaIds),
+        ),
+      );
+    await db
+      .delete(eventCheckins)
+      .where(inArray(eventCheckins.personaId, personaIds));
+    await db.delete(snsLinks).where(inArray(snsLinks.personaId, personaIds));
+    await db.delete(personas).where(eq(personas.id, data.personaId));
+
+    // デフォルトを削除した場合は残る最古のなふだに付け替える（不変条件維持）
+    if (target.isDefault) {
+      const nextDefault = myPersonas.find((p) => p.id !== data.personaId);
+      if (nextDefault) {
+        await db
+          .update(personas)
+          .set({ isDefault: true })
+          .where(eq(personas.id, nextDefault.id));
+      }
+    }
+  });

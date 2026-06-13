@@ -2,6 +2,7 @@ import {
   createFileRoute,
   useNavigate,
   useRouter,
+  Link,
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
@@ -12,6 +13,7 @@ import {
   updatePersona,
   upsertSnsLink,
   deleteSnsLink,
+  deletePersona,
 } from "../../../server/functions/profile";
 import { NAFUDA_STYLES } from "../../../lib/nafuda-styles";
 import {
@@ -171,6 +173,7 @@ function EditPage() {
   return (
     <EditForm
       personaId={defaultPersona.id}
+      personaCount={personas.length}
       initialDisplayName={defaultPersona.displayName}
       initialLabel={defaultPersona.label ?? ""}
       initialPurpose={defaultPersona.purpose ?? null}
@@ -201,6 +204,7 @@ function EditPage() {
 
 function EditForm({
   personaId,
+  personaCount,
   initialDisplayName,
   initialLabel,
   initialPurpose,
@@ -217,6 +221,7 @@ function EditForm({
   initialStyleId,
 }: {
   personaId: string;
+  personaCount: number;
   initialDisplayName: string;
   initialLabel: string;
   initialPurpose: string | null;
@@ -262,6 +267,10 @@ function EditForm({
     isPurposeId(initialPurpose) ? initialPurpose : null,
   );
   const [purposeDirty, setPurposeDirty] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const isLastPersona = personaCount <= 1;
   // 用途タイプに応じて SNS プラットフォームのサジェスト順を並べ替える
   const orderedPlatforms = orderPlatformsByPurpose(PLATFORMS, purpose);
 
@@ -453,6 +462,19 @@ function EditForm({
       setSaveError("保存に失敗しました。もう一度お試しください。");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deletePersona({ data: { personaId } });
+      await router.invalidate();
+      navigate({ to: "/me" });
+    } catch {
+      setDeleteError("削除に失敗しました。もう一度お試しください。");
+      setDeleting(false);
     }
   };
 
@@ -877,7 +899,70 @@ function EditForm({
             {saving ? "保存中..." : "保存する"}
           </Button>
         </form>
+
+        {/* 危険ゾーン: なふだの削除（最後の1枚は退会に委ねる — ADR-0011） */}
+        <div className="mt-2 pt-6 border-t border-gray-200 flex flex-col gap-2">
+          {isLastPersona ? (
+            <p className="text-xs text-gray-400">
+              これは最後のなふだのため削除できません。アカウントごと消す場合は{" "}
+              <Link to="/me" className="underline">
+                マイページの「退会する」
+              </Link>
+              から手続きしてください。
+            </p>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowDeleteModal(true)}
+              className="self-start h-auto p-0 text-sm text-red-600 underline hover:bg-transparent hover:text-red-700"
+            >
+              このなふだを削除する
+            </Button>
+          )}
+        </div>
       </main>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-3">なふだの削除</h2>
+            <p className="text-sm text-gray-600 mb-3">
+              なふだ「{initialLabel || initialDisplayName}
+              」を削除します。以下のデータが完全に削除されます（復元できません）：
+            </p>
+            <ul className="text-sm text-gray-600 mb-4 list-disc pl-4 space-y-1">
+              <li>このなふだのつながり（相手側の記録も含む）</li>
+              <li>このなふだのチェックイン履歴</li>
+              <li>このなふだのSNSリンク</li>
+            </ul>
+            {deleteError && (
+              <p className="text-sm text-red-500 mb-3">{deleteError}</p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError(null);
+                }}
+                disabled={deleting}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "削除中..." : "削除する"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </FormProvider>
   );
 }
