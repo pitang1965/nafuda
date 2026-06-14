@@ -38,7 +38,7 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     id: "social",
     label: "イベント・交流",
     emoji: "🥂",
-    description: "勉強会・オフ会・飲み会など“仕事じゃない”出会い",
+    description: "勉強会・オフ会・飲み会・ドッグランなど“仕事じゃない”出会い",
     labelSeed: "交流用",
     labelPlaceholder: "例: オフ会用・交流用",
     tagHeading: null,
