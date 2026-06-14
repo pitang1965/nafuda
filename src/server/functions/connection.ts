@@ -11,6 +11,7 @@ import {
   urlIds,
   eventCheckins,
   events,
+  pendingInvites,
 } from "../db/schema";
 import { auth } from "../auth";
 
@@ -87,6 +88,94 @@ export const deleteConnectionQrToken = createServerFn({ method: "POST" })
       .where(eq(connectionQrTokens.token, data.token));
   });
 
+// 発行者ペルソナのプロフィール＋現在のセッション文脈（自分のなふだ・既つながり判定）を
+// 組み立てる共有ヘルパー。つながりQR経由（getConnectPageData）と保留招待経由
+// （getPendingInviteData）で同一の画面を描けるよう返り値の形を揃える。
+async function buildIssuerView(issuerPersonaId: string) {
+  const [personaRow] = await db
+    .select({
+      id: personas.id,
+      userId: personas.userId,
+      displayName: personas.displayName,
+      shareToken: personas.shareToken,
+      bio: personas.bio,
+      avatarUrl: personas.avatarUrl,
+      oshiTags: personas.oshiTags,
+      fieldVisibility: personas.fieldVisibility,
+      styleId: personas.styleId,
+    })
+    .from(personas)
+    .where(eq(personas.id, issuerPersonaId))
+    .limit(1);
+  if (!personaRow) return null;
+
+  const [urlIdRow] = await db
+    .select({ urlId: urlIds.urlId })
+    .from(urlIds)
+    .where(eq(urlIds.userId, personaRow.userId))
+    .limit(1);
+
+  const request = getRequest();
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  let myPersonas: { id: string; displayName: string; isDefault: boolean }[] = [];
+  let alreadyConnected = false;
+
+  if (session?.user) {
+    myPersonas = await db
+      .select({
+        id: personas.id,
+        displayName: personas.displayName,
+        isDefault: personas.isDefault,
+      })
+      .from(personas)
+      .where(eq(personas.userId, session.user.id))
+      .orderBy(personas.createdAt);
+
+    // 既つながり確認: 自分の fromPersona → 相手の persona が存在するか
+    if (myPersonas.length > 0) {
+      const myPersonaIds = myPersonas.map((p) => p.id);
+      for (const myPersonaId of myPersonaIds) {
+        const existing = await db
+          .select({ id: connections.id })
+          .from(connections)
+          .where(
+            and(
+              eq(connections.fromPersonaId, myPersonaId),
+              eq(connections.toPersonaId, issuerPersonaId),
+            ),
+          )
+          .limit(1);
+        if (existing[0]) {
+          alreadyConnected = true;
+          break;
+        }
+      }
+    }
+  }
+
+  const visibility = (personaRow.fieldVisibility ?? {}) as Record<
+    string,
+    string
+  >;
+
+  return {
+    profile: {
+      displayName: personaRow.displayName,
+      bio: visibility.bio === "private" ? null : personaRow.bio,
+      avatarUrl:
+        visibility.avatar_url === "private" ? null : personaRow.avatarUrl,
+      oshiTags: visibility.oshi_tags === "private" ? [] : personaRow.oshiTags,
+      styleId: personaRow.styleId,
+      urlId: urlIdRow?.urlId ?? null,
+      shareToken: personaRow.shareToken,
+    },
+    session: session ? { user: session.user, myPersonas } : null,
+    alreadyConnected,
+    issuerPersonaId,
+  };
+}
+
 // つながりQRをスキャンしたページのローダー用: トークンを検証してプロフィールを返す
 export const getConnectPageData = createServerFn({ method: "GET" })
   .inputValidator(z.object({ token: z.string() }))
@@ -104,92 +193,189 @@ export const getConnectPageData = createServerFn({ method: "GET" })
       .limit(1);
     if (!tokenRows[0]) return { valid: false as const };
 
-    const issuerPersonaId = tokenRows[0].fromPersonaId;
+    const view = await buildIssuerView(tokenRows[0].fromPersonaId);
+    if (!view) return { valid: false as const };
 
-    const [personaRow] = await db
+    return { valid: true as const, ...view };
+  });
+
+// アカウント未所持の相手がスキャンした時点で保留招待を作成する（48時間有効）。
+// 文脈は発行者の現在のアクティブチェックインからスナップショットする（ADR-0012）。
+// 認証不要（スキャン者はまだアカウントを持たない）。有効な15分QRトークンが必須。
+export const ensurePendingInvite = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ connectionQrToken: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const now = new Date();
+
+    // 期限切れ招待を掃除（テーブルを肥大させない）
+    await db.delete(pendingInvites).where(lt(pendingInvites.expiresAt, now));
+
+    const [tokenRow] = await db
+      .select({ fromPersonaId: connectionQrTokens.fromPersonaId })
+      .from(connectionQrTokens)
+      .where(
+        and(
+          eq(connectionQrTokens.token, data.connectionQrToken),
+          gt(connectionQrTokens.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    if (!tokenRow) throw new Error("QRコードが無効または期限切れです");
+
+    const issuerPersonaId = tokenRow.fromPersonaId;
+
+    // 文脈スナップショット: 発行者のアクティブチェックイン（企画・即時とも eventId 付き）
+    const [activeCheckin] = await db
       .select({
-        id: personas.id,
-        userId: personas.userId,
-        displayName: personas.displayName,
-        shareToken: personas.shareToken,
-        bio: personas.bio,
-        avatarUrl: personas.avatarUrl,
-        oshiTags: personas.oshiTags,
-        fieldVisibility: personas.fieldVisibility,
-        styleId: personas.styleId,
+        eventId: eventCheckins.eventId,
+        eventName: events.name,
+        venueName: events.venueName,
+        eventDate: events.eventDate,
       })
+      .from(eventCheckins)
+      .innerJoin(events, eq(eventCheckins.eventId, events.id))
+      .where(
+        and(
+          eq(eventCheckins.personaId, issuerPersonaId),
+          isNull(eventCheckins.checkedOutAt),
+        ),
+      )
+      .limit(1);
+
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    const inviteToken = Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+    await db.insert(pendingInvites).values({
+      inviteToken,
+      issuerPersonaId,
+      eventId: activeCheckin?.eventId ?? null,
+      eventName: activeCheckin?.eventName ?? null,
+      venueName: activeCheckin?.venueName ?? null,
+      eventDate: activeCheckin?.eventDate ?? null,
+      expiresAt,
+    });
+
+    return { inviteToken };
+  });
+
+// QR期限切れ後の復旧用ローダー: inviteToken を検証して発行者プロフィールを返す
+export const getPendingInviteData = createServerFn({ method: "GET" })
+  .inputValidator(z.object({ inviteToken: z.string() }))
+  .handler(async ({ data }) => {
+    const now = new Date();
+    const [inviteRow] = await db
+      .select({ issuerPersonaId: pendingInvites.issuerPersonaId })
+      .from(pendingInvites)
+      .where(
+        and(
+          eq(pendingInvites.inviteToken, data.inviteToken),
+          gt(pendingInvites.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    if (!inviteRow) return { valid: false as const };
+
+    const view = await buildIssuerView(inviteRow.issuerPersonaId);
+    if (!view) return { valid: false as const };
+
+    return { valid: true as const, ...view };
+  });
+
+// 保留招待経由でコネクションを双方向即時生成する。文脈は招待作成時のスナップショットを使い、
+// 取り直さない（時間差で成立しても「実際に会った場所」を保持する）。
+export const applyPendingInvite = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      inviteToken: z.string().min(1),
+      fromPersonaId: z.uuid(), // スキャンした側（後から登録した人）のペルソナ
+    }),
+  )
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const [scannerPersonaRow] = await db
+      .select({ id: personas.id })
+      .from(personas)
+      .where(
+        and(
+          eq(personas.id, data.fromPersonaId),
+          eq(personas.userId, session.user.id),
+        ),
+      )
+      .limit(1);
+    if (!scannerPersonaRow) throw new Error("自分のペルソナが見つかりません");
+
+    const now = new Date();
+    const [inviteRow] = await db
+      .select({
+        issuerPersonaId: pendingInvites.issuerPersonaId,
+        eventId: pendingInvites.eventId,
+        eventName: pendingInvites.eventName,
+        venueName: pendingInvites.venueName,
+        eventDate: pendingInvites.eventDate,
+      })
+      .from(pendingInvites)
+      .where(
+        and(
+          eq(pendingInvites.inviteToken, data.inviteToken),
+          gt(pendingInvites.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    if (!inviteRow) throw new Error("招待が無効または期限切れです");
+
+    const issuerPersonaId = inviteRow.issuerPersonaId;
+    if (issuerPersonaId === scannerPersonaRow.id)
+      throw new Error("自分自身にはつながれません");
+
+    const [issuerPersonaRow] = await db
+      .select({ userId: personas.userId })
       .from(personas)
       .where(eq(personas.id, issuerPersonaId))
       .limit(1);
-    if (!personaRow) return { valid: false as const };
+    if (!issuerPersonaRow) throw new Error("相手のなふだが見つかりません");
+    if (issuerPersonaRow.userId === session.user.id)
+      throw new Error("自分自身にはつながれません");
 
-    const [urlIdRow] = await db
-      .select({ urlId: urlIds.urlId })
-      .from(urlIds)
-      .where(eq(urlIds.userId, personaRow.userId))
-      .limit(1);
-
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-
-    let myPersonas: { id: string; displayName: string; isDefault: boolean }[] =
-      [];
-    let alreadyConnected = false;
-
-    if (session?.user) {
-      myPersonas = await db
-        .select({
-          id: personas.id,
-          displayName: personas.displayName,
-          isDefault: personas.isDefault,
-        })
-        .from(personas)
-        .where(eq(personas.userId, session.user.id))
-        .orderBy(personas.createdAt);
-
-      // 既つながり確認: 自分の fromPersona → 相手の persona が存在するか
-      if (myPersonas.length > 0) {
-        const myPersonaIds = myPersonas.map((p) => p.id);
-        for (const myPersonaId of myPersonaIds) {
-          const existing = await db
-            .select({ id: connections.id })
-            .from(connections)
-            .where(
-              and(
-                eq(connections.fromPersonaId, myPersonaId),
-                eq(connections.toPersonaId, issuerPersonaId),
-              ),
-            )
-            .limit(1);
-          if (existing[0]) {
-            alreadyConnected = true;
-            break;
-          }
-        }
-      }
-    }
-
-    const visibility = (personaRow.fieldVisibility ?? {}) as Record<
-      string,
-      string
-    >;
-
-    return {
-      valid: true as const,
-      profile: {
-        displayName: personaRow.displayName,
-        bio: visibility.bio === "private" ? null : personaRow.bio,
-        avatarUrl:
-          visibility.avatar_url === "private" ? null : personaRow.avatarUrl,
-        oshiTags: visibility.oshi_tags === "private" ? [] : personaRow.oshiTags,
-        styleId: personaRow.styleId,
-        urlId: urlIdRow?.urlId ?? null,
-        shareToken: personaRow.shareToken,
-      },
-      session: session ? { user: session.user, myPersonas } : null,
-      alreadyConnected,
-      issuerPersonaId,
+    // 文脈は招待のスナップショットを双方の行へ（ADR-0012: 成立時点のコピー、編集は各自独立）
+    const ctx = {
+      eventId: inviteRow.eventId,
+      eventName: inviteRow.eventName,
+      venueName: inviteRow.venueName,
+      eventDate: inviteRow.eventDate,
     };
+
+    // 使用済み招待を即時削除
+    await db
+      .delete(pendingInvites)
+      .where(eq(pendingInvites.inviteToken, data.inviteToken));
+
+    // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）
+    await db
+      .insert(connections)
+      .values([
+        {
+          fromPersonaId: scannerPersonaRow.id,
+          toPersonaId: issuerPersonaId,
+          fromUserId: session.user.id,
+          ...ctx,
+        },
+        {
+          fromPersonaId: issuerPersonaId,
+          toPersonaId: scannerPersonaRow.id,
+          fromUserId: issuerPersonaRow.userId,
+          ...ctx,
+        },
+      ])
+      .onConflictDoNothing();
+
+    return { connectedAt: new Date().toISOString() };
   });
 
 // つながりQR経由でコネクションを双方向即時生成する

@@ -9,6 +9,9 @@ import { capture } from "../../lib/analytics";
 import {
   getConnectPageData,
   createConnectionFromQr,
+  ensurePendingInvite,
+  getPendingInviteData,
+  applyPendingInvite,
 } from "../../server/functions/connection";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { NafudaFrame } from "../../components/NafudaFrame";
@@ -19,32 +22,61 @@ export const Route = createFileRoute("/connect/$token")({
   component: ConnectPage,
 });
 
+// getConnectPageData / getPendingInviteData が返す「有効な発行者ビュー」だけを取り出した型
+type ValidView = Extract<
+  Awaited<ReturnType<typeof getConnectPageData>>,
+  { valid: true }
+>;
+
 function ConnectPage() {
-  const data = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
   const { token } = Route.useParams();
   const navigate = useNavigate();
   const router = useRouter();
 
+  // QRトークンが期限切れのとき、localStorage の inviteToken から復旧した発行者ビュー
+  const [inviteView, setInviteView] = useState<ValidView | null>(null);
+  // QR無効時、復旧フェッチが完了するまでローディング表示する（loaderData由来でSSRと一致）
+  const [rescueLoading, setRescueLoading] = useState(!loaderData.valid);
+
   const [connected, setConnected] = useState(
-    data.valid && data.alreadyConnected,
+    loaderData.valid && loaderData.alreadyConnected,
   );
   const [connectedAt, setConnectedAt] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
+  // 描画に使う有効なデータソース: QRが生きていれば loader、死んでいれば招待復旧
+  const view: ValidView | null = loaderData.valid ? loaderData : inviteView;
+
+  const clearPending = () => {
+    localStorage.removeItem("pendingConnect");
+    localStorage.removeItem(`pendingInvite:${token}`);
+  };
+
   const doConnect = async (fromPersonaId: string) => {
     setShowPicker(false);
     setConnecting(true);
     setError(null);
     try {
-      const result = await createConnectionFromQr({
-        data: { connectionQrToken: token, fromPersonaId },
-      });
+      let result: { connectedAt: string } | null = null;
+      if (loaderData.valid) {
+        result = await createConnectionFromQr({
+          data: { connectionQrToken: token, fromPersonaId },
+        });
+      } else {
+        const stored = localStorage.getItem(`pendingInvite:${token}`);
+        if (stored)
+          result = await applyPendingInvite({
+            data: { inviteToken: stored, fromPersonaId },
+          });
+      }
+      if (!result) throw new Error("つながり情報が見つかりません");
       capture("connection_completed");
       setConnected(true);
       setConnectedAt(result.connectedAt);
-      sessionStorage.removeItem("pendingConnect");
+      clearPending();
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
@@ -53,35 +85,77 @@ function ConnectPage() {
   };
 
   useEffect(() => {
-    if (data.valid) capture("connect_page_viewed");
-  }, [data.valid]);
+    if (loaderData.valid) capture("connect_page_viewed");
+  }, [loaderData.valid]);
 
-  // ログイン・ウィザード完了後に自動接続する
+  // アカウント未所持の相手がスキャンした時点で保留招待を作成し inviteToken を localStorage に保存。
+  // 15分QRトークンが切れた後も後追い接続できるようにする（ADR-0007 §3）。setStateは持たない。
   useEffect(() => {
-    if (!data.valid) return;
-    const { session } = data;
-    const pendingToken = sessionStorage.getItem("pendingConnect");
-    if (pendingToken !== token) return;
-    if (connected) {
-      sessionStorage.removeItem("pendingConnect");
-      return;
-    }
-    if (!session?.user) return;
-    if (session.myPersonas.length === 0) {
-      navigate({
-        to: "/profile/wizard",
-        search: { redirect: `/connect/${token}` },
+    if (!loaderData.valid) return;
+    if (loaderData.session?.user) return; // アカウントありは同一セッションで完結（招待不要）
+    const key = `pendingInvite:${token}`;
+    if (localStorage.getItem(key)) return;
+    ensurePendingInvite({ data: { connectionQrToken: token } })
+      .then((r) => localStorage.setItem(key, r.inviteToken))
+      .catch(() => {
+        /* 招待作成失敗は致命ではない（その場で登録すれば通常フローで繋がれる） */
       });
-      return;
-    }
-    if (session.myPersonas.length === 1) {
-      doConnect(session.myPersonas[0].id);
-    } else {
-      setShowPicker(true);
-    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!data.valid) {
+  // QRトークン期限切れ時の復旧: localStorage の inviteToken から発行者ビューを取得。
+  // setStateはすべて非同期コールバック内に閉じ込める（同期setStateを避ける）。
+  useEffect(() => {
+    if (loaderData.valid) return;
+    const key = `pendingInvite:${token}`;
+    const stored = localStorage.getItem(key);
+    const fetched = stored
+      ? getPendingInviteData({ data: { inviteToken: stored } }).then((d) => {
+          if (d.valid) {
+            setInviteView(d);
+            if (d.alreadyConnected) setConnected(true);
+          } else {
+            localStorage.removeItem(key);
+          }
+        })
+      : Promise.resolve();
+    fetched.finally(() => setRescueLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ログイン・ウィザード完了後に自動接続する。招待復旧（inviteView）の到着を待って再評価する。
+  // 判定後の状態更新はマイクロタスクに逃がし、エフェクト本体での同期setStateを避ける。
+  useEffect(() => {
+    if (localStorage.getItem("pendingConnect") !== token) return;
+    if (connected) {
+      clearPending();
+      return;
+    }
+    if (!view) return; // 招待復旧の読み込み待ち
+    const session = view.session;
+    if (!session?.user) return;
+    const myPersonas = session.myPersonas;
+    Promise.resolve().then(() => {
+      if (myPersonas.length === 0) {
+        navigate({
+          to: "/profile/wizard",
+          search: { redirect: `/connect/${token}` },
+        });
+      } else if (myPersonas.length === 1) {
+        doConnect(myPersonas[0].id);
+      } else {
+        setShowPicker(true);
+      }
+    });
+  }, [inviteView]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // QRが死んでいて復旧データもまだ無い → 復旧中 or 期限切れ
+  if (!view) {
+    if (rescueLoading) {
+      return (
+        <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
+          <p className="text-sm text-gray-400">読み込み中...</p>
+        </main>
+      );
+    }
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
         <p className="text-2xl">⏰</p>
@@ -94,7 +168,7 @@ function ConnectPage() {
     );
   }
 
-  const { profile, session } = data;
+  const { profile, session } = view;
   const style = getNafudaStyle(profile.styleId ?? null);
   const textColor = style?.textColor;
   const subtextColor = style?.subtextColor;
@@ -102,7 +176,7 @@ function ConnectPage() {
 
   const handleConnectClick = async () => {
     if (!session?.user) {
-      sessionStorage.setItem("pendingConnect", token);
+      localStorage.setItem("pendingConnect", token);
       await navigate({
         to: "/login",
         search: { redirect: `/connect/${token}` },
@@ -110,7 +184,7 @@ function ConnectPage() {
       return;
     }
     if (session.myPersonas.length === 0) {
-      sessionStorage.setItem("pendingConnect", token);
+      localStorage.setItem("pendingConnect", token);
       await navigate({
         to: "/profile/wizard",
         search: { redirect: `/connect/${token}` },

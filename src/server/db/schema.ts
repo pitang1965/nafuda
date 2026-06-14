@@ -191,3 +191,28 @@ export const connections = pgTable(
     uniqueConn: unique().on(table.fromPersonaId, table.toPersonaId),
   }),
 );
+
+// Pending invites: アカウント未所持の相手がつながりQRをスキャンした時点で作成される
+// 後追い接続用レコード（48時間有効）。15分のQRトークン期限切れ後も接続を完成できる。
+// 出会い自体は対面のQRスキャンであり、オンライン接続ではない（→ ADR-0007 §3 / ADR-0013）。
+export const pendingInvites = pgTable("pending_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // ブラウザの localStorage に保存し、登録完了後にこのトークンで招待を引いて接続を完成させる
+  inviteToken: text("invite_token").notNull().unique(),
+  // 発行者（A）= QRを見せた側のペルソナ
+  issuerPersonaId: uuid("issuer_persona_id")
+    .notNull()
+    .references(() => personas.id, { onDelete: "cascade" }),
+  // 出会いの文脈スナップショット: 招待作成時の発行者アクティブチェックインから取得（ADR-0012）。
+  // 接続が時間差で成立しても「実際に会った場所」を保持するため、適用時に取り直さず固定する。
+  eventId: uuid("event_id").references(() => events.id, {
+    onDelete: "set null",
+  }),
+  eventName: text("event_name"),
+  venueName: text("venue_name"),
+  eventDate: timestamp("event_date", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
