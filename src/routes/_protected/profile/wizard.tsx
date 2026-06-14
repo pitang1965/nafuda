@@ -12,6 +12,8 @@ import {
   PURPOSE_CONFIGS,
   PURPOSE_PICKER_ORDER,
   purposeLabelPlaceholder,
+  purposeEditTagLabel,
+  purposeEditTagHint,
   type PurposeId,
 } from "@/lib/purpose";
 import { OshiTagInput } from "../../../components/OshiTagInput";
@@ -118,7 +120,7 @@ function WizardPage() {
     }
   };
 
-  const steps = ["用途", "表示名", "推し / 趣味タグ", "完了"];
+  const steps = ["用途", "表示名", purposeEditTagLabel(purpose), "完了"];
 
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
@@ -267,13 +269,13 @@ function WizardPage() {
           {step === 3 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
-                趣味・推し・ジャンルを登録しましょう{" "}
+                {purposeEditTagLabel(purpose)}を登録しましょう{" "}
                 <span className="text-sm font-normal text-gray-400">
                   （任意）
                 </span>
               </h2>
               <p className="text-sm text-gray-500">
-                推しの名前・グループ名・趣味・ジャンルなど自由に入力できます。
+                {purposeEditTagHint(purpose)}自由に入力できます。
                 <br />
                 入力して{" "}
                 <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">

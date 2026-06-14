@@ -25,9 +25,13 @@ export interface PurposeConfig {
   tagHeading: string | null;
   /** SNSリンクのサジェストで前方へ出すプラットフォーム（platform value） */
   snsPriority: string[];
+  /** 編集/ウィザードのタグ入力欄の見出し（推しタグ / 興味タグ など） */
+  editTagLabel: string;
+  /** タグ入力欄の補足説明文 */
+  editTagHint: string;
 }
 
-const DEFAULT_LABEL_PLACEHOLDER = "例: 推し活用・仕事用";
+const DEFAULT_LABEL_PLACEHOLDER = "例: 推し活用・趣味用";
 
 export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
   social: {
@@ -39,6 +43,8 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     labelPlaceholder: "例: オフ会用・交流用",
     tagHeading: null,
     snsPriority: ["instagram", "x", "line_openchat"],
+    editTagLabel: "興味タグ",
+    editTagHint: "興味のあること・ジャンル・趣味など",
   },
   oshi: {
     id: "oshi",
@@ -49,6 +55,8 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     labelPlaceholder: "例: 推し活用",
     tagHeading: "推し",
     snsPriority: ["x", "instagram", "tiktok", "youtube"],
+    editTagLabel: "推しタグ",
+    editTagHint: "推しの名前・グループ名・ジャンルなど",
   },
   car: {
     id: "car",
@@ -59,6 +67,8 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     labelPlaceholder: "例: 車用",
     tagHeading: "車",
     snsPriority: ["minkara", "x", "youtube", "instagram"],
+    editTagLabel: "興味タグ",
+    editTagHint: "車種・走り方・カスタムの方向性など",
   },
   other: {
     id: "other",
@@ -69,6 +79,8 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     labelPlaceholder: DEFAULT_LABEL_PLACEHOLDER,
     tagHeading: null,
     snsPriority: [],
+    editTagLabel: "興味タグ",
+    editTagHint: "興味のあること・ジャンル・趣味など",
   },
 };
 
@@ -101,6 +113,34 @@ export function purposeLabelPlaceholder(
   purpose: string | null | undefined,
 ): string {
   return getPurposeConfig(purpose)?.labelPlaceholder ?? DEFAULT_LABEL_PLACEHOLDER;
+}
+
+// null/未知（＝導入前の既存なふだ）は従来表示にフォールバックする。
+const LEGACY_TAG_LABEL = "推し / 趣味タグ";
+const LEGACY_TAG_HINT = "推しの名前・グループ名・ジャンルなど";
+
+/** 編集/ウィザードのタグ入力欄の見出し（null/未知 → 従来表示） */
+export function purposeEditTagLabel(
+  purpose: string | null | undefined,
+): string {
+  return getPurposeConfig(purpose)?.editTagLabel ?? LEGACY_TAG_LABEL;
+}
+
+/** タグ入力欄の補足説明文（null/未知 → 従来表示） */
+export function purposeEditTagHint(purpose: string | null | undefined): string {
+  return getPurposeConfig(purpose)?.editTagHint ?? LEGACY_TAG_HINT;
+}
+
+/**
+ * 同担拒否（dojinReject）の入力欄を出すか。
+ * 同担は推し活固有の概念のため `oshi` でのみ表示する。
+ * null/未知（導入前の既存なふだ）は従来表示を守って表示し続ける（ADR-0010）。
+ */
+export function purposeShowsDojinReject(
+  purpose: string | null | undefined,
+): boolean {
+  const cfg = getPurposeConfig(purpose);
+  return cfg ? cfg.id === "oshi" : true;
 }
 
 /**

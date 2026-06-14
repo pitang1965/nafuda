@@ -20,6 +20,9 @@ import {
   PURPOSE_CONFIGS,
   PURPOSE_PICKER_ORDER,
   purposeLabelPlaceholder,
+  purposeEditTagLabel,
+  purposeEditTagHint,
+  purposeShowsDojinReject,
   orderPlatformsByPurpose,
   isPurposeId,
   type PurposeId,
@@ -652,7 +655,9 @@ function EditForm({
           {/* Oshi tags */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">推し / 趣味タグ</label>
+              <label className="text-sm font-medium">
+                {purposeEditTagLabel(purpose)}
+              </label>
               <VisibilityToggle
                 value={oshiTagsVisibility}
                 onChange={(v) => {
@@ -662,7 +667,7 @@ function EditForm({
               />
             </div>
             <p className="text-xs text-gray-500">
-              推しの名前・グループ名・ジャンルなど自由に入力できます。入力して{" "}
+              {purposeEditTagHint(purpose)}自由に入力できます。入力して{" "}
               <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">
                 Enter
               </kbd>{" "}
@@ -679,34 +684,36 @@ function EditForm({
             )}
           </div>
 
-          {/* Dojin reject — immediate save on radio change */}
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">同担設定</h3>
+          {/* Dojin reject — 推し活(oshi)と既存(null)でのみ表示。非表示でも DB の値は保持する */}
+          {purposeShowsDojinReject(purpose) && (
             <div className="flex flex-col gap-2">
-              <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="false"
-                  {...register("dojinReject")}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  同担の方にも表示される（デフォルト）
-                </span>
-              </label>
-              <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="true"
-                  {...register("dojinReject")}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  同担の方の一覧に表示されたくない場合はオンにしてください
-                </span>
-              </label>
+              <h3 className="text-sm font-medium">同担設定</h3>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    value="false"
+                    {...register("dojinReject")}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    同担の方にも表示される（デフォルト）
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    value="true"
+                    {...register("dojinReject")}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    同担の方の一覧に表示されたくない場合はオンにしてください
+                  </span>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SNS links */}
           <div className="flex flex-col gap-2">
