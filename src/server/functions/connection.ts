@@ -261,19 +261,19 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       )
       .limit(1);
 
-    const noCtx = { eventId: null, eventName: null, venueName: null, eventDate: null };
-    const eventCtx = activeCheckin
+    // 文脈は双方のコネクション行に付与する（ADR-0012）。即時・企画とも eventId 付きで
+    // 双方にコピーする（即時イベント識別子は将来の複数人関連のために保持）。編集可否は
+    // ロック判定（isInstant）で出し分け、即時イベントは各自が自分の行を③で編集できる。
+    const ctx = activeCheckin
       ? {
           eventId: activeCheckin.eventId,
           eventName: activeCheckin.eventName,
           venueName: activeCheckin.venueName,
           eventDate: activeCheckin.eventDate,
         }
-      : noCtx;
-
-    // 即時イベントはA（発行側）のみに文脈を付与する。企画イベントは双方に付与。
-    const issuerCtx = eventCtx;
-    const scannerCtx = activeCheckin?.isInstant ? noCtx : eventCtx;
+      : { eventId: null, eventName: null, venueName: null, eventDate: null };
+    const issuerCtx = ctx;
+    const scannerCtx = ctx;
 
     // 使用済みトークンを即時削除
     await db
@@ -375,8 +375,9 @@ export const updateConnection = createServerFn({ method: "POST" })
     if (!session?.user) throw new Error("Unauthorized");
 
     const [row] = await db
-      .select({ eventId: connections.eventId })
+      .select({ eventId: connections.eventId, isInstant: events.isInstant })
       .from(connections)
+      .leftJoin(events, eq(connections.eventId, events.id))
       .where(
         and(
           eq(connections.id, data.connectionId),
@@ -386,13 +387,13 @@ export const updateConnection = createServerFn({ method: "POST" })
       .limit(1);
     if (!row) throw new Error("つながりが見つかりません");
 
-    // イベント参照のある文脈は事実の記録として固定（編集不可）
-    const contextLocked = row.eventId !== null;
+    // 企画イベント由来の文脈のみ事実として固定（編集不可）。即時イベントは各自が編集可能（ADR-0012）。
+    const contextLocked = row.eventId !== null && row.isInstant === false;
     if (
       contextLocked &&
       (data.eventName !== undefined || data.venueName !== undefined)
     )
-      throw new Error("イベント由来の文脈は編集できません");
+      throw new Error("企画イベント由来の文脈は編集できません");
 
     const updates: {
       eventName?: string | null;
@@ -448,6 +449,7 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
         connectionId: connections.id,
         connectedAt: connections.connectedAt,
         eventId: connections.eventId,
+        isInstant: events.isInstant,
         eventName: connections.eventName,
         venueName: connections.venueName,
         eventDate: connections.eventDate,
@@ -463,6 +465,7 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
       .innerJoin(fromPersona, eq(connections.fromPersonaId, fromPersona.id))
       .innerJoin(toPersona, eq(connections.toPersonaId, toPersona.id))
       .innerJoin(toUrlId, eq(toPersona.userId, toUrlId.userId))
+      .leftJoin(events, eq(connections.eventId, events.id))
       .where(eq(fromPersona.userId, userId))
       .orderBy(desc(connections.connectedAt));
   },

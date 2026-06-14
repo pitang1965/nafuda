@@ -268,8 +268,8 @@ function EditDialog({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  // イベント参照のある文脈は事実の記録として固定（CONTEXT.md ③）
-  const contextLocked = conn.eventId !== null;
+  // 企画イベント由来の文脈のみ事実として固定。即時イベントは各自が編集可能（CONTEXT.md ③ / ADR-0012）
+  const contextLocked = conn.eventId !== null && conn.isInstant === false;
   const [eventName, setEventName] = useState(conn.eventName ?? "");
   const [venueName, setVenueName] = useState(conn.venueName ?? "");
   const [memo, setMemo] = useState(conn.privateMemo ?? "");
