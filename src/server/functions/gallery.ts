@@ -5,10 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "../db/client";
 import { personas, galleryPhotos } from "../db/schema";
 import { auth } from "../auth";
-import { deleteFromR2 } from "./avatar";
-import { env } from "cloudflare:workers";
-
-type CloudflareEnv = { AVATARS_BUCKET: R2Bucket };
+import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 
 // アバター以外の「対象物」写真の上限とキャプション長（ADR-0014）
 export const MAX_GALLERY_PHOTOS = 6;
@@ -62,10 +59,9 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
     const key = `gallery/${data.personaId}/${crypto.randomUUID()}.jpg`;
-    const bucket = (env as unknown as CloudflareEnv).AVATARS_BUCKET;
-    await bucket.put(key, bytes, { httpMetadata: { contentType } });
+    await putToR2(key, bytes, contentType);
 
-    const imageUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+    const imageUrl = r2PublicUrl(key);
     const caption = data.caption?.trim() ? data.caption.trim() : null;
     const [row] = await db
       .insert(galleryPhotos)

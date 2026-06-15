@@ -5,23 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
 import { personas } from "../db/schema";
 import { auth } from "../auth";
-import { env } from "cloudflare:workers";
-
-type CloudflareEnv = { AVATARS_BUCKET: R2Bucket };
-
-function r2Key(url: string): string | null {
-  const base = process.env.R2_PUBLIC_URL;
-  if (!base || !url.startsWith(base)) return null;
-  return url.slice(base.length + 1); // strip leading "/"
-}
-
-export async function deleteFromR2(url: string | null) {
-  if (!url) return;
-  const key = r2Key(url);
-  if (!key) return;
-  const bucket = (env as unknown as CloudflareEnv).AVATARS_BUCKET;
-  await bucket.delete(key);
-}
+import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 
 export const uploadAvatar = createServerFn({ method: "POST" })
   .inputValidator(
@@ -57,10 +41,9 @@ export const uploadAvatar = createServerFn({ method: "POST" })
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
     const key = `avatars/${data.personaId}/${crypto.randomUUID()}.jpg`;
-    const bucket = (env as unknown as CloudflareEnv).AVATARS_BUCKET;
-    await bucket.put(key, bytes, { httpMetadata: { contentType } });
+    await putToR2(key, bytes, contentType);
 
-    const avatarUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+    const avatarUrl = r2PublicUrl(key);
     await db
       .update(personas)
       .set({ avatarUrl, updatedAt: new Date() })

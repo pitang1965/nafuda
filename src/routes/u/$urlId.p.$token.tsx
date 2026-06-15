@@ -5,6 +5,7 @@ import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
+import { GalleryLightbox } from "../../components/GalleryLightbox";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { purposeTagHeading } from "../../lib/purpose";
@@ -23,7 +24,13 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     const avatarUrl = profile.avatarUrl?.startsWith("/")
       ? `${BASE_URL}${profile.avatarUrl}`
       : profile.avatarUrl;
-    return { ...profile, avatarUrl };
+    const galleryPhotos = profile.galleryPhotos.map((p) => ({
+      ...p,
+      imageUrl: p.imageUrl.startsWith("/")
+        ? `${BASE_URL}${p.imageUrl}`
+        : p.imageUrl,
+    }));
+    return { ...profile, avatarUrl, galleryPhotos };
   },
   head: ({ loaderData: profile, params }) => {
     if (!profile) return {};
@@ -185,6 +192,14 @@ function PublicProfilePage() {
                   </span>
                   ))}
                 </div>
+              </div>
+            )}
+            {profile.galleryPhotos.length > 0 && (
+              <div className="w-full max-w-sm">
+                <GalleryLightbox
+                  photos={profile.galleryPhotos}
+                  accentColor={style?.textColor}
+                />
               </div>
             )}
             {profile.snsLinks.length > 0 && (

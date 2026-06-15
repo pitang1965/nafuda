@@ -16,7 +16,7 @@ import {
   account as accountTable,
 } from "../db/schema";
 import { auth } from "../auth";
-import { deleteFromR2 } from "./avatar";
+import { deleteFromR2 } from "../storage";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
