@@ -53,10 +53,10 @@ export const uploadAvatar = createServerFn({ method: "POST" })
     await deleteFromR2(persona.avatarUrl);
 
     const [header, base64] = data.dataUrl.split(",");
-    const contentType = header.match(/data:([^;]+)/)?.[1] ?? "image/webp";
+    const contentType = header.match(/data:([^;]+)/)?.[1] ?? "image/jpeg";
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
-    const key = `avatars/${data.personaId}/${crypto.randomUUID()}.webp`;
+    const key = `avatars/${data.personaId}/${crypto.randomUUID()}.jpg`;
     const bucket = (env as unknown as CloudflareEnv).AVATARS_BUCKET;
     await bucket.put(key, bytes, { httpMetadata: { contentType } });
 

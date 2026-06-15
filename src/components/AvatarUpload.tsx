@@ -52,19 +52,14 @@ export function AvatarUpload({
     if (!imgRef.current || !crop) return;
     setError(null);
     setUploading(true);
-    // 診断用: 送信する dataUrl の MIME プレフィックスと文字数を控えておく。
-    // 本番でサーバーのエラーメッセージがマスクされても、クライアント側の
-    // この事実だけで「PNG肥大(サイズ超過)」か「空データ」かを判別できる。
-    let meta = "";
     try {
       const dataUrl = getCroppedDataUrl(imgRef.current, crop);
-      meta = `${dataUrl.slice(0, 30)}… (${dataUrl.length.toLocaleString()}文字)`;
       const result = await uploadAvatar({ data: { personaId, dataUrl } });
       onAvatarChange(result.avatarUrl);
       setSrcImg(null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(meta ? `${meta} — ${msg}` : msg);
+      console.error("avatar upload failed", err);
+      setError("画像の保存に失敗しました。もう一度お試しください。");
     } finally {
       setUploading(false);
     }
@@ -77,7 +72,8 @@ export function AvatarUpload({
       await deleteAvatar({ data: { personaId } });
       onAvatarChange(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      console.error("avatar delete failed", err);
+      setError("画像の削除に失敗しました。もう一度お試しください。");
     } finally {
       setUploading(false);
     }
@@ -235,5 +231,9 @@ function getCroppedDataUrl(img: HTMLImageElement, crop: Crop): string {
     SIZE,
   );
 
-  return canvas.toDataURL("image/webp", 0.85);
+  // Safari (iOS) は canvas からの WebP エンコードに非対応で、"image/webp" を
+  // 指定すると黙って PNG にフォールバックして肥大化する（サーバーの文字数上限で
+  // 弾かれアップロードが無言で失敗する）。全ブラウザが対応する JPEG を使う。
+  // アバターは正方形写真で透過不要のため JPEG で十分。
+  return canvas.toDataURL("image/jpeg", 0.85);
 }
