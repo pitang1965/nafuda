@@ -26,6 +26,7 @@ export function AvatarUpload({
   const [srcImg, setSrcImg] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>();
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -49,22 +50,34 @@ export function AvatarUpload({
 
   async function handleSave() {
     if (!imgRef.current || !crop) return;
-    const dataUrl = getCroppedDataUrl(imgRef.current, crop);
-    setSrcImg(null);
+    setError(null);
     setUploading(true);
+    // 診断用: 送信する dataUrl の MIME プレフィックスと文字数を控えておく。
+    // 本番でサーバーのエラーメッセージがマスクされても、クライアント側の
+    // この事実だけで「PNG肥大(サイズ超過)」か「空データ」かを判別できる。
+    let meta = "";
     try {
+      const dataUrl = getCroppedDataUrl(imgRef.current, crop);
+      meta = `${dataUrl.slice(0, 30)}… (${dataUrl.length.toLocaleString()}文字)`;
       const result = await uploadAvatar({ data: { personaId, dataUrl } });
       onAvatarChange(result.avatarUrl);
+      setSrcImg(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(meta ? `${meta} — ${msg}` : msg);
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete() {
+    setError(null);
     setUploading(true);
     try {
       await deleteAvatar({ data: { personaId } });
       onAvatarChange(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
     }
@@ -124,6 +137,12 @@ export function AvatarUpload({
         )}
       </div>
 
+      {error && !srcImg && (
+        <p className="mt-2 max-w-[16rem] text-xs text-red-700 break-all">
+          {error}
+        </p>
+      )}
+
       <input
         ref={fileInputRef}
         type="file"
@@ -155,20 +174,27 @@ export function AvatarUpload({
                 />
               </ReactCrop>
             </div>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 break-all">
+                {error}
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setSrcImg(null)}
-                className="flex-1 py-2.5 text-sm border rounded-xl hover:bg-gray-50 transition-colors"
+                disabled={uploading}
+                className="flex-1 py-2.5 text-sm border rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 キャンセル
               </button>
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex-1 py-2.5 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                disabled={uploading}
+                className="flex-1 py-2.5 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                保存
+                {uploading ? "保存中..." : "保存"}
               </button>
             </div>
           </div>
