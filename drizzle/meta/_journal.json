@@ -113,6 +113,13 @@
       "when": 1781446709702,
       "tag": "0015_glamorous_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1781533262574,
+      "tag": "0016_orange_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

@@ -106,6 +106,20 @@ export const snsLinks = pgTable("sns_links", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Gallery photos table: アバター以外の「対象物」写真を最大6枚並べる独立コンテンツ（ADR-0014）。
+// なふだスタイル（コード管理の装飾）とは別レイヤーのユーザーアップロードコンテンツ。
+export const galleryPhotos = pgTable("gallery_photos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  personaId: uuid("persona_id")
+    .notNull()
+    .references(() => personas.id, { onDelete: "cascade" }),
+  imageUrl: text("image_url").notNull(), // R2 公開URL（キー: gallery/{personaId}/{uuid}.jpg）
+  caption: text("caption"), // null = キャプションなし（最大30文字をアプリ層で強制）
+  displayOrder: smallint("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Events table: self-created by first check-in (no admin management)
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),

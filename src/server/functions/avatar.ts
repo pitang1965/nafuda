@@ -15,7 +15,7 @@ function r2Key(url: string): string | null {
   return url.slice(base.length + 1); // strip leading "/"
 }
 
-async function deleteFromR2(url: string | null) {
+export async function deleteFromR2(url: string | null) {
   if (!url) return;
   const key = r2Key(url);
   if (!key) return;

@@ -7,6 +7,7 @@ import {
   personas,
   urlIds,
   snsLinks,
+  galleryPhotos,
   connections,
   eventCheckins,
   events,
@@ -15,6 +16,7 @@ import {
   account as accountTable,
 } from "../db/schema";
 import { auth } from "../auth";
+import { deleteFromR2 } from "./avatar";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -79,6 +81,22 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
       {},
     );
 
+    const allPhotos =
+      personaIds.length > 0
+        ? await db
+            .select()
+            .from(galleryPhotos)
+            .where(inArray(galleryPhotos.personaId, personaIds))
+            .orderBy(galleryPhotos.displayOrder)
+        : [];
+    const photosByPersona = allPhotos.reduce<Record<string, typeof allPhotos>>(
+      (acc, photo) => {
+        (acc[photo.personaId] ??= []).push(photo);
+        return acc;
+      },
+      {},
+    );
+
     // 前回使ったなふだをCookieから解決する。SSR時点で確定させることで、
     // /me 初回描画でデフォルトなふだが一瞬表示されるフラッシュを防ぐ。
     const savedPersonaId = (request.headers.get("cookie") ?? "")
@@ -99,6 +117,7 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
       personas: myPersonas.map((p) => ({
         ...p,
         snsLinks: linksByPersona[p.id] ?? [],
+        galleryPhotos: photosByPersona[p.id] ?? [],
       })),
     };
   },
@@ -253,6 +272,21 @@ export const getPublicProfile = createServerFn({ method: "GET" })
             .where(eq(snsLinks.personaId, persona.id))
             .orderBy(snsLinks.displayOrder);
 
+    // CRITICAL: ギャラリーも非公開ならクエリ段階で除外する（取得して隠すのは不可）
+    // id (photoId) は返さない: 匿名収集→削除APIへの攻撃面になるため（SNSリンクと同じ方針）
+    const gallery =
+      visibility.gallery === "private"
+        ? []
+        : await db
+            .select({
+              imageUrl: galleryPhotos.imageUrl,
+              caption: galleryPhotos.caption,
+              displayOrder: galleryPhotos.displayOrder,
+            })
+            .from(galleryPhotos)
+            .where(eq(galleryPhotos.personaId, persona.id))
+            .orderBy(galleryPhotos.displayOrder);
+
     return {
       displayName: persona.displayName,
       bio: visibility.bio === "private" ? null : persona.bio,
@@ -262,6 +296,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
       purpose: persona.purpose,
       dojinReject: persona.dojinReject,
       snsLinks: links,
+      galleryPhotos: gallery,
       styleId: persona.styleId,
     };
   });
@@ -359,6 +394,28 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
     await db.delete(snsLinks).where(eq(snsLinks.id, data.linkId));
   });
 
+// 指定なふだ群に紐づく R2 画像（アバター＋ギャラリー写真）を物理削除する。
+// DB行は FK cascade / 明示削除で消えるが R2 には効かないため、孤児を残さないよう
+// personas を消す前に呼ぶ（ADR-0014。アバターの既存孤児バグもここで塞ぐ）。
+async function cleanupPersonaR2Assets(personaIds: string[]) {
+  if (personaIds.length === 0) return;
+  const [avatars, photos] = await Promise.all([
+    db
+      .select({ avatarUrl: personas.avatarUrl })
+      .from(personas)
+      .where(inArray(personas.id, personaIds)),
+    db
+      .select({ imageUrl: galleryPhotos.imageUrl })
+      .from(galleryPhotos)
+      .where(inArray(galleryPhotos.personaId, personaIds)),
+  ]);
+  const urls = [
+    ...avatars.map((a) => a.avatarUrl),
+    ...photos.map((p) => p.imageUrl),
+  ];
+  await Promise.all(urls.map((url) => deleteFromR2(url)));
+}
+
 export const deleteAccount = createServerFn({ method: "POST" }).handler(
   async () => {
     const request = getRequest();
@@ -379,7 +436,10 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
       .where(eq(events.hostUserId, userId));
 
     if (personaIds.length > 0) {
+      // R2 画像（アバター＋ギャラリー）を先に物理削除（孤児を残さない）
+      await cleanupPersonaR2Assets(personaIds);
       // FK 制約順: connections → event_checkins → sns_links → personas
+      // gallery_photos は personas 削除時に DB cascade で自動削除される
       await db
         .delete(connections)
         .where(
@@ -430,8 +490,11 @@ export const deletePersona = createServerFn({ method: "POST" })
 
     const personaIds = [data.personaId];
 
+    // R2 画像（アバター＋ギャラリー）を先に物理削除（孤児を残さない — ADR-0014）
+    await cleanupPersonaR2Assets(personaIds);
+
     // FK 制約順: connections（相手側の鏡像行も含む）→ event_checkins → sns_links → personas
-    // connection_qr_tokens は onDelete: cascade で自動削除される
+    // connection_qr_tokens・gallery_photos は onDelete: cascade で自動削除される
     await db
       .delete(connections)
       .where(
