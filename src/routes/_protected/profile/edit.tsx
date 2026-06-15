@@ -32,6 +32,7 @@ import {
   updateDojinReject,
 } from "../../../server/functions/oshi";
 import { AvatarUpload } from "../../../components/AvatarUpload";
+import { GalleryUpload } from "../../../components/GalleryUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
@@ -116,6 +117,7 @@ const EditSchema = z.object({
   avatarVisibility: z.enum(["public", "private"]),
   snsLinksVisibility: z.enum(["public", "private"]),
   oshiTagsVisibility: z.enum(["public", "private"]),
+  galleryVisibility: z.enum(["public", "private"]),
   // oshiTags managed via OshiTagInput (FormProvider context) — RHF field
   oshiTags: z.array(z.string()),
   // dojinReject stored as string in radio input, converted to boolean on save
@@ -197,9 +199,13 @@ function EditPage() {
       initialOshiTagsVisibility={
         (visibility.oshi_tags as "public" | "private") ?? "public"
       }
+      initialGalleryVisibility={
+        (visibility.gallery as "public" | "private") ?? "public"
+      }
       initialOshiTags={defaultPersona.oshiTags}
       initialDojinReject={defaultPersona.dojinReject}
       initialSnsLinks={defaultPersona.snsLinks}
+      initialGalleryPhotos={defaultPersona.galleryPhotos}
       initialStyleId={defaultPersona.styleId ?? null}
     />
   );
@@ -218,9 +224,11 @@ function EditForm({
   initialAvatarVisibility,
   initialSnsLinksVisibility,
   initialOshiTagsVisibility,
+  initialGalleryVisibility,
   initialOshiTags,
   initialDojinReject,
   initialSnsLinks,
+  initialGalleryPhotos,
   initialStyleId,
 }: {
   personaId: string;
@@ -235,6 +243,7 @@ function EditForm({
   initialAvatarVisibility: "public" | "private";
   initialSnsLinksVisibility: "public" | "private";
   initialOshiTagsVisibility: "public" | "private";
+  initialGalleryVisibility: "public" | "private";
   initialOshiTags: string[];
   initialDojinReject: boolean;
   initialSnsLinks: {
@@ -242,6 +251,12 @@ function EditForm({
     platform: string;
     url: string;
     title?: string | null;
+    displayOrder: number;
+  }[];
+  initialGalleryPhotos: {
+    id: string;
+    imageUrl: string;
+    caption: string | null;
     displayOrder: number;
   }[];
   initialStyleId: string | null;
@@ -288,6 +303,7 @@ function EditForm({
       avatarVisibility: initialAvatarVisibility,
       snsLinksVisibility: initialSnsLinksVisibility,
       oshiTagsVisibility: initialOshiTagsVisibility,
+      galleryVisibility: initialGalleryVisibility,
       oshiTags: initialOshiTags,
       dojinReject: initialDojinReject ? "true" : "false",
     },
@@ -349,6 +365,9 @@ function EditForm({
   );
   const [oshiTagsVisibility, setOshiTagsVisibility] = useState(
     initialOshiTagsVisibility,
+  );
+  const [galleryVisibility, setGalleryVisibility] = useState(
+    initialGalleryVisibility,
   );
 
   const addSnsLink = () => {
@@ -428,6 +447,7 @@ function EditForm({
             avatar_url: values.avatarVisibility,
             sns_links: values.snsLinksVisibility,
             oshi_tags: values.oshiTagsVisibility,
+            gallery: values.galleryVisibility,
           },
           styleId: selectedStyleId,
         },
@@ -650,6 +670,24 @@ function EditForm({
                 切り取り後に保存されます
               </p>
             </div>
+          </div>
+
+          {/* Gallery */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">ギャラリー</label>
+              <VisibilityToggle
+                value={galleryVisibility}
+                onChange={(v) => {
+                  setGalleryVisibility(v);
+                  setValue("galleryVisibility", v, { shouldDirty: true });
+                }}
+              />
+            </div>
+            <GalleryUpload
+              personaId={personaId}
+              initialPhotos={initialGalleryPhotos}
+            />
           </div>
 
           {/* Oshi tags */}
