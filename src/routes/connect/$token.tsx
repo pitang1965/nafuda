@@ -59,18 +59,28 @@ function ConnectPage() {
     setShowPicker(false);
     setConnecting(true);
     setError(null);
+    const stored = localStorage.getItem(`pendingInvite:${token}`);
     try {
       let result: { connectedAt: string } | null = null;
       if (loaderData.valid) {
-        result = await createConnectionFromQr({
-          data: { connectionQrToken: token, fromPersonaId },
-        });
-      } else {
-        const stored = localStorage.getItem(`pendingInvite:${token}`);
-        if (stored)
-          result = await applyPendingInvite({
-            data: { inviteToken: stored, fromPersonaId },
+        try {
+          result = await createConnectionFromQr({
+            data: { connectionQrToken: token, fromPersonaId },
           });
+        } catch (qrErr) {
+          // ページを開いたまま15分超過しQRトークンが切れた場合は保留招待にフォールバック
+          if (stored) {
+            result = await applyPendingInvite({
+              data: { inviteToken: stored, fromPersonaId },
+            });
+          } else {
+            throw qrErr;
+          }
+        }
+      } else if (stored) {
+        result = await applyPendingInvite({
+          data: { inviteToken: stored, fromPersonaId },
+        });
       }
       if (!result) throw new Error("つながり情報が見つかりません");
       capture("connection_completed");
@@ -88,11 +98,11 @@ function ConnectPage() {
     if (loaderData.valid) capture("connect_page_viewed");
   }, [loaderData.valid]);
 
-  // アカウント未所持の相手がスキャンした時点で保留招待を作成し inviteToken を localStorage に保存。
-  // 15分QRトークンが切れた後も後追い接続できるようにする（ADR-0007 §3）。setStateは持たない。
+  // スキャンした時点で保留招待を作成し inviteToken を localStorage に保存。ログイン有無を問わず作る
+  // ——ログイン済みでもページを開いたまま15分超過するとQRトークンが切れるため、恒久的な後追い接続の
+  // 受け皿として全スキャナーに必要（ADR-0007 §3 の「ログイン済みは記録不要」前提を是正）。setStateは持たない。
   useEffect(() => {
     if (!loaderData.valid) return;
-    if (loaderData.session?.user) return; // アカウントありは同一セッションで完結（招待不要）
     const key = `pendingInvite:${token}`;
     if (localStorage.getItem(key)) return;
     ensurePendingInvite({ data: { connectionQrToken: token } })
