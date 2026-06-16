@@ -527,13 +527,11 @@ function MePage() {
             <div className="bg-white rounded-xl p-6 w-full max-w-sm">
               <h2 className="text-lg font-bold mb-3">退会の確認</h2>
               <p className="text-sm text-gray-600 mb-3">
-                以下のデータが完全に削除されます（復元できません）：
+                退会すると、あなたが入力したデータや築いたつながりはすべて削除され、元に戻せません。印刷・共有済みのQRコードも使えなくなります。
               </p>
-              <ul className="text-sm text-gray-600 mb-4 list-disc pl-4 space-y-1">
-                <li>すべてのなふだ</li>
-                <li>つながり（相手側の記録も含む）</li>
-                <li>チェックイン履歴</li>
-              </ul>
+              <p className="text-sm text-gray-600 mb-4">
+                ただし、あなたが作成したイベントは記録として残ります（あなた自身の情報は消えます）。
+              </p>
               <label className="flex items-start gap-2 mb-4 cursor-pointer">
                 <input
                   type="checkbox"
