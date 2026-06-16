@@ -12,6 +12,7 @@ import { authClient } from "../../lib/auth-client";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
+import { GalleryLightbox } from "../../components/GalleryLightbox";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
@@ -354,6 +355,23 @@ function MePage() {
                 )}
               </div>
             )}
+
+            {currentPersona?.galleryPhotos &&
+              currentPersona.galleryPhotos.length > 0 && (
+                <div
+                  className={`w-full max-w-xs ${isPrivate("gallery") ? "opacity-50" : ""}`}
+                >
+                  <GalleryLightbox
+                    photos={currentPersona.galleryPhotos}
+                    accentColor={style?.textColor}
+                  />
+                  {isPrivate("gallery") && (
+                    <p className="text-xs text-gray-400 text-center mt-1">
+                      🔒 非公開
+                    </p>
+                  )}
+                </div>
+              )}
 
             {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
               <div
