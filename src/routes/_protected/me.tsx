@@ -34,12 +34,31 @@ function PrivateBadge() {
 
 const LAST_PERSONA_KEY = "nafuda_last_persona_id";
 
+// クライアント側で最後に見ていたなふだIDをCookieから読む。
+// SSR時は document が無いので null（loader の initialPersonaId にフォールバックする）。
+function readLastPersonaId(): string | null {
+  if (typeof document === "undefined") return null;
+  return (
+    document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${LAST_PERSONA_KEY}=`))
+      ?.slice(LAST_PERSONA_KEY.length + 1) ?? null
+  );
+}
+
 function MePage() {
   const { urlId, personas, initialPersonaId } = Route.useLoaderData();
   const navigate = useNavigate();
-  const [currentPersonaId, setCurrentPersonaId] = useState(
-    () => initialPersonaId ?? "",
-  );
+  const [currentPersonaId, setCurrentPersonaId] = useState(() => {
+    // 編集画面から戻った際の再マウントでは、loader がキャッシュした initialPersonaId が
+    // 切り替え前の古い値のことがある。クライアントの Cookie は常に最新なので Cookie を優先し、
+    // 実在するなふだを指す場合のみ採用する（削除済み等はフォールバック）。
+    const fromCookie = readLastPersonaId();
+    if (fromCookie && personas.some((p) => p.id === fromCookie))
+      return fromCookie;
+    return initialPersonaId ?? "";
+  });
   const currentPersona = personas.find((p) => p.id === currentPersonaId);
   const style = getNafudaStyle(currentPersona?.styleId ?? null);
   const subtextColor = style?.subtextColor;
@@ -159,8 +178,6 @@ function MePage() {
       } finally {
         setConnectQrLoading(false);
       }
-    } catch (err) {
-      throw err;
     } finally {
       setExchangeContextSubmitting(false);
     }
