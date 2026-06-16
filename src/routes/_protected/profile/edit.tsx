@@ -4,7 +4,7 @@ import {
   useRouter,
   Link,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -289,6 +289,24 @@ function EditForm({
   const router = useRouter();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // 保存ボタンは最下部にあり、エラーバナーは上部にある。保存時にエラーが
+  // 画面外だと気づけないため、エラー発生時にバナーを画面内へスクロールする。
+  // tick はエラーを出すたびに必ず増やす——同じメッセージの再発生でも
+  // （未修正のまま再度「保存」を押した場合でも）確実にスクロールさせるため。
+  const saveErrorRef = useRef<HTMLDivElement>(null);
+  const [errorTick, setErrorTick] = useState(0);
+  const showSaveError = (msg: string) => {
+    setSaveError(msg);
+    setErrorTick((t) => t + 1);
+  };
+  useEffect(() => {
+    if (errorTick > 0) {
+      saveErrorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [errorTick]);
   const [snsLinks, setSnsLinks] = useState<SnsLinkState[]>(() =>
     initialSnsLinks.map((l) => ({
       id: l.id,
@@ -484,7 +502,7 @@ function EditForm({
       (l) => l.platform === "other" && !l.title.trim() && l.url.trim(),
     );
     if (otherWithoutTitle) {
-      setSaveError("「その他」のSNSリンクには表示名を入力してください。");
+      showSaveError("「その他」のSNSリンクには表示名を入力してください。");
       return;
     }
     setSaveError(null);
@@ -545,8 +563,13 @@ function EditForm({
 
       await router.invalidate();
       navigate({ to: "/me" });
-    } catch {
-      setSaveError("保存に失敗しました。もう一度お試しください。");
+    } catch (err) {
+      // サーバーが投げた具体的なメッセージ（nafuda.me 拒否など）をそのまま表示する
+      showSaveError(
+        err instanceof Error
+          ? err.message
+          : "保存に失敗しました。もう一度お試しください。",
+      );
     } finally {
       setSaving(false);
     }
@@ -597,7 +620,10 @@ function EditForm({
         </div>
 
         {saveError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <div
+            ref={saveErrorRef}
+            className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
+          >
             {saveError}
           </div>
         )}

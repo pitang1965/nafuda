@@ -21,23 +21,25 @@ import { deleteFromR2 } from "../storage";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-// SNSリンクのURL: http(s) のみ許可。z.url() は javascript:/data: を通すため
-// スキームを明示的に絞り格納型XSSを防ぐ
+// SNSリンクのURL: https のみ許可。z.url() は javascript:/data: を通すため
+// スキームを明示的に絞り格納型XSSを防ぐ。http も不許可（https 強制）。
 const httpUrl = z
   .url("有効なURLを入力してください")
-  .refine(
-    (v) => /^https?:\/\//i.test(v),
-    "http または https のURLを入力してください",
-  )
-  // なふだのプロフィールURL（/u/{urlId}/p/{token}）は SNSリンクには登録させない（ADR-0015）。
-  // 自分のなふだは「なふだリンク」機能で、他人のなふだは ShareToken の無断公開を防ぐため拒否する。
-  .refine((v) => {
-    try {
-      return !/^\/u\/[^/]+\/p\/[^/]+/.test(new URL(v).pathname);
-    } catch {
-      return true;
-    }
-  }, "なふだへのリンクは「なふだリンク」から追加してください");
+  .refine((v) => /^https:\/\//i.test(v), "https のURLを入力してください");
+
+// nafuda.me（およびサブドメイン）の URL は SNSリンクに登録させない。
+// SNSリンクは「外部サービス」へのリンクであり自社ドメインは対象外。プロフィールURL
+// （見せる/つながる）・イベントURL を含むあらゆる nafuda.me URL が対象（ADR-0015）。
+// handler 内で throw して使う（Zod refine だと ZodError の message が JSON 化して
+// クライアントに汚く出るため、クリーンな文を投げられる handler に置く）。
+function isNafudaHost(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "nafuda.me" || host.endsWith(".nafuda.me");
+  } catch {
+    return false;
+  }
+}
 
 async function generateUniqueUrlId(): Promise<string> {
   while (true) {
@@ -409,6 +411,12 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
       )
       .limit(1);
     if (!persona[0]) throw new Error("Forbidden");
+
+    if (isNafudaHost(data.url)) {
+      throw new Error(
+        "nafuda.me のリンクは SNSリンクに登録できません。自分の別のなふだは「なふだリンク」から追加してください。",
+      );
+    }
 
     const title = data.title?.trim() || null;
 
