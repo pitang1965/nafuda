@@ -7,6 +7,7 @@ import {
   personas,
   urlIds,
   snsLinks,
+  nafudaLinks,
   galleryPhotos,
   connections,
   eventCheckins,
@@ -27,7 +28,16 @@ const httpUrl = z
   .refine(
     (v) => /^https?:\/\//i.test(v),
     "http または https のURLを入力してください",
-  );
+  )
+  // なふだのプロフィールURL（/u/{urlId}/p/{token}）は SNSリンクには登録させない（ADR-0015）。
+  // 自分のなふだは「なふだリンク」機能で、他人のなふだは ShareToken の無断公開を防ぐため拒否する。
+  .refine((v) => {
+    try {
+      return !/^\/u\/[^/]+\/p\/[^/]+/.test(new URL(v).pathname);
+    } catch {
+      return true;
+    }
+  }, "なふだへのリンクは「なふだリンク」から追加してください");
 
 async function generateUniqueUrlId(): Promise<string> {
   while (true) {
@@ -97,6 +107,31 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
       {},
     );
 
+    // なふだリンク: リンク先ペルソナを JOIN して表示名・アバター・shareToken を動的取得（ADR-0015）
+    const allNafudaLinks =
+      personaIds.length > 0
+        ? await db
+            .select({
+              id: nafudaLinks.id,
+              personaId: nafudaLinks.personaId,
+              targetPersonaId: nafudaLinks.targetPersonaId,
+              displayOrder: nafudaLinks.displayOrder,
+              targetDisplayName: personas.displayName,
+              targetAvatarUrl: personas.avatarUrl,
+              targetShareToken: personas.shareToken,
+            })
+            .from(nafudaLinks)
+            .innerJoin(personas, eq(nafudaLinks.targetPersonaId, personas.id))
+            .where(inArray(nafudaLinks.personaId, personaIds))
+            .orderBy(nafudaLinks.displayOrder)
+        : [];
+    const nafudaLinksByPersona = allNafudaLinks.reduce<
+      Record<string, typeof allNafudaLinks>
+    >((acc, link) => {
+      (acc[link.personaId] ??= []).push(link);
+      return acc;
+    }, {});
+
     // 前回使ったなふだをCookieから解決する。SSR時点で確定させることで、
     // /me 初回描画でデフォルトなふだが一瞬表示されるフラッシュを防ぐ。
     const savedPersonaId = (request.headers.get("cookie") ?? "")
@@ -118,6 +153,7 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
         ...p,
         snsLinks: linksByPersona[p.id] ?? [],
         galleryPhotos: photosByPersona[p.id] ?? [],
+        nafudaLinks: nafudaLinksByPersona[p.id] ?? [],
       })),
     };
   },
@@ -287,6 +323,35 @@ export const getPublicProfile = createServerFn({ method: "GET" })
             .where(eq(galleryPhotos.personaId, persona.id))
             .orderBy(galleryPhotos.displayOrder);
 
+    // なふだリンク（ADR-0015）: 自分の別のなふだへの内部参照。リンク先は同一ユーザーなので
+    // urlId は共通。表示名・アバター・shareToken をリンク先 personas から動的取得する。
+    // 公開範囲トグルは持たない（貼る＝自己公開の意思表示）。
+    const ownerUrlId = await db
+      .select({ urlId: urlIds.urlId })
+      .from(urlIds)
+      .where(eq(urlIds.userId, persona.userId))
+      .limit(1);
+    const urlId = ownerUrlId[0]?.urlId ?? null;
+    const nafudaLinkRows = urlId
+      ? await db
+          .select({
+            displayName: personas.displayName,
+            avatarUrl: personas.avatarUrl,
+            shareToken: personas.shareToken,
+            displayOrder: nafudaLinks.displayOrder,
+          })
+          .from(nafudaLinks)
+          .innerJoin(personas, eq(nafudaLinks.targetPersonaId, personas.id))
+          .where(eq(nafudaLinks.personaId, persona.id))
+          .orderBy(nafudaLinks.displayOrder)
+      : [];
+    const nafudaLinkChips = nafudaLinkRows.map((r) => ({
+      urlId: urlId!,
+      shareToken: r.shareToken,
+      displayName: r.displayName,
+      avatarUrl: r.avatarUrl,
+    }));
+
     return {
       displayName: persona.displayName,
       bio: visibility.bio === "private" ? null : persona.bio,
@@ -297,6 +362,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
       dojinReject: persona.dojinReject,
       snsLinks: links,
       galleryPhotos: gallery,
+      nafudaLinks: nafudaLinkChips,
       styleId: persona.styleId,
     };
   });
@@ -394,6 +460,63 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
     await db.delete(snsLinks).where(eq(snsLinks.id, data.linkId));
   });
 
+// なふだリンクをまとめて設定する（ADR-0015）。リンク先は targetPersonaIds の順に並ぶ。
+// 自分のペルソナのみ・自己参照不可・重複不可をサーバー側で強制し、既存行を置き換える。
+export const setNafudaLinks = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      personaId: z.uuid(),
+      targetPersonaIds: z.array(z.uuid()).max(50),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+    const userId = session.user.id;
+
+    // リンク元が自分のものか確認
+    const [owned] = await db
+      .select({ id: personas.id })
+      .from(personas)
+      .where(and(eq(personas.id, data.personaId), eq(personas.userId, userId)))
+      .limit(1);
+    if (!owned) throw new Error("Forbidden");
+
+    // 重複除去・自己参照除去（順序は保持）
+    const seen = new Set<string>();
+    const targetIds = data.targetPersonaIds.filter((id) => {
+      if (id === data.personaId || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+
+    // 全リンク先が自分のペルソナであることを確認（他人のなふだは指せない）
+    if (targetIds.length > 0) {
+      const ownTargets = await db
+        .select({ id: personas.id })
+        .from(personas)
+        .where(
+          and(inArray(personas.id, targetIds), eq(personas.userId, userId)),
+        );
+      if (ownTargets.length !== targetIds.length) {
+        throw new Error("Forbidden");
+      }
+    }
+
+    // 既存を全削除して順序どおりに入れ直す
+    await db.delete(nafudaLinks).where(eq(nafudaLinks.personaId, data.personaId));
+    if (targetIds.length > 0) {
+      await db.insert(nafudaLinks).values(
+        targetIds.map((targetPersonaId, i) => ({
+          personaId: data.personaId,
+          targetPersonaId,
+          displayOrder: i,
+        })),
+      );
+    }
+  });
+
 // 指定なふだ群に紐づく R2 画像（アバター＋ギャラリー写真）を物理削除する。
 // DB行は FK cascade / 明示削除で消えるが R2 には効かないため、孤児を残さないよう
 // personas を消す前に呼ぶ（ADR-0014。アバターの既存孤児バグもここで塞ぐ）。
@@ -439,7 +562,7 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
       // R2 画像（アバター＋ギャラリー）を先に物理削除（孤児を残さない）
       await cleanupPersonaR2Assets(personaIds);
       // FK 制約順: connections → event_checkins → sns_links → personas
-      // gallery_photos は personas 削除時に DB cascade で自動削除される
+      // gallery_photos・nafuda_links は personas 削除時に DB cascade で自動削除される
       await db
         .delete(connections)
         .where(
@@ -494,7 +617,8 @@ export const deletePersona = createServerFn({ method: "POST" })
     await cleanupPersonaR2Assets(personaIds);
 
     // FK 制約順: connections（相手側の鏡像行も含む）→ event_checkins → sns_links → personas
-    // connection_qr_tokens・gallery_photos は onDelete: cascade で自動削除される
+    // connection_qr_tokens・gallery_photos・nafuda_links は onDelete: cascade で自動削除される
+    // （nafuda_links はこのなふだが指す行＋他のなふだからこのなふだを指す被参照の双方が消える）
     await db
       .delete(connections)
       .where(

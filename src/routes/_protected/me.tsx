@@ -12,6 +12,7 @@ import { authClient } from "../../lib/auth-client";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
+import { NafudaLinkChip } from "../../components/NafudaLinkChip";
 import { GalleryLightbox } from "../../components/GalleryLightbox";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
@@ -399,6 +400,39 @@ function MePage() {
                 )}
               </div>
             )}
+
+            {currentPersona?.nafudaLinks &&
+              currentPersona.nafudaLinks.length > 0 &&
+              urlId && (
+                <div className="w-full max-w-xs flex flex-col items-center gap-1">
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: subtextColor ?? "#6b7280" }}
+                  >
+                    📛 他のなふだ
+                  </span>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {currentPersona.nafudaLinks.map((link) => (
+                      <NafudaLinkChip
+                        key={link.targetShareToken}
+                        urlId={urlId}
+                        shareToken={link.targetShareToken}
+                        displayName={link.targetDisplayName}
+                        avatarUrl={link.targetAvatarUrl}
+                        colorOverride={
+                          style
+                            ? {
+                                border: `${style.textColor}50`,
+                                text: style.textColor,
+                                hoverBg: `${style.textColor}15`,
+                              }
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
             <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
               <Button

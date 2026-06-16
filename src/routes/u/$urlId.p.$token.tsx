@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { getPublicProfile } from "../../server/functions/profile";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
+import { NafudaLinkChip } from "../../components/NafudaLinkChip";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { GalleryLightbox } from "../../components/GalleryLightbox";
@@ -30,7 +31,13 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
         ? `${BASE_URL}${p.imageUrl}`
         : p.imageUrl,
     }));
-    return { ...profile, avatarUrl, galleryPhotos };
+    const nafudaLinks = profile.nafudaLinks.map((l) => ({
+      ...l,
+      avatarUrl: l.avatarUrl?.startsWith("/")
+        ? `${BASE_URL}${l.avatarUrl}`
+        : l.avatarUrl,
+    }));
+    return { ...profile, avatarUrl, galleryPhotos, nafudaLinks };
   },
   head: ({ loaderData: profile, params }) => {
     if (!profile) return {};
@@ -179,17 +186,17 @@ function PublicProfilePage() {
                 )}
                 <div className="flex flex-wrap gap-1 justify-center">
                   {profile.oshiTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 rounded-full text-xs"
-                    style={
-                      style
-                        ? { background: style.tagBg, color: style.tagText }
-                        : { background: "#fce7f3", color: "#be185d" }
-                    }
-                  >
-                    {tag}
-                  </span>
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 rounded-full text-xs"
+                      style={
+                        style
+                          ? { background: style.tagBg, color: style.tagText }
+                          : { background: "#fce7f3", color: "#be185d" }
+                      }
+                    >
+                      {tag}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -221,6 +228,37 @@ function PublicProfilePage() {
                     }
                   />
                 ))}
+              </div>
+            )}
+
+            {profile.nafudaLinks.length > 0 && (
+              <div className="w-full max-w-sm flex flex-col items-center gap-1">
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: subtextColor ?? "#6b7280" }}
+                >
+                  📛 他のなふだ
+                </span>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {profile.nafudaLinks.map((link) => (
+                    <NafudaLinkChip
+                      key={link.shareToken}
+                      urlId={link.urlId}
+                      shareToken={link.shareToken}
+                      displayName={link.displayName}
+                      avatarUrl={link.avatarUrl}
+                      colorOverride={
+                        style
+                          ? {
+                              border: `${style.textColor}50`,
+                              text: style.textColor,
+                              hoverBg: `${style.textColor}15`,
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
               </div>
             )}
 

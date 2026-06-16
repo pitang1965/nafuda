@@ -13,6 +13,7 @@ import {
   updatePersona,
   upsertSnsLink,
   deleteSnsLink,
+  setNafudaLinks,
   deletePersona,
 } from "../../../server/functions/profile";
 import { NAFUDA_STYLES } from "../../../lib/nafuda-styles";
@@ -206,6 +207,15 @@ function EditPage() {
       initialDojinReject={defaultPersona.dojinReject}
       initialSnsLinks={defaultPersona.snsLinks}
       initialGalleryPhotos={defaultPersona.galleryPhotos}
+      initialNafudaLinks={defaultPersona.nafudaLinks}
+      otherPersonas={personas
+        .filter((p) => p.id !== defaultPersona.id)
+        .map((p) => ({
+          id: p.id,
+          displayName: p.displayName,
+          label: p.label ?? null,
+          avatarUrl: p.avatarUrl ?? null,
+        }))}
       initialStyleId={defaultPersona.styleId ?? null}
     />
   );
@@ -229,6 +239,8 @@ function EditForm({
   initialDojinReject,
   initialSnsLinks,
   initialGalleryPhotos,
+  initialNafudaLinks,
+  otherPersonas,
   initialStyleId,
 }: {
   personaId: string;
@@ -259,6 +271,18 @@ function EditForm({
     caption: string | null;
     displayOrder: number;
   }[];
+  initialNafudaLinks: {
+    targetPersonaId: string;
+    displayOrder: number;
+    targetDisplayName: string;
+    targetAvatarUrl: string | null;
+  }[];
+  otherPersonas: {
+    id: string;
+    displayName: string;
+    label: string | null;
+    avatarUrl: string | null;
+  }[];
   initialStyleId: string | null;
 }) {
   const navigate = useNavigate();
@@ -276,6 +300,14 @@ function EditForm({
     })),
   );
   const [deletedLinkIds, setDeletedLinkIds] = useState<string[]>([]);
+  // なふだリンク: リンク先 personaId の順序付き配列（ADR-0015）
+  const [nafudaLinkTargets, setNafudaLinkTargets] = useState<string[]>(() =>
+    initialNafudaLinks.map((l) => l.targetPersonaId),
+  );
+  const personaById = new Map(otherPersonas.map((p) => [p.id, p]));
+  const availablePersonas = otherPersonas.filter(
+    (p) => !nafudaLinkTargets.includes(p.id),
+  );
   const [hasPendingOshiInput, setHasPendingOshiInput] = useState(false);
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(
     initialStyleId,
@@ -330,9 +362,15 @@ function EditForm({
         orig.displayOrder !== l.displayOrder
       );
     });
+  const nafudaLinksDirty =
+    nafudaLinkTargets.length !== initialNafudaLinks.length ||
+    nafudaLinkTargets.some(
+      (id, i) => initialNafudaLinks[i]?.targetPersonaId !== id,
+    );
   const anyDirty =
     isDirty ||
     snsLinksDirty ||
+    nafudaLinksDirty ||
     styleDirty ||
     purposeDirty ||
     hasPendingOshiInput;
@@ -412,6 +450,25 @@ function EditForm({
     setSnsLinks(newLinks.map((l, i) => ({ ...l, displayOrder: i })));
   };
 
+  const addNafudaLink = (targetId: string) => {
+    if (!targetId) return;
+    setNafudaLinkTargets((prev) =>
+      prev.includes(targetId) ? prev : [...prev, targetId],
+    );
+  };
+
+  const removeNafudaLink = (targetId: string) => {
+    setNafudaLinkTargets((prev) => prev.filter((id) => id !== targetId));
+  };
+
+  const moveNafudaLink = (index: number, direction: "up" | "down") => {
+    const next = [...nafudaLinkTargets];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= next.length) return;
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    setNafudaLinkTargets(next);
+  };
+
   const updateSnsLinkField = (
     index: number,
     field: "platform" | "url" | "title",
@@ -476,6 +533,13 @@ function EditForm({
             title: link.title.trim() || undefined,
             displayOrder: link.displayOrder,
           },
+        });
+      }
+
+      // なふだリンク: 順序付きで一括設定（ADR-0015）
+      if (nafudaLinksDirty) {
+        await setNafudaLinks({
+          data: { personaId, targetPersonaIds: nafudaLinkTargets },
         });
       }
 
@@ -859,6 +923,110 @@ function EditForm({
             </Button>
           </div>
 
+          {/* なふだリンク（ADR-0015） */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">
+              なふだリンク{" "}
+              <span className="text-xs text-gray-400 font-normal">
+                （自分の別のなふだへの導線）
+              </span>
+            </label>
+
+            {otherPersonas.length === 0 ? (
+              <p className="text-xs text-gray-400">
+                リンクできる他のなふだがありません
+              </p>
+            ) : (
+              <>
+                {nafudaLinkTargets.length === 0 && (
+                  <p className="text-xs text-gray-400">
+                    なふだリンクがありません
+                  </p>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  {nafudaLinkTargets.map((targetId, index) => {
+                    const target = personaById.get(targetId);
+                    if (!target) return null;
+                    return (
+                      <div
+                        key={targetId}
+                        className="flex items-center gap-2 p-3 border rounded-lg bg-gray-50"
+                      >
+                        {target.avatarUrl ? (
+                          <img
+                            src={target.avatarUrl}
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <span className="text-lg leading-none shrink-0">
+                            📛
+                          </span>
+                        )}
+                        <span className="flex-1 text-sm truncate">
+                          {target.label || target.displayName}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-11"
+                            onClick={() => moveNafudaLink(index, "up")}
+                            disabled={index === 0}
+                            aria-label="上に移動"
+                          >
+                            <ArrowUp className="size-5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-11"
+                            onClick={() => moveNafudaLink(index, "down")}
+                            disabled={index === nafudaLinkTargets.length - 1}
+                            aria-label="下に移動"
+                          >
+                            <ArrowDown className="size-5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-11 ml-3 text-red-600 hover:bg-red-50 hover:text-red-600"
+                            onClick={() => removeNafudaLink(targetId)}
+                            aria-label="削除"
+                          >
+                            <X className="size-5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {availablePersonas.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      addNafudaLink(e.target.value);
+                      e.target.value = "";
+                    }}
+                    className="mt-1 w-full px-3 py-2 border border-dashed rounded-lg text-sm text-gray-500 bg-white outline-none"
+                  >
+                    <option value="">＋ なふだリンクを追加</option>
+                    {availablePersonas.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label || p.displayName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </>
+            )}
+          </div>
+
           {/* なふだスタイル */}
           <div className="flex flex-col gap-3">
             <label className="text-sm font-medium">なふだスタイル</label>
@@ -979,7 +1147,7 @@ function EditForm({
             <ul className="text-sm text-gray-600 mb-4 list-disc pl-4 space-y-1">
               <li>このなふだのつながり（相手側の記録も含む）</li>
               <li>このなふだのチェックイン履歴</li>
-              <li>このなふだのSNSリンク</li>
+              <li>このなふだのSNSリンク・なふだリンク</li>
             </ul>
             {deleteError && (
               <p className="text-sm text-red-500 mb-3">{deleteError}</p>

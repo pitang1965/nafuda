@@ -106,6 +106,29 @@ export const snsLinks = pgTable("sns_links", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Nafuda links table: 自分が持つ別のなふだへの内部参照リンク（ADR-0015）。
+// 外部サービスを指す sns_links とは別概念。リンク先は URL ではなく targetPersonaId で参照し、
+// 表示名・アバターは参照先 personas から動的取得する。他人のなふだは指せない（サーバー側で所有検証）。
+// personaId・targetPersonaId 双方に onDelete: cascade を張り、どちらのなふだが消えても幽霊リンクを残さない。
+export const nafudaLinks = pgTable(
+  "nafuda_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    personaId: uuid("persona_id")
+      .notNull()
+      .references(() => personas.id, { onDelete: "cascade" }), // リンク元
+    targetPersonaId: uuid("target_persona_id")
+      .notNull()
+      .references(() => personas.id, { onDelete: "cascade" }), // リンク先
+    displayOrder: smallint("display_order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    // 同じリンク先を二重に貼らせない
+    unique().on(table.personaId, table.targetPersonaId),
+  ],
+);
+
 // Gallery photos table: アバター以外の「対象物」写真を最大6枚並べる独立コンテンツ（ADR-0014）。
 // なふだスタイル（コード管理の装飾）とは別レイヤーのユーザーアップロードコンテンツ。
 export const galleryPhotos = pgTable("gallery_photos", {
@@ -200,10 +223,10 @@ export const connections = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => ({
+  (table) => [
     // 同一ペルソナペアのコネクション重複防止（一方通行なのでfrom/to両方でユニーク）
-    uniqueConn: unique().on(table.fromPersonaId, table.toPersonaId),
-  }),
+    unique().on(table.fromPersonaId, table.toPersonaId),
+  ],
 );
 
 // Pending invites: アカウント未所持の相手がつながりQRをスキャンした時点で作成される
