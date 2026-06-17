@@ -12,6 +12,7 @@ import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { purposeTagHeading } from "../../lib/purpose";
 import { buildOgpDescription } from "../../lib/ogp";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
+import { EmptyState } from "../../components/EmptyState";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     return { ...profile, avatarUrl, galleryPhotos, nafudaLinks };
   },
   head: ({ loaderData: profile, params }) => {
-    if (!profile) return {};
+    if (!profile) return { meta: [{ title: "なふだが見つかりません" }] };
     const title = `${profile.displayName}のなふだ`;
     const description = buildOgpDescription(profile.displayName, profile.bio);
     const rawImage = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
@@ -95,7 +96,13 @@ function PublicProfilePage() {
 
   if (!profile)
     return (
-      <main className="p-6 text-sm text-gray-500">なふだが見つかりません</main>
+      <EmptyState
+        icon="📛"
+        title="なふだが見つかりません"
+        description="削除されたか、URLが間違っている可能性があります。"
+        cta={{ label: "トップへ戻る", to: "/" }}
+        showBack
+      />
     );
 
   return (

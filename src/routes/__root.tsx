@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import "../index.css";
 import { initAnalytics } from "../lib/analytics";
+import { EmptyState } from "../components/EmptyState";
 
 function RootDocument({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -55,18 +56,13 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-2xl font-semibold text-gray-700">404</p>
-        <p className="mt-2 text-sm text-gray-500">ページが見つかりません</p>
-        <a
-          href="/"
-          className="mt-4 inline-block text-sm text-blue-500 underline"
-        >
-          トップへ戻る
-        </a>
-      </div>
-    </div>
+    <EmptyState
+      icon="🔍"
+      title="ページが見つかりません"
+      description="お探しのページは存在しないか、移動した可能性があります。"
+      cta={{ label: "トップへ戻る", to: "/" }}
+      showBack
+    />
   );
 }
 

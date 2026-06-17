@@ -16,6 +16,7 @@ import {
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { EmptyState } from "../../components/EmptyState";
 
 export const Route = createFileRoute("/connect/$token")({
   loader: ({ params }) => getConnectPageData({ data: { token: params.token } }),
@@ -167,14 +168,12 @@ function ConnectPage() {
       );
     }
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
-        <p className="text-2xl">⏰</p>
-        <p className="text-sm text-gray-500 text-center">
-          このQRコードは期限切れか無効です。
-          <br />
-          相手に新しいQRコードを表示してもらってください。
-        </p>
-      </main>
+      <EmptyState
+        icon="⏰"
+        title="このQRコードは期限切れか無効です"
+        description="相手に新しいQRコードを表示してもらってください。"
+        cta={{ label: "トップへ戻る", to: "/" }}
+      />
     );
   }
 

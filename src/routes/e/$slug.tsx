@@ -13,6 +13,7 @@ import { getOwnProfile } from "../../server/functions/profile";
 import { ParticipantCard } from "../../components/ParticipantCard";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
+import { EmptyState } from "../../components/EmptyState";
 
 const getOptionalSession = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -166,15 +167,13 @@ function EventPage() {
 
   if (!data) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <h1 className="text-2xl font-semibold text-gray-700">
-          イベントが見つかりません
-        </h1>
-        <p className="text-sm text-gray-500">URLを確認してください。</p>
-        <Link to="/" className="text-sm text-blue-500 underline">
-          トップへ戻る
-        </Link>
-      </main>
+      <EmptyState
+        icon="📅"
+        title="イベントが見つかりません"
+        description="削除されたか、URLが間違っている可能性があります。"
+        cta={{ label: "トップへ戻る", to: "/" }}
+        showBack
+      />
     );
   }
 
