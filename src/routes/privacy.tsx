@@ -34,7 +34,7 @@ function PrivacyPage() {
           <h1 className="text-xl font-bold text-gray-900 mt-4">
             プライバシーポリシー
           </h1>
-          <p className="text-xs text-gray-400 mt-1">最終更新: 2026年6月5日</p>
+          <p className="text-xs text-gray-400 mt-1">最終更新: 2026年6月17日</p>
         </div>
 
         <Section title="1. 運営者">
@@ -60,7 +60,7 @@ function PrivacyPage() {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
               <span className="font-medium text-gray-700">アカウント情報</span>
-              ：Google・Facebookでのログイン時に取得する氏名・メールアドレス・プロフィール画像
+              ：Google・Facebook・LINEでのログイン時に取得する氏名・メールアドレス・プロフィール画像
             </li>
             <li>
               <span className="font-medium text-gray-700">
@@ -83,6 +83,9 @@ function PrivacyPage() {
               ：ページ閲覧・ボタン操作などの操作履歴（IPアドレスは含みません）
             </li>
           </ul>
+          <p className="mt-3">
+            アカウント情報は退会まで保管し、退会時に削除します。
+          </p>
         </Section>
 
         <Section title="3. 利用目的">
@@ -147,6 +150,22 @@ function PrivacyPage() {
               </p>
             </div>
             <div>
+              <p className="font-medium text-gray-700">
+                LINEヤフー株式会社（日本）
+              </p>
+              <p>
+                LINEアカウントによるログイン機能を提供します。ログイン時に氏名・メールアドレス・プロフィール画像を取得し、アカウント認証・本人確認の目的で利用します。詳細:{" "}
+                <a
+                  href="https://line.me/ja/terms/policy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-500 underline underline-offset-2"
+                >
+                  line.me/ja/terms/policy/
+                </a>
+              </p>
+            </div>
+            <div>
               <p className="font-medium text-gray-700">Neon（米国）</p>
               <p>
                 アカウント情報・プロフィール・コネクション履歴などを保管するデータベースサービスです。
@@ -187,6 +206,9 @@ function PrivacyPage() {
           </ul>
           <p className="mt-2">
             退会手順: ログイン後、マイなふだ画面の下部にある「退会する」からアカウントを削除できます。メールでの削除依頼も受け付けます（下記お問い合わせ先）。
+          </p>
+          <p className="mt-2">
+            LINEログイン連携の解除をご希望の場合は、退会によりアカウントごと削除されます。
           </p>
           <p className="mt-2">
             個人情報の開示・訂正・利用停止等のご請求は下記お問い合わせ先までご連絡ください。
