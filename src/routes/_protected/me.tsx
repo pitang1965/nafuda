@@ -452,21 +452,37 @@ function MePage() {
               )}
 
             <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
-              <Button
-                onClick={() => setProfileQrOpen(true)}
-                size="lg"
-                className="w-full rounded-xl"
-              >
-                なふだを見せる
-              </Button>
-              <Button
-                onClick={handleExchangeNafuda}
-                disabled={connectQrLoading}
-                size="lg"
-                className="w-full rounded-xl"
-              >
-                {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  onClick={() => setProfileQrOpen(true)}
+                  size="lg"
+                  className="w-full rounded-xl"
+                >
+                  なふだを見せる
+                </Button>
+                <p
+                  className="text-xs text-center"
+                  style={{ color: subtextColor ?? "#9ca3af" }}
+                >
+                  プロフィールを見せるだけ。つながりません。
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Button
+                  onClick={handleExchangeNafuda}
+                  disabled={connectQrLoading}
+                  size="lg"
+                  className="w-full rounded-xl"
+                >
+                  {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
+                </Button>
+                <p
+                  className="text-xs text-center"
+                  style={{ color: subtextColor ?? "#9ca3af" }}
+                >
+                  その場でお互いにつながります。
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="lg"
