@@ -886,7 +886,7 @@ function EditForm({
                       onChange={(e) =>
                         updateSnsLinkField(index, "platform", e.target.value)
                       }
-                      className="flex-1 px-2 py-1.5 border rounded text-sm bg-white outline-none"
+                      className="flex-1 min-w-0 px-2 py-1.5 border rounded text-sm bg-white outline-none"
                     >
                       {orderedPlatforms.map((p) => (
                         <option key={p.value} value={p.value}>
