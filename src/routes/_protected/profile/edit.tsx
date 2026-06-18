@@ -36,8 +36,10 @@ import { AvatarUpload } from "../../../components/AvatarUpload";
 import { GalleryUpload } from "../../../components/GalleryUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -130,23 +132,29 @@ type EditForm = z.infer<typeof EditSchema>;
 function VisibilityToggle({
   value,
   onChange,
+  label,
 }: {
   value: "public" | "private";
   onChange: (v: "public" | "private") => void;
+  label: string;
 }) {
+  const isPublic = value === "public";
   return (
-    <button
-      type="button"
-      onClick={() => onChange(value === "public" ? "private" : "public")}
-      title={
-        value === "public"
-          ? "公開中（タップで非公開に）"
-          : "非公開（タップで公開に）"
-      }
-      className="text-lg select-none"
-    >
-      {value === "public" ? "👁" : "🔒"}
-    </button>
+    <label className="flex cursor-pointer items-center gap-2 select-none">
+      <span
+        className={cn(
+          "text-xs",
+          isPublic ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {isPublic ? "公開" : "非公開"}
+      </span>
+      <Switch
+        checked={isPublic}
+        onCheckedChange={(checked) => onChange(checked ? "public" : "private")}
+        aria-label={`${label}の公開設定`}
+      />
+    </label>
   );
 }
 
@@ -634,6 +642,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">表示名</label>
               <VisibilityToggle
+                label="表示名"
                 value={displayNameVisibility}
                 onChange={(v) => {
                   setDisplayNameVisibility(v);
@@ -711,6 +720,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">自己紹介</label>
               <VisibilityToggle
+                label="自己紹介"
                 value={bioVisibility}
                 onChange={(v) => {
                   setBioVisibility(v);
@@ -740,6 +750,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">アバター</label>
               <VisibilityToggle
+                label="アバター"
                 value={avatarVisibility}
                 onChange={(v) => {
                   setAvatarVisibility(v);
@@ -767,6 +778,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">ギャラリー</label>
               <VisibilityToggle
+                label="ギャラリー"
                 value={galleryVisibility}
                 onChange={(v) => {
                   setGalleryVisibility(v);
@@ -787,6 +799,7 @@ function EditForm({
                 {purposeEditTagLabel(purpose)}
               </label>
               <VisibilityToggle
+                label={purposeEditTagLabel(purpose)}
                 value={oshiTagsVisibility}
                 onChange={(v) => {
                   setOshiTagsVisibility(v);
@@ -848,6 +861,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">SNSリンク</label>
               <VisibilityToggle
+                label="SNSリンク"
                 value={snsLinksVisibility}
                 onChange={(v) => {
                   setSnsLinksVisibility(v);
