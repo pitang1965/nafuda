@@ -17,6 +17,7 @@ import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ConnectTokenRouteImport } from './routes/connect/$token'
 import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
 import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
+import { Route as ProtectedAccountRouteImport } from './routes/_protected/account'
 import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
 import { Route as ESlugEditRouteImport } from './routes/e/$slug_.edit'
 import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
@@ -63,6 +64,11 @@ const ProtectedConnectionsRoute = ProtectedConnectionsRouteImport.update({
   path: '/connections',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedAccountRoute = ProtectedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedEventsIndexRoute = ProtectedEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/account': typeof ProtectedAccountRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/account': typeof ProtectedAccountRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/_protected/account': typeof ProtectedAccountRoute
   '/_protected/connections': typeof ProtectedConnectionsRoute
   '/_protected/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/privacy'
+    | '/account'
     | '/connections'
     | '/me'
     | '/connect/$token'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/privacy'
+    | '/account'
     | '/connections'
     | '/me'
     | '/connect/$token'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/login'
     | '/privacy'
+    | '/_protected/account'
     | '/_protected/connections'
     | '/_protected/me'
     | '/connect/$token'
@@ -259,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedConnectionsRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/account': {
+      id: '/_protected/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof ProtectedAccountRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/events/': {
       id: '/_protected/events/'
       path: '/events'
@@ -305,6 +324,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface ProtectedRouteChildren {
+  ProtectedAccountRoute: typeof ProtectedAccountRoute
   ProtectedConnectionsRoute: typeof ProtectedConnectionsRoute
   ProtectedMeRoute: typeof ProtectedMeRoute
   ProtectedEventsNewRoute: typeof ProtectedEventsNewRoute
@@ -314,6 +334,7 @@ interface ProtectedRouteChildren {
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedAccountRoute: ProtectedAccountRoute,
   ProtectedConnectionsRoute: ProtectedConnectionsRoute,
   ProtectedMeRoute: ProtectedMeRoute,
   ProtectedEventsNewRoute: ProtectedEventsNewRoute,
@@ -341,10 +362,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

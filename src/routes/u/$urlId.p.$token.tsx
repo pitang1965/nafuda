@@ -120,7 +120,7 @@ function PublicProfilePage() {
           >
             <button
               onClick={() => router.history.back()}
-              className="transition-colors"
+              className="flex items-center gap-1 transition-colors"
               style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
               aria-label="戻る"
             >
@@ -136,6 +136,7 @@ function PublicProfilePage() {
               >
                 <path d="M15 18l-6-6 6-6" />
               </svg>
+              <span className="text-sm">戻る</span>
             </button>
           </div>
         )}

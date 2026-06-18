@@ -1,15 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { capture } from "../../lib/analytics";
 import { useState, useEffect } from "react";
-import { getOwnProfile, deleteAccount } from "../../server/functions/profile";
+import { getOwnProfile } from "../../server/functions/profile";
 import {
   createConnectionQrToken,
   deleteConnectionQrToken,
   checkQrConnectionStatus,
 } from "../../server/functions/connection";
 import { createInstantEventAndCheckin } from "../../server/functions/event";
-import { authClient } from "../../lib/auth-client";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
+import { AppMenu } from "../../components/AppMenu";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaLinkChip } from "../../components/NafudaLinkChip";
@@ -77,10 +77,6 @@ function MePage() {
   const [exchangeContextOpen, setExchangeContextOpen] = useState(false);
   const [exchangeContextSubmitting, setExchangeContextSubmitting] =
     useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteAgreed, setDeleteAgreed] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // 前回使ったなふだをCookieに保存する。次回 /me 表示時にSSRが読み取り、
   // 正しいなふだを最初から描画できる（localStorageだとSSRから見えずフラッシュする）。
@@ -121,24 +117,6 @@ function MePage() {
     const id = setInterval(poll, 3000);
     return () => clearInterval(id);
   }, [connectQrOpen, connectQrToken, currentPersona, connectQrSince]);
-
-  const handleLogout = async () => {
-    await authClient.signOut();
-    await navigate({ to: "/login" });
-  };
-
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteAccount();
-      await authClient.signOut();
-      await navigate({ to: "/login" });
-    } catch {
-      setDeleteError("退会処理に失敗しました。再度お試しください。");
-      setIsDeleting(false);
-    }
-  };
 
   const handleExchangeNafuda = () => {
     if (!currentPersona) return;
@@ -251,22 +229,9 @@ function MePage() {
             >
               編集
             </Link>
-            <Link
-              to="/events"
-              className="text-sm underline"
-              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
-            >
-              イベント
-            </Link>
-            <Button
-              variant="link"
-              size="sm"
-              onClick={handleLogout}
-              className="p-0 h-auto"
-              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
-            >
-              ログアウト
-            </Button>
+            <AppMenu
+              iconColor={style ? "rgba(255,255,255,0.65)" : "#6b7280"}
+            />
           </div>
         </div>
 
@@ -452,21 +417,37 @@ function MePage() {
               )}
 
             <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
-              <Button
-                onClick={() => setProfileQrOpen(true)}
-                size="lg"
-                className="w-full rounded-xl"
-              >
-                なふだを見せる
-              </Button>
-              <Button
-                onClick={handleExchangeNafuda}
-                disabled={connectQrLoading}
-                size="lg"
-                className="w-full rounded-xl"
-              >
-                {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  onClick={() => setProfileQrOpen(true)}
+                  size="lg"
+                  className="w-full rounded-xl"
+                >
+                  なふだを見せる
+                </Button>
+                <p
+                  className="text-xs text-center"
+                  style={{ color: subtextColor ?? "#9ca3af" }}
+                >
+                  プロフィールを見せるだけ。つながりません。
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Button
+                  onClick={handleExchangeNafuda}
+                  disabled={connectQrLoading}
+                  size="lg"
+                  className="w-full rounded-xl"
+                >
+                  {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
+                </Button>
+                <p
+                  className="text-xs text-center"
+                  style={{ color: subtextColor ?? "#9ca3af" }}
+                >
+                  その場でお互いにつながります。
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="lg"
@@ -475,16 +456,6 @@ function MePage() {
               >
                 <Link to="/connections">つながりを見る</Link>
               </Button>
-            </div>
-
-            <div className="pt-6 pb-2">
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="text-xs underline hover:text-red-500"
-                style={{ color: subtextColor ?? "#9ca3af" }}
-              >
-                退会する
-              </button>
             </div>
           </div>
         </main>
@@ -522,156 +493,31 @@ function MePage() {
           />
         )}
 
-        {showDeleteModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-              <h2 className="text-lg font-bold mb-3">退会の確認</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                退会すると、あなたが入力したデータや築いたつながりはすべて削除され、元に戻せません。印刷・共有済みのQRコードも使えなくなります。
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                ただし、あなたが作成したイベントは記録として残ります（あなた自身の情報は消えます）。
-              </p>
-              <label className="flex items-start gap-2 mb-4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={deleteAgreed}
-                  onChange={(e) => setDeleteAgreed(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  上記の内容をすべて削除することに同意します
-                </span>
-              </label>
-              {deleteError && (
-                <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setDeleteAgreed(false);
-                    setDeleteError(null);
-                  }}
-                  disabled={isDeleting}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={handleDeleteAccount}
-                  disabled={!deleteAgreed || isDeleting}
-                >
-                  {isDeleting ? "処理中..." : "退会する"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 function RedirectToWizard() {
-  const navigate = useNavigate();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteAgreed, setDeleteAgreed] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const handleLogout = async () => {
-    await authClient.signOut();
-    await navigate({ to: "/login" });
-  };
-
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteAccount();
-      await authClient.signOut();
-      await navigate({ to: "/login" });
-    } catch {
-      setDeleteError("退会処理に失敗しました。再度お試しください。");
-      setIsDeleting(false);
-    }
-  };
-
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
-        <p className="text-sm text-gray-400">ようこそ！</p>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex justify-end p-4">
+        <AppMenu iconColor="#6b7280" />
       </div>
-      <p className="text-sm text-gray-500 text-center max-w-xs leading-relaxed">
-        なふだはQRコードと紐づいたあなたのデジタル名刺です。
-        <br />
-        まず1枚作りましょう。
-      </p>
-      <Button asChild size="lg">
-        <Link to="/profile/wizard">なふだを作る</Link>
-      </Button>
-      <button
-        onClick={handleLogout}
-        className="text-sm text-gray-400 underline hover:text-gray-600"
-      >
-        ログアウト
-      </button>
-      <button
-        onClick={() => setShowDeleteModal(true)}
-        className="text-xs text-gray-300 underline hover:text-red-400"
-      >
-        退会する
-      </button>
-
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-3">退会の確認</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              アカウントを削除します。この操作は取り消せません。
-            </p>
-            <label className="flex items-start gap-2 mb-4 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={deleteAgreed}
-                onChange={(e) => setDeleteAgreed(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span className="text-sm">削除することに同意します</span>
-            </label>
-            {deleteError && (
-              <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteAgreed(false);
-                  setDeleteError(null);
-                }}
-                disabled={isDeleting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDeleteAccount}
-                disabled={!deleteAgreed || isDeleting}
-              >
-                {isDeleting ? "処理中..." : "退会する"}
-              </Button>
-            </div>
-          </div>
+      <main className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
+          <p className="text-sm text-gray-400">ようこそ！</p>
         </div>
-      )}
-    </main>
+        <p className="text-sm text-gray-500 text-center max-w-xs leading-relaxed">
+          なふだはQRコードと紐づいたあなたのデジタル名刺です。
+          <br />
+          まず1枚作りましょう。
+        </p>
+        <Button asChild size="lg">
+          <Link to="/profile/wizard">なふだを作る</Link>
+        </Button>
+      </main>
+    </div>
   );
 }

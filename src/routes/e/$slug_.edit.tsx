@@ -215,7 +215,7 @@ function EditEventPage() {
                 rows={4}
                 maxLength={1000}
                 placeholder="イベントの詳細・注意事項など"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
               />
               {errors.description && (
                 <p className="text-xs text-red-500">

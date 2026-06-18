@@ -30,44 +30,47 @@ function ConnectionsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="p-4 border-b flex items-center gap-3">
-        <button
-          onClick={() => router.history.back()}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="戻る"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    <div className="min-h-screen bg-gray-100">
+      <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col bg-white sm:shadow-sm">
+        <div className="p-4 border-b flex items-center gap-2">
+          <button
+            onClick={() => router.history.back()}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="戻る"
           >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <h1 className="text-lg font-bold">つながり</h1>
-      </div>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            <span className="text-sm">戻る</span>
+          </button>
+          <h1 className="text-lg font-bold">つながり</h1>
+        </div>
 
-      <main className="flex-1 p-4">
-        {connections.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {connections.map((conn) => (
-              <ConnectionCard
-                key={conn.connectionId}
-                conn={conn}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+        <main className="flex-1 p-4">
+          {connections.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {connections.map((conn) => (
+                <ConnectionCard
+                  key={conn.connectionId}
+                  conn={conn}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
@@ -374,7 +377,7 @@ function EditDialog({
                 rows={4}
                 maxLength={500}
                 placeholder="相手についての覚え書き"
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="w-full px-3 py-3 border rounded-lg text-base md:text-sm outline-none focus:ring-2 focus:ring-black resize-none"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {memo.length}/500
