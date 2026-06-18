@@ -206,7 +206,7 @@ function WizardPage() {
               <div>
                 <Input
                   {...register("displayName")}
-                  placeholder="ゆきたん⭐"
+                  placeholder="例：ゆきたん⭐"
                   className="h-12"
                 />
                 {errors.displayName && (
