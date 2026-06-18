@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { genericOAuth, line } from 'better-auth/plugins/generic-oauth'
 import { db } from './db/client'
 import * as schema from './db/schema'
 
@@ -10,6 +11,8 @@ const requiredEnvVars = [
   'GOOGLE_CLIENT_SECRET',
   'FACEBOOK_CLIENT_ID',
   'FACEBOOK_CLIENT_SECRET',
+  'LINE_CLIENT_ID',
+  'LINE_CLIENT_SECRET',
 ] as const
 
 const missing = requiredEnvVars.filter((key) => !process.env[key])
@@ -38,7 +41,8 @@ export const auth = betterAuth({
   },
   accountLinking: {
     enabled: true,
-    trustedProviders: ["google", "facebook"],
+    // LINE のメールは LINE 側で確認済みのものを id_token で受け取るため信頼する
+    trustedProviders: ["google", "facebook", "line"],
   },
   session: {
     storeSessionInDatabase: true,
@@ -52,5 +56,18 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,   // 30 days (iOS ITP mitigation — users open app ~monthly)
     updateAge: 60 * 60 * 24,          // Refresh session token after 1 day of activity
   },
-  plugins: [],
+  plugins: [
+    genericOAuth({
+      config: [
+        // LINE Login（OIDC）。メールは id_token から取得するため email permission の取得が前提。
+        // コールバック: {BETTER_AUTH_URL}/api/auth/oauth2/callback/line
+        line({
+          providerId: "line",
+          clientId: process.env.LINE_CLIENT_ID!,
+          clientSecret: process.env.LINE_CLIENT_SECRET!,
+          pkce: true,
+        }),
+      ],
+    }),
+  ],
 })

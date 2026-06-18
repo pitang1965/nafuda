@@ -22,6 +22,9 @@ function LoginPage() {
   const handleFacebook = async () => {
     await authClient.signIn.social({ provider: "facebook", callbackURL });
   };
+  const handleLine = async () => {
+    await authClient.signIn.oauth2({ providerId: "line", callbackURL });
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6 bg-white">
@@ -41,6 +44,14 @@ function LoginPage() {
         >
           <span>G</span>
           Googleでログイン
+        </Button>
+        <Button
+          onClick={handleLine}
+          size="lg"
+          className="w-full gap-2 bg-[#06C755] text-white hover:bg-[#05b34c]"
+        >
+          <span>L</span>
+          LINEでログイン
         </Button>
         <Button
           onClick={handleFacebook}
