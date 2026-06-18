@@ -374,7 +374,7 @@ function EditDialog({
                 rows={4}
                 maxLength={500}
                 placeholder="相手についての覚え書き"
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="w-full px-3 py-3 border rounded-lg text-base md:text-sm outline-none focus:ring-2 focus:ring-black resize-none"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {memo.length}/500

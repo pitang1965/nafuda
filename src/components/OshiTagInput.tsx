@@ -81,6 +81,9 @@ export function OshiTagInput({
       maxTags={20}
       className="w-full"
       styleClasses={{
+        // モバイルSafariはfontSize<16pxの入力欄をタップすると自動ズームする。
+        // emblorのデフォルトinputはtext-sm(14px)なので16px化してズームを抑止。
+        input: "text-base md:text-sm",
         tag: {
           body: "bg-pink-100 text-pink-700 border-pink-200 pl-3",
           closeButton: "py-1 pl-1 pr-1 h-full hover:bg-transparent",

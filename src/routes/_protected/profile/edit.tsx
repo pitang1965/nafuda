@@ -724,7 +724,7 @@ function EditForm({
                 rows={3}
                 maxLength={200}
                 placeholder="推し活のきっかけや活動スタイルなど、自由に書いてください"
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="w-full px-3 py-3 border rounded-lg text-base md:text-sm outline-none focus:ring-2 focus:ring-black resize-none"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {bio.length}/200
