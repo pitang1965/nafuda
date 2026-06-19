@@ -11,5 +11,14 @@ bucket_name = "nafuda-avatars"
 VITE_POSTHOG_KEY = "phc_zcgFaCQVCT68NPuPpnXnCSweL826tr4TDqpg2GFXs3dY"
 R2_PUBLIC_URL = "https://pub-005c2707053246c7961f7082094d34f8.r2.dev"
 
+[env.preview]
+
+[[env.preview.r2_buckets]]
+binding = "AVATARS_BUCKET"
+bucket_name = "nafuda-avatars-staging"
+
+[env.preview.vars]
+R2_PUBLIC_URL = "https://pub-4b271ae313654596b3a0f88236892b5b.r2.dev"
+
 [observability]
 enabled = true

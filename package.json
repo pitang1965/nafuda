@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:staging": "drizzle-kit migrate --config drizzle.config.staging.ts",
+    "db:migrate:prod": "drizzle-kit migrate --config drizzle.config.production.ts",
     "db:studio": "drizzle-kit studio",
+    "db:studio:staging": "drizzle-kit studio --config drizzle.config.staging.ts",
     "auth:generate": "npx auth generate"
   },
   "dependencies": {
