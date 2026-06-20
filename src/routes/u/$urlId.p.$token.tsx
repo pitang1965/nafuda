@@ -1,5 +1,10 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import {
+  createFileRoute,
+  Link,
+  useRouter,
+  useCanGoBack,
+} from "@tanstack/react-router";
+import { useEffect } from "react";
 import { getPublicProfile } from "../../server/functions/profile";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
@@ -72,13 +77,9 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
 function PublicProfilePage() {
   const profile = Route.useLoaderData();
   const router = useRouter();
-  const [canGoBack] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      document.referrer !== "" &&
-      new URL(document.referrer).origin === window.location.origin
-    );
-  });
+  // アプリ内遷移（公開→公開の「他のなふだ」、イベントページ等）では履歴があり戻れる。
+  // QR からのコールドロードでは履歴が無く戻り先も無いので出さない（ADR-0019）。
+  const canGoBack = useCanGoBack();
 
   const style = getNafudaStyle(profile?.styleId);
   const textColor = style?.textColor;

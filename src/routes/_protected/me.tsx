@@ -381,6 +381,9 @@ function MePage() {
                         shareToken={link.targetShareToken}
                         displayName={link.targetDisplayName}
                         avatarUrl={link.targetAvatarUrl}
+                        // /me ではシェルから出ず、PersonaSwitcher と同じ in-place
+                        // 切り替えにする（ADR-0019）。なふだリンクは必ず自分の別ペルソナを指す。
+                        onSelect={() => setCurrentPersonaId(link.targetPersonaId)}
                         colorOverride={
                           style
                             ? {
