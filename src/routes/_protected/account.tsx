@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { authClient } from "../../lib/auth-client";
 import { deleteAccount } from "../../server/functions/profile";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_protected/account")({
+  staticData: { title: "アカウント", hideBottomNav: true },
   component: AccountPage,
 });
 
@@ -35,21 +35,8 @@ function AccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col bg-white sm:shadow-sm">
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200">
-          <Link
-            to="/me"
-            aria-label="戻る"
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <ArrowLeft className="size-5" />
-            <span className="text-sm">戻る</span>
-          </Link>
-          <h1 className="text-base font-bold">アカウント</h1>
-        </div>
-
-        <div className="flex-1 p-6 flex flex-col gap-8">
+    <>
+      <div className="flex-1 p-6 flex flex-col gap-8">
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-medium text-gray-700">ログアウト</h2>
             <p className="text-xs text-gray-500">
@@ -124,7 +111,6 @@ function AccountPage() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </>
   );
 }

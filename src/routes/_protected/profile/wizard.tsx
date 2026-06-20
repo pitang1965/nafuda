@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { capture } from "@/lib/analytics";
@@ -25,6 +26,9 @@ export const Route = createFileRoute("/_protected/profile/wizard")({
     redirect: z.string().optional(),
   }),
   loader: () => getOwnProfile(),
+  // 初回オンボーディングの多段フロー。独自の内部ナビを持つため、シェルの
+  // ヘッダー/ボトムナビを被せず全画面で表示する。
+  staticData: { hideChrome: true },
   component: WizardPage,
 });
 
@@ -125,8 +129,12 @@ function WizardPage() {
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
       <div className="mb-4">
-        <Link to="/me" className="text-sm text-gray-400 hover:text-gray-600">
-          ← トップに戻る
+        <Link
+          to="/me"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
+        >
+          <ArrowLeft className="size-4" />
+          トップに戻る
         </Link>
       </div>
       {/* Step indicator */}
@@ -358,9 +366,10 @@ function WizardPage() {
                   <button
                     type="button"
                     onClick={() => setStep(3)}
-                    className="text-sm text-gray-400 hover:text-gray-600 underline underline-offset-2 mt-1"
+                    className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mt-1"
                   >
-                    ← 戻る
+                    <ArrowLeft className="size-4" />
+                    <span className="underline underline-offset-2">戻る</span>
                   </button>
                 </div>
               )}

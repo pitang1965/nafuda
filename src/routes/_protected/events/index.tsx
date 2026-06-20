@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { getMyEvents } from "../../../server/functions/event";
 
 export const Route = createFileRoute("/_protected/events/")({
   loader: async () => {
     return await getMyEvents();
   },
+  staticData: { title: "イベント" },
   component: MyEventsPage,
 });
 
@@ -75,44 +76,19 @@ function EventCard({
 
 function MyEventsPage() {
   const { hostedEvents, participatedEvents } = Route.useLoaderData();
-  const router = useRouter();
 
   const plannedEvents = hostedEvents.filter((e) => !e.isInstant);
   const instantEvents = hostedEvents.filter((e) => e.isInstant);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="p-4 border-b flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.history.back()}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="戻る"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <h1 className="text-lg font-bold">マイイベント</h1>
-        </div>
-        <Link
-          to="/events/new"
-          className="px-4 py-2 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
-        >
-          イベントを作成
-        </Link>
-      </div>
+    <div className="flex-1 p-6 flex flex-col gap-8">
+      <Link
+        to="/events/new"
+        className="self-start px-4 py-2 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
+      >
+        イベントを作成
+      </Link>
 
-      <main className="flex-1 p-6 flex flex-col gap-8 max-w-lg mx-auto w-full">
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             作成したイベント
@@ -177,7 +153,6 @@ function MyEventsPage() {
             ))
           )}
         </section>
-      </main>
     </div>
   );
 }

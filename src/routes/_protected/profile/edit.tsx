@@ -48,6 +48,9 @@ export const Route = createFileRoute("/_protected/profile/edit")({
   }),
   loader: () => getOwnProfile(),
   staleTime: 0,
+  // 未保存変更の確認（handleBack）を自前で持つ集中フローのため、シェルの
+  // ヘッダー/ボトムナビを被せずガードを温存する。
+  staticData: { hideChrome: true },
   component: EditPage,
 });
 

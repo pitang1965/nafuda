@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { authClient } from "../lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -54,9 +55,10 @@ function LoginPage() {
 
       <Link
         to="/"
-        className="text-sm text-gray-500 underline underline-offset-2 hover:text-gray-700"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
       >
-        ← トップに戻る
+        <ArrowLeft className="size-4" />
+        <span className="underline underline-offset-2">トップに戻る</span>
       </Link>
 
       <Link

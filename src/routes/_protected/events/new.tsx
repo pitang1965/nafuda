@@ -53,6 +53,7 @@ export const Route = createFileRoute("/_protected/events/new")({
       profile?.personas?.find((p) => p.isDefault) ?? profile?.personas?.[0];
     return { personaId: defaultPersona?.id ?? null, personas: profile?.personas ?? [] };
   },
+  staticData: { title: "イベントを作成" },
   component: NewEventPage,
 });
 
@@ -114,31 +115,7 @@ function NewEventPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="p-4 border-b flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => router.history.back()}
-          aria-label="戻る"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Button>
-        <h1 className="text-lg font-bold">イベントを作成</h1>
-      </div>
-
-      <main className="flex-1 p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
+    <div className="flex-1 p-6 flex flex-col gap-6">
         {personas.length > 1 && selectedPersonaId && (
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>参加なふだ：</span>
@@ -250,7 +227,6 @@ function NewEventPage() {
             作成後、QRコード付きイベントページに移動します
           </p>
         </form>
-      </main>
     </div>
   );
 }
