@@ -31,9 +31,6 @@ export function AppMenu({ iconColor }: { iconColor?: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem className="cursor-pointer" asChild>
-          <Link to="/events">イベント</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" asChild>
           <Link to="/account">アカウント</Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" asChild>

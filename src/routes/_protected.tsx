@@ -1,7 +1,25 @@
-import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  Outlet,
+  useMatches,
+} from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, removeResponseHeader } from "@tanstack/react-start/server";
 import { auth } from "../server/auth";
+import { AppHeader } from "../components/AppHeader";
+import { BottomNav } from "../components/BottomNav";
+
+// 各保護ルートが staticData で宣言するメタ。title はヘッダーに表示し、
+// hideChrome を立てたルート（初回ウィザード等）はシェルを外して全画面表示する。
+// hideBottomNav はヘッダーを残したままボトムナビだけ外す（アカウント等の二次画面用）。
+declare module "@tanstack/react-router" {
+  interface StaticDataRouteOption {
+    title?: string;
+    hideChrome?: boolean;
+    hideBottomNav?: boolean;
+  }
+}
 
 // auth.api.getSession sets cookies on the h3Event response (including session_data for
 // cookieCache, and Set-Cookie: Max-Age=0 via deleteSessionCookie when session is invalid).
@@ -29,5 +47,32 @@ export const Route = createFileRoute("/_protected")({
     }
     return { session };
   },
-  component: () => <Outlet />,
+  component: ProtectedLayout,
 });
+
+function ProtectedLayout() {
+  const matches = useMatches();
+  const hideChrome = matches.some((m) => m.staticData?.hideChrome);
+  const hideBottomNav = matches.some((m) => m.staticData?.hideBottomNav);
+  const title =
+    [...matches].reverse().find((m) => m.staticData?.title)?.staticData
+      ?.title ?? "";
+
+  // 初回ウィザード等は独自の多段フローを持つため、シェル（ヘッダー/ボトムナビ）を
+  // 被せず全画面で表示する。
+  if (hideChrome) {
+    return <Outlet />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="mx-auto flex min-h-screen w-full flex-col bg-white sm:max-w-sm sm:shadow-sm">
+        <AppHeader title={title} />
+        <main className="flex flex-1 flex-col">
+          <Outlet />
+        </main>
+        {!hideBottomNav && <BottomNav />}
+      </div>
+    </div>
+  );
+}

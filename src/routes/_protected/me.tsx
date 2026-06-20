@@ -9,7 +9,6 @@ import {
 } from "../../server/functions/connection";
 import { createInstantEventAndCheckin } from "../../server/functions/event";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
-import { AppMenu } from "../../components/AppMenu";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaLinkChip } from "../../components/NafudaLinkChip";
@@ -25,6 +24,7 @@ import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
+  staticData: { title: "なふだ" },
   component: MePage,
 });
 
@@ -197,50 +197,30 @@ function MePage() {
   const isPrivate = (field: string) => vis[field] === "private";
 
   return (
-    <div
-      className={
-        style ? "min-h-screen bg-gray-900" : "min-h-screen bg-gray-100"
-      }
-    >
-      <div
-        className={`mx-auto sm:max-w-sm w-full min-h-screen flex flex-col${style ? "" : " bg-white sm:shadow-sm"}`}
-      >
-        {/* Top bar - なふだ領域外 */}
-        <div
-          className="flex items-center justify-between p-4"
-          style={
-            style
-              ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
-              : { borderBottom: "1px solid #e5e7eb" }
-          }
+    <>
+      {/* なふだ切り替え・編集（ホーム固有・中立色のストリップ） */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <PersonaSwitcher
+          personas={personas}
+          currentPersonaId={currentPersonaId}
+          onSwitch={setCurrentPersonaId}
+          onCreateNew={() => navigate({ to: "/profile/wizard" })}
+        />
+        <Link
+          to="/profile/edit"
+          search={{ personaId: currentPersonaId }}
+          className="text-sm text-gray-500 underline hover:text-gray-700"
         >
-          <PersonaSwitcher
-            personas={personas}
-            currentPersonaId={currentPersonaId}
-            onSwitch={setCurrentPersonaId}
-            onCreateNew={() => navigate({ to: "/profile/wizard" })}
-          />
-          <div className="flex items-center gap-3">
-            <Link
-              to="/profile/edit"
-              search={{ personaId: currentPersonaId }}
-              className="text-sm underline"
-              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
-            >
-              編集
-            </Link>
-            <AppMenu
-              iconColor={style ? "rgba(255,255,255,0.65)" : "#6b7280"}
-            />
-          </div>
-        </div>
+          編集
+        </Link>
+      </div>
 
-        <PwaInstallBanner />
+      <PwaInstallBanner />
 
-        {/* なふだ領域 */}
-        <main
-          className="flex-1 relative"
-          style={
+      {/* なふだ領域 */}
+      <div
+        className="flex-1 relative"
+        style={
             style
               ? {
                   background: style.background,
@@ -448,17 +428,9 @@ function MePage() {
                   その場でお互いにつながります。
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="w-full rounded-xl text-gray-700 bg-white border-gray-200 hover:bg-gray-50 hover:text-gray-800"
-              >
-                <Link to="/connections">つながりを見る</Link>
-              </Button>
             </div>
           </div>
-        </main>
+        </div>
         {/* /なふだ領域 */}
 
         {currentPersona && urlId && (
@@ -492,32 +464,25 @@ function MePage() {
             }}
           />
         )}
-
-      </div>
-    </div>
+    </>
   );
 }
 
 function RedirectToWizard() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex justify-end p-4">
-        <AppMenu iconColor="#6b7280" />
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
+        <p className="text-sm text-gray-400">ようこそ！</p>
       </div>
-      <main className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
-          <p className="text-sm text-gray-400">ようこそ！</p>
-        </div>
-        <p className="text-sm text-gray-500 text-center max-w-xs leading-relaxed">
-          なふだはQRコードと紐づいたあなたのデジタル名刺です。
-          <br />
-          まず1枚作りましょう。
-        </p>
-        <Button asChild size="lg">
-          <Link to="/profile/wizard">なふだを作る</Link>
-        </Button>
-      </main>
+      <p className="text-sm text-gray-500 text-center max-w-xs leading-relaxed">
+        なふだはQRコードと紐づいたあなたのデジタル名刺です。
+        <br />
+        まず1枚作りましょう。
+      </p>
+      <Button asChild size="lg">
+        <Link to="/profile/wizard">なふだを作る</Link>
+      </Button>
     </div>
   );
 }

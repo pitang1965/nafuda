@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
@@ -28,8 +29,12 @@ function PrivacyPage() {
     <main className="min-h-screen bg-gray-50 flex justify-center px-4 py-10">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm px-6 py-8">
         <div className="mb-8">
-          <Link to="/" className="text-xs text-gray-400 hover:text-gray-600">
-            ← トップに戻る
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+          >
+            <ArrowLeft className="size-4" />
+            トップに戻る
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-4">
             プライバシーポリシー
