@@ -10,6 +10,8 @@ interface NafudaLinkChipProps {
     text: string;
     hoverBg: string;
   };
+  // 指定時は公開ページ遷移ではなくコールバックで動く（/me の in-place 切り替え用・ADR-0019）。
+  onSelect?: () => void;
 }
 
 // 自分の別のなふだへの内部リンク（ADR-0015）。
@@ -20,33 +22,26 @@ export function NafudaLinkChip({
   displayName,
   avatarUrl,
   colorOverride,
+  onSelect,
 }: NafudaLinkChipProps) {
-  return (
-    <Link
-      to="/u/$urlId/p/$token"
-      params={{ urlId, token: shareToken }}
-      className="flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-xs transition-colors max-w-full"
-      style={
-        colorOverride
-          ? { border: `1px solid ${colorOverride.border}`, color: colorOverride.text }
-          : { border: "1px solid #e5e7eb", color: "#1f2937" }
+  const className =
+    "flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-xs transition-colors max-w-full";
+  const style = colorOverride
+    ? { border: `1px solid ${colorOverride.border}`, color: colorOverride.text }
+    : { border: "1px solid #e5e7eb", color: "#1f2937" };
+  const onMouseEnter = colorOverride
+    ? (e: React.MouseEvent<HTMLElement>) => {
+        e.currentTarget.style.backgroundColor = colorOverride.hoverBg;
       }
-      onMouseEnter={
-        colorOverride
-          ? (e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor =
-                colorOverride.hoverBg;
-            }
-          : undefined
+    : undefined;
+  const onMouseLeave = colorOverride
+    ? (e: React.MouseEvent<HTMLElement>) => {
+        e.currentTarget.style.backgroundColor = "";
       }
-      onMouseLeave={
-        colorOverride
-          ? (e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = "";
-            }
-          : undefined
-      }
-    >
+    : undefined;
+
+  const inner = (
+    <>
       {avatarUrl ? (
         <img
           src={avatarUrl}
@@ -59,6 +54,34 @@ export function NafudaLinkChip({
         </span>
       )}
       <span className="truncate">{displayName}</span>
+    </>
+  );
+
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        onClick={onSelect}
+        className={className}
+        style={style}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      to="/u/$urlId/p/$token"
+      params={{ urlId, token: shareToken }}
+      className={className}
+      style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {inner}
     </Link>
   );
 }
