@@ -231,97 +231,112 @@ function MePage() {
       <div
         className="flex-1 relative"
         style={
-            style
-              ? {
-                  background: style.background,
-                  fontFamily: style.fontFamily,
-                  color: style.textColor,
-                }
-              : undefined
-          }
-        >
-          {style?.frameId && <NafudaFrame frameId={style.frameId} />}
-          {style?.holographic && <HolographicOverlay />}
-          {style?.petalsFall && <CherryBlossomOverlay />}
-          <div className="p-6 flex flex-col items-center gap-4 relative z-20">
-            <div
-              className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
-            >
-              {currentPersona?.avatarUrl ? (
-                <img
-                  src={currentPersona.avatarUrl}
-                  alt=""
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-              ) : (
-                <InitialsAvatar
-                  name={currentPersona?.displayName ?? "?"}
-                  size={80}
-                />
-              )}
-              {isPrivate("avatar_url") && (
-                <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
-                  🔒
-                </span>
-              )}
-            </div>
-
-            <div
-              className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
-            >
-              <h1 className="text-xl font-bold">
-                {currentPersona?.displayName}
-              </h1>
-              {isPrivate("display_name") && <PrivateBadge />}
-            </div>
-
-            {!currentPersona?.label && (
-              <Link
-                to="/profile/edit"
-                search={{ personaId: activePersonaId }}
-                className="text-xs underline"
-                style={{ color: subtextColor ?? "#9ca3af" }}
-              >
-                ラベルを設定する →
-              </Link>
+          style
+            ? {
+                background: style.background,
+                fontFamily: style.fontFamily,
+                color: style.textColor,
+              }
+            : undefined
+        }
+      >
+        {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+        {style?.holographic && <HolographicOverlay />}
+        {style?.petalsFall && <CherryBlossomOverlay />}
+        <div className="p-6 flex flex-col items-center gap-4 relative z-20">
+          <div
+            className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
+          >
+            {currentPersona?.avatarUrl ? (
+              <img
+                src={currentPersona.avatarUrl}
+                alt=""
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            ) : (
+              <InitialsAvatar
+                name={currentPersona?.displayName ?? "?"}
+                size={80}
+              />
             )}
+            {isPrivate("avatar_url") && (
+              <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
+                🔒
+              </span>
+            )}
+          </div>
 
-            {currentPersona?.bio && (
-              <div
-                className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
+          <div
+            className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
+          >
+            <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
+            {isPrivate("display_name") && <PrivateBadge />}
+          </div>
+
+          {!currentPersona?.label && (
+            <Link
+              to="/profile/edit"
+              search={{ personaId: activePersonaId }}
+              className="text-xs underline"
+              style={{ color: subtextColor ?? "#9ca3af" }}
+            >
+              ラベルを設定する →
+            </Link>
+          )}
+
+          {currentPersona?.bio && (
+            <div
+              className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
+            >
+              <p
+                className="text-sm whitespace-pre-wrap"
+                style={{ color: subtextColor ?? "#4b5563" }}
               >
-                <p
-                  className="text-sm whitespace-pre-wrap"
-                  style={{ color: subtextColor ?? "#4b5563" }}
-                >
-                  {currentPersona.bio}
-                </p>
-                {isPrivate("bio") && (
-                  <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
-                )}
+                {currentPersona.bio}
+              </p>
+              {isPrivate("bio") && (
+                <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
+              )}
+            </div>
+          )}
+
+          {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
+            <div
+              className={`w-full max-w-xs ${isPrivate("oshi_tags") ? "opacity-50" : ""}`}
+            >
+              <div className="flex flex-wrap gap-1 justify-center">
+                {currentPersona.oshiTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 rounded-full text-xs"
+                    style={
+                      style
+                        ? { background: style.tagBg, color: style.tagText }
+                        : { background: "#fce7f3", color: "#be185d" }
+                    }
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
-            )}
+              {isPrivate("oshi_tags") && (
+                <p className="text-xs text-gray-400 text-center mt-1">
+                  🔒 非公開
+                </p>
+              )}
+            </div>
+          )}
 
-            {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
+          {currentPersona?.galleryPhotos &&
+            currentPersona.galleryPhotos.length > 0 && (
               <div
-                className={`w-full max-w-xs ${isPrivate("oshi_tags") ? "opacity-50" : ""}`}
+                className={`w-full max-w-xs ${isPrivate("gallery") ? "opacity-50" : ""}`}
               >
-                <div className="flex flex-wrap gap-1 justify-center">
-                  {currentPersona.oshiTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-0.5 rounded-full text-xs"
-                      style={
-                        style
-                          ? { background: style.tagBg, color: style.tagText }
-                          : { background: "#fce7f3", color: "#be185d" }
-                      }
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                {isPrivate("oshi_tags") && (
+                <GalleryLightbox
+                  photos={currentPersona.galleryPhotos}
+                  accentColor={style?.textColor}
+                />
+                {isPrivate("gallery") && (
                   <p className="text-xs text-gray-400 text-center mt-1">
                     🔒 非公開
                   </p>
@@ -329,154 +344,145 @@ function MePage() {
               </div>
             )}
 
-            {currentPersona?.galleryPhotos &&
-              currentPersona.galleryPhotos.length > 0 && (
-                <div
-                  className={`w-full max-w-xs ${isPrivate("gallery") ? "opacity-50" : ""}`}
-                >
-                  <GalleryLightbox
-                    photos={currentPersona.galleryPhotos}
-                    accentColor={style?.textColor}
-                  />
-                  {isPrivate("gallery") && (
-                    <p className="text-xs text-gray-400 text-center mt-1">
-                      🔒 非公開
-                    </p>
-                  )}
-                </div>
+          {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
+            <div
+              className={`flex flex-col gap-2 w-full max-w-xs ${isPrivate("sns_links") ? "opacity-50" : ""}`}
+            >
+              {currentPersona.snsLinks.map((link) => (
+                <SnsLinkButton
+                  key={link.id}
+                  platform={link.platform}
+                  url={link.url}
+                  title={link.title}
+                  colorOverride={
+                    style
+                      ? {
+                          border: `${style.textColor}50`,
+                          text: style.textColor,
+                          hoverBg: `${style.textColor}15`,
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+              {isPrivate("sns_links") && (
+                <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
               )}
+            </div>
+          )}
 
-            {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
-              <div
-                className={`flex flex-col gap-2 w-full max-w-xs ${isPrivate("sns_links") ? "opacity-50" : ""}`}
-              >
-                {currentPersona.snsLinks.map((link) => (
-                  <SnsLinkButton
-                    key={link.id}
-                    platform={link.platform}
-                    url={link.url}
-                    title={link.title}
-                    colorOverride={
-                      style
-                        ? {
-                            border: `${style.textColor}50`,
-                            text: style.textColor,
-                            hoverBg: `${style.textColor}15`,
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-                {isPrivate("sns_links") && (
-                  <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
-                )}
+          {currentPersona?.nafudaLinks &&
+            currentPersona.nafudaLinks.length > 0 &&
+            urlId && (
+              <div className="w-full max-w-xs flex flex-col items-center gap-1">
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: subtextColor ?? "#6b7280" }}
+                >
+                  📛 他のなふだ
+                </span>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {currentPersona.nafudaLinks.map((link) => (
+                    <NafudaLinkChip
+                      key={link.targetShareToken}
+                      urlId={urlId}
+                      shareToken={link.targetShareToken}
+                      displayName={link.targetDisplayName}
+                      avatarUrl={link.targetAvatarUrl}
+                      // /me ではシェルから出ず、PersonaSwitcher と同じ in-place
+                      // 切り替えにする（ADR-0019）。なふだリンクは必ず自分の別ペルソナを指す。
+                      onSelect={() => setCurrentPersonaId(link.targetPersonaId)}
+                      colorOverride={
+                        style
+                          ? {
+                              border: `${style.textColor}50`,
+                              text: style.textColor,
+                              hoverBg: `${style.textColor}15`,
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
-            {currentPersona?.nafudaLinks &&
-              currentPersona.nafudaLinks.length > 0 &&
-              urlId && (
-                <div className="w-full max-w-xs flex flex-col items-center gap-1">
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color: subtextColor ?? "#6b7280" }}
-                  >
-                    📛 他のなふだ
-                  </span>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {currentPersona.nafudaLinks.map((link) => (
-                      <NafudaLinkChip
-                        key={link.targetShareToken}
-                        urlId={urlId}
-                        shareToken={link.targetShareToken}
-                        displayName={link.targetDisplayName}
-                        avatarUrl={link.targetAvatarUrl}
-                        // /me ではシェルから出ず、PersonaSwitcher と同じ in-place
-                        // 切り替えにする（ADR-0019）。なふだリンクは必ず自分の別ペルソナを指す。
-                        onSelect={() => setCurrentPersonaId(link.targetPersonaId)}
-                        colorOverride={
-                          style
-                            ? {
-                                border: `${style.textColor}50`,
-                                text: style.textColor,
-                                hoverBg: `${style.textColor}15`,
-                              }
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
-              <div className="flex flex-col gap-1">
-                <Button
-                  onClick={() => setProfileQrOpen(true)}
-                  size="lg"
-                  className="w-full rounded-xl"
-                >
-                  なふだを見せる
-                </Button>
-                <p
-                  className="text-xs text-center"
-                  style={{ color: subtextColor ?? "#9ca3af" }}
-                >
-                  プロフィールを見せるだけ。つながりません。
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <Button
-                  onClick={handleExchangeNafuda}
-                  disabled={connectQrLoading}
-                  size="lg"
-                  className="w-full rounded-xl"
-                >
-                  {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
-                </Button>
-                <p
-                  className="text-xs text-center"
-                  style={{ color: subtextColor ?? "#9ca3af" }}
-                >
-                  その場でお互いにつながります。
-                </p>
-              </div>
+          <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
+              <Button
+                onClick={() => setProfileQrOpen(true)}
+                size="lg"
+                className="w-full rounded-xl"
+              >
+                なふだを見せる
+              </Button>
+              <p
+                className="text-xs text-center"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                プロフィールを見せるだけ。つながりません。
+              </p>
             </div>
+            <div className="flex flex-col gap-1">
+              <Button
+                onClick={handleExchangeNafuda}
+                disabled={connectQrLoading}
+                size="lg"
+                className="w-full rounded-xl"
+              >
+                {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
+              </Button>
+              <p
+                className="text-xs text-center"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                その場でお互いにつながります。
+              </p>
+            </div>
+            {currentPersona && (
+              <Link
+                to="/u/$urlId/p/$token"
+                params={{ urlId, token: currentPersona.shareToken }}
+                className="text-xs text-center underline underline-offset-2 transition-colors"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                👁 人から見た画面で確認
+              </Link>
+            )}
           </div>
         </div>
-        {/* /なふだ領域 */}
+      </div>
+      {/* /なふだ領域 */}
 
-        {currentPersona && urlId && (
-          <QRBottomSheet
-            isOpen={profileQrOpen}
-            onClose={() => setProfileQrOpen(false)}
-            url={
-              origin
-                ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}`
-                : ""
-            }
-            label={`${currentPersona.displayName} のなふだ（閲覧用）`}
-          />
-        )}
-        <ExchangeContextSheet
-          isOpen={exchangeContextOpen}
-          isSubmitting={exchangeContextSubmitting}
-          onSubmit={handleContextSubmit}
-          onSkip={handleContextSkip}
+      {currentPersona && urlId && (
+        <QRBottomSheet
+          isOpen={profileQrOpen}
+          onClose={() => setProfileQrOpen(false)}
+          url={
+            origin ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}` : ""
+          }
+          label={`${currentPersona.displayName} のなふだ（閲覧用）`}
         />
-        {connectQrUrl && (
-          <QRBottomSheet
-            isOpen={connectQrOpen}
-            onClose={() => {}}
-            url={connectQrUrl}
-            label="相手にスキャンしてもらう（15分有効）"
-            exchangeMode={{
-              onExchanged: handleExchanged,
-              onNotExchanged: handleNotExchanged,
-              connectionNotification,
-            }}
-          />
-        )}
+      )}
+      <ExchangeContextSheet
+        isOpen={exchangeContextOpen}
+        isSubmitting={exchangeContextSubmitting}
+        onSubmit={handleContextSubmit}
+        onSkip={handleContextSkip}
+      />
+      {connectQrUrl && (
+        <QRBottomSheet
+          isOpen={connectQrOpen}
+          onClose={() => {}}
+          url={connectQrUrl}
+          label="相手にスキャンしてもらう（15分有効）"
+          exchangeMode={{
+            onExchanged: handleExchanged,
+            onNotExchanged: handleNotExchanged,
+            connectionNotification,
+          }}
+        />
+      )}
     </>
   );
 }

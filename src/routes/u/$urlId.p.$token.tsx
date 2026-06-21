@@ -1,20 +1,11 @@
 import {
   createFileRoute,
-  Link,
   useRouter,
   useCanGoBack,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { getPublicProfile } from "../../server/functions/profile";
-import { InitialsAvatar } from "../../components/InitialsAvatar";
-import { SnsLinkButton } from "../../components/SnsLinkButton";
-import { NafudaLinkChip } from "../../components/NafudaLinkChip";
-import { NafudaFrame } from "../../components/NafudaFrame";
-import { HolographicOverlay } from "../../components/HolographicOverlay";
-import { GalleryLightbox } from "../../components/GalleryLightbox";
-import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
+import { NafudaCardView } from "../../components/NafudaCardView";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
-import { purposeTagHeading } from "../../lib/purpose";
 import { buildOgpDescription } from "../../lib/ogp";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { EmptyState } from "../../components/EmptyState";
@@ -82,18 +73,6 @@ function PublicProfilePage() {
   const canGoBack = useCanGoBack();
 
   const style = getNafudaStyle(profile?.styleId);
-  const textColor = style?.textColor;
-  const subtextColor = style?.subtextColor;
-
-  useEffect(() => {
-    if (!style?.fontUrl) return;
-    if (document.querySelector(`link[data-nafuda-font="${style.id}"]`)) return;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = style.fontUrl;
-    link.setAttribute("data-nafuda-font", style.id);
-    document.head.appendChild(link);
-  }, [style?.fontUrl, style?.id]);
 
   if (!profile)
     return (
@@ -142,143 +121,9 @@ function PublicProfilePage() {
           </div>
         )}
 
-        {/* なふだ領域 */}
-        <main
-          className="flex-1 relative"
-          style={{
-            background: style?.background ?? undefined,
-            fontFamily: style?.fontFamily ?? undefined,
-            color: textColor ?? undefined,
-          }}
-        >
-          {style?.frameId && <NafudaFrame frameId={style.frameId} />}
-          {style?.holographic && <HolographicOverlay />}
-          {style?.petalsFall && <CherryBlossomOverlay />}
-          <div className="p-6 flex flex-col items-center gap-4 relative z-20">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="w-20 h-20 rounded-full object-cover"
-                style={
-                  style
-                    ? { boxShadow: `0 0 0 3px ${style.textColor}40` }
-                    : undefined
-                }
-              />
-            ) : (
-              <InitialsAvatar name={profile.displayName} size={80} />
-            )}
-            <h1
-              className="text-2xl font-bold"
-              style={{ color: textColor ?? undefined }}
-            >
-              {profile.displayName}
-            </h1>
-            {profile.bio && (
-              <p
-                className="text-sm text-center whitespace-pre-wrap max-w-sm"
-                style={{ color: subtextColor ?? "#4b5563" }}
-              >
-                {profile.bio}
-              </p>
-            )}
-            {profile.oshiTags.length > 0 && (
-              <div className="flex flex-col items-center gap-1">
-                {purposeTagHeading(profile.purpose) && (
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color: subtextColor ?? "#6b7280" }}
-                  >
-                    {purposeTagHeading(profile.purpose)}
-                  </span>
-                )}
-                <div className="flex flex-wrap gap-1 justify-center">
-                  {profile.oshiTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-0.5 rounded-full text-xs"
-                      style={
-                        style
-                          ? { background: style.tagBg, color: style.tagText }
-                          : { background: "#fce7f3", color: "#be185d" }
-                      }
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {profile.galleryPhotos.length > 0 && (
-              <div className="w-full max-w-sm">
-                <GalleryLightbox
-                  photos={profile.galleryPhotos}
-                  accentColor={style?.textColor}
-                />
-              </div>
-            )}
-            {profile.snsLinks.length > 0 && (
-              <div className="w-full max-w-sm flex flex-col gap-2">
-                {profile.snsLinks.map((link) => (
-                  <SnsLinkButton
-                    key={`${link.platform}-${link.displayOrder}-${link.url}`}
-                    platform={link.platform}
-                    url={link.url}
-                    title={link.title}
-                    colorOverride={
-                      style
-                        ? {
-                            border: `${style.textColor}50`,
-                            text: style.textColor,
-                            hoverBg: `${style.textColor}15`,
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            )}
-
-            {profile.nafudaLinks.length > 0 && (
-              <div className="w-full max-w-sm flex flex-col items-center gap-1">
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: subtextColor ?? "#6b7280" }}
-                >
-                  📛 他のなふだ
-                </span>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {profile.nafudaLinks.map((link) => (
-                    <NafudaLinkChip
-                      key={link.shareToken}
-                      urlId={link.urlId}
-                      shareToken={link.shareToken}
-                      displayName={link.displayName}
-                      avatarUrl={link.avatarUrl}
-                      colorOverride={
-                        style
-                          ? {
-                              border: `${style.textColor}50`,
-                              text: style.textColor,
-                              hoverBg: `${style.textColor}15`,
-                            }
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Link
-              to="/"
-              className="mt-4 text-xs underline underline-offset-2 transition-colors"
-              style={{ color: subtextColor ?? "#9ca3af" }}
-            >
-              なふだとは？
-            </Link>
-          </div>
+        {/* なふだ領域（公開ページと編集プレビューで共通の表示部品） */}
+        <main className="flex-1 flex flex-col">
+          <NafudaCardView profile={profile} className="flex-1" />
         </main>
         {/* /なふだ領域 */}
       </div>

@@ -17,17 +17,30 @@ interface GalleryPhoto {
 interface GalleryUploadProps {
   personaId: string;
   initialPhotos: GalleryPhoto[];
+  // 親へ現在の写真一覧を通知する（編集プレビューでライブ反映するため）。
+  onChange?: (photos: GalleryPhoto[]) => void;
 }
 
 const CAPTION_MAX = 30;
 
-export function GalleryUpload({ personaId, initialPhotos }: GalleryUploadProps) {
+export function GalleryUpload({
+  personaId,
+  initialPhotos,
+  onChange,
+}: GalleryUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<GalleryPhoto[]>(() =>
     [...initialPhotos].sort((a, b) => a.displayOrder - b.displayOrder),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 写真一覧を更新しつつ親へ通知する。busy ゲートで同時操作が無いため
+  // 現在の photos クロージャから次の配列を組んで渡す（関数型更新は使わない）。
+  const apply = (next: GalleryPhoto[]) => {
+    setPhotos(next);
+    onChange?.(next);
+  };
 
   const full = photos.length >= MAX_GALLERY_PHOTOS;
 
@@ -40,7 +53,7 @@ export function GalleryUpload({ personaId, initialPhotos }: GalleryUploadProps) 
     try {
       const dataUrl = await fileToResizedJpeg(file);
       const row = await uploadGalleryPhoto({ data: { personaId, dataUrl } });
-      setPhotos((prev) => [...prev, row]);
+      apply([...photos, row]);
     } catch (err) {
       console.error("gallery upload failed", err);
       setError("写真の保存に失敗しました。もう一度お試しください。");
@@ -54,7 +67,7 @@ export function GalleryUpload({ personaId, initialPhotos }: GalleryUploadProps) 
     setBusy(true);
     try {
       await deleteGalleryPhoto({ data: { photoId } });
-      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+      apply(photos.filter((p) => p.id !== photoId));
     } catch (err) {
       console.error("gallery delete failed", err);
       setError("写真の削除に失敗しました。もう一度お試しください。");
@@ -64,9 +77,7 @@ export function GalleryUpload({ personaId, initialPhotos }: GalleryUploadProps) 
   }
 
   function handleCaptionChange(photoId: string, caption: string) {
-    setPhotos((prev) =>
-      prev.map((p) => (p.id === photoId ? { ...p, caption } : p)),
-    );
+    apply(photos.map((p) => (p.id === photoId ? { ...p, caption } : p)));
   }
 
   async function persistCaption(photoId: string, caption: string | null) {
@@ -85,7 +96,7 @@ export function GalleryUpload({ personaId, initialPhotos }: GalleryUploadProps) 
     if (next < 0 || next >= photos.length) return;
     const reordered = [...photos];
     [reordered[index], reordered[next]] = [reordered[next], reordered[index]];
-    setPhotos(reordered);
+    apply(reordered);
     try {
       await reorderGalleryPhotos({
         data: { personaId, orderedIds: reordered.map((p) => p.id) },
@@ -169,7 +180,8 @@ export function GalleryUpload({ personaId, initialPhotos }: GalleryUploadProps) 
       </div>
 
       <p className="text-xs text-gray-500">
-        最大{MAX_GALLERY_PHOTOS}枚。推し・作品・愛車など見せたいものを。タップで全体表示されます。
+        最大{MAX_GALLERY_PHOTOS}
+        枚。推し・作品・愛車など見せたいものを。タップで全体表示されます。
       </p>
 
       {error && <p className="text-xs text-red-700 break-all">{error}</p>}
