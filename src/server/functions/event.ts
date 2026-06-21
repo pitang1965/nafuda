@@ -15,15 +15,16 @@ function generateShareToken(): string {
     .join("");
 }
 
+// フォームの日付・時刻は JST のウォールクロック入力。サーバーの実行タイムゾーン
+// （Workers は UTC）に依存しないよう、明示的に +09:00 として解釈・保存する。
+// 表示側も Asia/Tokyo 固定で描画し、往復を一致させる。
 function buildEventDate(
   eventDate: string,
   showTime: boolean,
   eventTime?: string,
 ): Date {
-  if (showTime && eventTime) {
-    return new Date(`${eventDate}T${eventTime}:00`);
-  }
-  return new Date(eventDate);
+  const time = showTime && eventTime ? eventTime : "00:00";
+  return new Date(`${eventDate}T${time}:00+09:00`);
 }
 
 // Check in to an existing event by shareToken

@@ -63,25 +63,21 @@ function EditEventPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const eventDateStr = new Date(event.eventDate).toISOString().slice(0, 10);
-  const eventTimeStr = event.showTime
-    ? new Date(event.eventDate).toLocaleTimeString("ja-JP", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-    : "";
-  const eventEndDateStr = event.eventEndDate
-    ? new Date(event.eventEndDate).toISOString().slice(0, 10)
-    : "";
+  // 保存値（UTC instant）から JST のウォールクロック文字列を取り出す（入力欄の初期値用）。
+  // sv-SE ロケールは "YYYY-MM-DD" / "HH:MM" 形式を返すため date/time input にそのまま使える。
+  const toJstDate = (d: Date | string) =>
+    new Date(d).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+  const toJstTime = (d: Date | string) =>
+    new Date(d).toLocaleTimeString("sv-SE", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  const eventDateStr = toJstDate(event.eventDate);
+  const eventTimeStr = event.showTime ? toJstTime(event.eventDate) : "";
+  const eventEndDateStr = event.eventEndDate ? toJstDate(event.eventEndDate) : "";
   const eventEndTimeStr =
-    event.eventEndDate && event.showTime
-      ? new Date(event.eventEndDate).toLocaleTimeString("ja-JP", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-      : "";
+    event.eventEndDate && event.showTime ? toJstTime(event.eventEndDate) : "";
 
   const {
     register,

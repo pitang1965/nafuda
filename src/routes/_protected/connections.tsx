@@ -134,6 +134,7 @@ function ConnectionCard({
                     {" "}
                     (
                     {new Date(conn.eventDate).toLocaleDateString("ja-JP", {
+                      timeZone: "Asia/Tokyo",
                       month: "short",
                       day: "numeric",
                     })}

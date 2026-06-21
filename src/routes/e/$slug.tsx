@@ -26,6 +26,7 @@ function formatEventDate(date: Date | string, showTime: boolean): string {
   const d = new Date(date);
   if (showTime) {
     return d.toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -34,6 +35,7 @@ function formatEventDate(date: Date | string, showTime: boolean): string {
     });
   }
   return d.toLocaleDateString("ja-JP", {
+    timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -54,6 +56,7 @@ function formatEventPeriod(
   if (sameDay) {
     if (!showTime) return startStr;
     const endTime = e.toLocaleTimeString("ja-JP", {
+      timeZone: "Asia/Tokyo",
       hour: "2-digit",
       minute: "2-digit",
     });
