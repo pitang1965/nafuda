@@ -35,6 +35,8 @@ import {
 import { AvatarUpload } from "../../../components/AvatarUpload";
 import { GalleryUpload } from "../../../components/GalleryUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
+import { NafudaPreviewDialog } from "../../../components/NafudaPreviewDialog";
+import type { NafudaCardProfile } from "../../../components/NafudaCardView";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
@@ -350,6 +352,11 @@ function EditForm({
     (p) => !nafudaLinkTargets.includes(p.id),
   );
   const [hasPendingOshiInput, setHasPendingOshiInput] = useState(false);
+  // ギャラリーは GalleryUpload がローカルに持つため、プレビュー用に親へリフトする
+  const [galleryPhotos, setGalleryPhotos] = useState(() =>
+    [...initialGalleryPhotos].sort((a, b) => a.displayOrder - b.displayOrder),
+  );
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(
     initialStyleId,
   );
@@ -625,6 +632,41 @@ function EditForm({
   };
 
   const label = useWatch({ control, name: "label", defaultValue: "" });
+  const oshiTags =
+    useWatch({ control, name: "oshiTags", defaultValue: initialOshiTags }) ??
+    [];
+
+  // プレビュー用に「人から見た画面」を組む。公開範囲が非公開の項目は除外し、
+  // SNS URL はユーザー名入力を正規化する（getPublicProfile のフィルタと同じ規則）。
+  const previewProfile: NafudaCardProfile = {
+    displayName,
+    bio: bioVisibility === "private" ? null : bio || null,
+    avatarUrl: avatarVisibility === "private" ? null : avatarUrl,
+    oshiTags: oshiTagsVisibility === "private" ? [] : oshiTags,
+    purpose,
+    galleryPhotos:
+      galleryVisibility === "private"
+        ? []
+        : galleryPhotos.map((p) => ({
+            imageUrl: p.imageUrl,
+            caption: p.caption,
+          })),
+    snsLinks:
+      snsLinksVisibility === "private"
+        ? []
+        : snsLinks
+            .filter((l) => l.url.trim())
+            .map((l) => ({
+              platform: l.platform,
+              url: normalizeUrl(l.platform, l.url),
+              title: l.title,
+            })),
+    nafudaLinks: nafudaLinkTargets
+      .map((id) => personaById.get(id))
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+      .map((t) => ({ displayName: t.displayName, avatarUrl: t.avatarUrl })),
+    styleId: selectedStyleId,
+  };
 
   return (
     <FormProvider {...methods}>
@@ -817,6 +859,7 @@ function EditForm({
             <GalleryUpload
               personaId={personaId}
               initialPhotos={initialGalleryPhotos}
+              onChange={setGalleryPhotos}
             />
           </div>
 
@@ -897,6 +940,11 @@ function EditForm({
                 }}
               />
             </div>
+
+            <p className="text-xs text-gray-500">
+              「表示名」はボタンに表示される文字です。空欄ならURLからユーザー名（例:
+              @username）を自動表示します。
+            </p>
 
             {snsLinks.length === 0 && (
               <p className="text-xs text-gray-400">SNSリンクがありません</p>
@@ -1176,9 +1224,26 @@ function EditForm({
             </div>
           </div>
 
-          <Button type="submit" disabled={saving} size="lg" className="w-full">
-            {saving ? "保存中..." : "保存する"}
-          </Button>
+          {/* 下固定アクションバー: スクロール不要で保存でき、プレビュー導線も常時表示 */}
+          <div className="sticky bottom-0 -mx-6 mt-2 flex gap-2 border-t border-gray-200 bg-white/95 px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1"
+              onClick={() => setPreviewOpen(true)}
+            >
+              プレビュー
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              size="lg"
+              className="flex-1"
+            >
+              {saving ? "保存中..." : "保存する"}
+            </Button>
+          </div>
         </form>
 
         {/* 危険ゾーン: なふだの削除（最後の1枚は退会に委ねる — ADR-0011） */}
@@ -1203,6 +1268,17 @@ function EditForm({
           )}
         </div>
       </main>
+
+      <NafudaPreviewDialog
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        profile={previewProfile}
+        selectedStyleId={selectedStyleId}
+        onSelectStyle={(id) => {
+          setSelectedStyleId(id);
+          setStyleDirty(true);
+        }}
+      />
 
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
