@@ -316,7 +316,7 @@ function WizardPage() {
           {step === 4 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
-                {isFromEvent ? "設定完了！" : "もうひといきです！"}
+                {isFromEvent ? "設定完了！" : "なふだができました！"}
               </h2>
               <p className="text-sm text-gray-500">
                 {isFromEvent
