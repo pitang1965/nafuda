@@ -172,35 +172,36 @@ function NewEventPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="eventDate">
-                開始日
-              </label>
-              <Input id="eventDate" type="date" {...register("eventDate")} />
-              {errors.eventDate && (
-                <p className="text-xs text-red-500">
-                  {errors.eventDate.message}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="eventEndDate">
-                終了日{" "}
-                <span className="text-xs text-gray-400 font-normal">
-                  （任意・複数日開催のとき）
-                </span>
-              </label>
-              <Input
-                id="eventEndDate"
-                type="date"
-                {...register("eventEndDate")}
-              />
-              {errors.eventEndDate && (
-                <p className="text-xs text-red-500">
-                  {errors.eventEndDate.message}
-                </p>
-              )}
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-medium" htmlFor="eventDate">
+                  開始日
+                </label>
+                <Input id="eventDate" type="date" {...register("eventDate")} />
+                {errors.eventDate && (
+                  <p className="text-xs text-red-500">
+                    {errors.eventDate.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-medium" htmlFor="eventEndDate">
+                  終了日{" "}
+                  <span className="text-xs text-gray-400 font-normal">
+                    （任意）
+                  </span>
+                </label>
+                <Input
+                  id="eventEndDate"
+                  type="date"
+                  {...register("eventEndDate")}
+                />
+                {errors.eventEndDate && (
+                  <p className="text-xs text-red-500">
+                    {errors.eventEndDate.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">

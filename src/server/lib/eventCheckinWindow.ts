@@ -10,7 +10,8 @@ export const CHECKIN_GRACE_MS = 15 * 60 * 1000;
 // なお超過時の挙動は「文脈なし」（安全側）であり、誤った文脈を付けることはない。
 export const INSTANT_CONTEXT_MAX_AGE_MS = 60 * 60 * 1000;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+// イベント日時は JST のウォールクロックとして扱う（保存・表示とも JST 固定）。
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 type EventTiming = {
   eventDate: Date | string;
@@ -18,21 +19,24 @@ type EventTiming = {
   showTime: boolean;
 };
 
+// 指定インスタントが属する JST の「その日の終わり」（翌 0:00 JST）を返す。
+function jstEndOfDay(d: Date): Date {
+  // JST のウォールクロック空間（UTC として読む）へずらし、翌 0:00 にして戻す。
+  const shifted = new Date(d.getTime() + JST_OFFSET_MS);
+  shifted.setUTCHours(24, 0, 0, 0);
+  return new Date(shifted.getTime() - JST_OFFSET_MS);
+}
+
 // 実効終了（受付の後ろ端、猶予を足す前）を求める。
 function effectiveEnd(event: EventTiming): Date {
   const start = new Date(event.eventDate);
   if (event.eventEndDate) {
     const end = new Date(event.eventEndDate);
-    // 日付のみの終了は「その日の終わり」まで延ばす（日付は当日 0:00 を指すため）。
-    return event.showTime ? end : new Date(end.getTime() + DAY_MS);
+    // 時刻あり: 指定された終了時刻まで。時刻なし: その終了日の終わり（JST）まで。
+    return event.showTime ? end : jstEndOfDay(end);
   }
-  // 終了未指定: 開始日の終わり（次の 0:00）までフォールバック。
-  if (event.showTime) {
-    const d = new Date(start);
-    d.setUTCHours(24, 0, 0, 0);
-    return d;
-  }
-  return new Date(start.getTime() + DAY_MS);
+  // 終了未指定: 開始日の終わり（JST の翌 0:00）までフォールバック。無期限にはしない。
+  return jstEndOfDay(start);
 }
 
 // 受付窓 [open, close]。この範囲外のチェックインは受け付けない。
