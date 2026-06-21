@@ -17,6 +17,7 @@ function formatEventDate(
   const d = new Date(date);
   if (showTime || isInstant) {
     return d.toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -25,6 +26,7 @@ function formatEventDate(
     });
   }
   return d.toLocaleDateString("ja-JP", {
+    timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "long",
     day: "numeric",

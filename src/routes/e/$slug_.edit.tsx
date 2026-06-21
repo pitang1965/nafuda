@@ -35,14 +35,21 @@ export const Route = createFileRoute("/e/$slug_/edit")({
   component: EditEventPage,
 });
 
-const schema = z.object({
-  name: z.string().min(1, "イベント名を入力してください").max(100),
-  venueName: z.string().min(1, "会場名を入力してください").max(100),
-  eventDate: z.string().min(1, "日付を選択してください"),
-  eventTime: z.string().optional(),
-  showTime: z.boolean(),
-  description: z.string().max(1000).optional(),
-});
+const schema = z
+  .object({
+    name: z.string().min(1, "イベント名を入力してください").max(100),
+    venueName: z.string().min(1, "会場名を入力してください").max(100),
+    eventDate: z.string().min(1, "日付を選択してください"),
+    eventTime: z.string().optional(),
+    eventEndDate: z.string().optional(),
+    eventEndTime: z.string().optional(),
+    showTime: z.boolean(),
+    description: z.string().max(1000).optional(),
+  })
+  .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
+    message: "終了日は開始日以降にしてください",
+    path: ["eventEndDate"],
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -56,14 +63,21 @@ function EditEventPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const eventDateStr = new Date(event.eventDate).toISOString().slice(0, 10);
-  const eventTimeStr = event.showTime
-    ? new Date(event.eventDate).toLocaleTimeString("ja-JP", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-    : "";
+  // 保存値（UTC instant）から JST のウォールクロック文字列を取り出す（入力欄の初期値用）。
+  // sv-SE ロケールは "YYYY-MM-DD" / "HH:MM" 形式を返すため date/time input にそのまま使える。
+  const toJstDate = (d: Date | string) =>
+    new Date(d).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+  const toJstTime = (d: Date | string) =>
+    new Date(d).toLocaleTimeString("sv-SE", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  const eventDateStr = toJstDate(event.eventDate);
+  const eventTimeStr = event.showTime ? toJstTime(event.eventDate) : "";
+  const eventEndDateStr = event.eventEndDate ? toJstDate(event.eventEndDate) : "";
+  const eventEndTimeStr =
+    event.eventEndDate && event.showTime ? toJstTime(event.eventEndDate) : "";
 
   const {
     register,
@@ -78,6 +92,8 @@ function EditEventPage() {
       venueName: event.venueName ?? "",
       eventDate: eventDateStr,
       eventTime: eventTimeStr,
+      eventEndDate: eventEndDateStr,
+      eventEndTime: eventEndTimeStr,
       showTime: event.showTime,
       description: event.description ?? "",
     },
@@ -96,6 +112,8 @@ function EditEventPage() {
           venueName: formData.venueName,
           eventDate: formData.eventDate,
           eventTime: formData.eventTime,
+          eventEndDate: formData.eventEndDate || undefined,
+          eventEndTime: formData.eventEndTime || undefined,
           showTime: formData.showTime,
           description: formData.description || null,
         },
@@ -173,16 +191,36 @@ function EditEventPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="eventDate">
-                日付
-              </label>
-              <Input id="eventDate" type="date" {...register("eventDate")} />
-              {errors.eventDate && (
-                <p className="text-xs text-red-500">
-                  {errors.eventDate.message}
-                </p>
-              )}
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-medium" htmlFor="eventDate">
+                  開始日
+                </label>
+                <Input id="eventDate" type="date" {...register("eventDate")} />
+                {errors.eventDate && (
+                  <p className="text-xs text-red-500">
+                    {errors.eventDate.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-medium" htmlFor="eventEndDate">
+                  終了日{" "}
+                  <span className="text-xs text-gray-400 font-normal">
+                    （任意）
+                  </span>
+                </label>
+                <Input
+                  id="eventEndDate"
+                  type="date"
+                  {...register("eventEndDate")}
+                />
+                {errors.eventEndDate && (
+                  <p className="text-xs text-red-500">
+                    {errors.eventEndDate.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -194,11 +232,30 @@ function EditEventPage() {
             </label>
 
             {showTime && (
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" htmlFor="eventTime">
-                  開始時刻
-                </label>
-                <Input id="eventTime" type="time" {...register("eventTime")} />
+              <div className="flex gap-3">
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-sm font-medium" htmlFor="eventTime">
+                    開始時刻
+                  </label>
+                  <Input
+                    id="eventTime"
+                    type="time"
+                    {...register("eventTime")}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-sm font-medium" htmlFor="eventEndTime">
+                    終了時刻{" "}
+                    <span className="text-xs text-gray-400 font-normal">
+                      （任意）
+                    </span>
+                  </label>
+                  <Input
+                    id="eventEndTime"
+                    type="time"
+                    {...register("eventEndTime")}
+                  />
+                </div>
               </div>
             )}
 
