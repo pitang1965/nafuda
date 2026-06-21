@@ -5,6 +5,7 @@ import { eq, and, isNull, ne, desc } from "drizzle-orm";
 import { db } from "../db/client";
 import { events, eventCheckins, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
+import { isWithinCheckinWindow } from "../lib/eventCheckinWindow";
 
 function generateShareToken(): string {
   const bytes = new Uint8Array(16);
@@ -53,6 +54,11 @@ export const checkinToEvent = createServerFn({ method: "POST" })
       .where(eq(events.shareToken, data.token))
       .limit(1);
     if (!eventRow[0]) throw new Error("Event not found");
+
+    // 受付窓ゲート（ADR-0020）: 開催期間±猶予の外からのチェックインは受け付けない。
+    if (!isWithinCheckinWindow(eventRow[0])) {
+      throw new Error("チェックインの受付期間外です");
+    }
 
     // Remove other personas of same user from this event (1ユーザー = 1エントリ)
     await db
@@ -105,6 +111,8 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
       venueName: z.string().min(1).max(100),
       eventDate: z.string(),
       eventTime: z.string().optional(),
+      eventEndDate: z.string().optional(),
+      eventEndTime: z.string().optional(),
       showTime: z.boolean(),
       description: z.string().max(1000).optional().nullable(),
       personaId: z.uuid(),
@@ -156,6 +164,13 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
               data.showTime,
               data.eventTime,
             ),
+            eventEndDate: data.eventEndDate
+              ? buildEventDate(
+                  data.eventEndDate,
+                  data.showTime,
+                  data.eventEndTime,
+                )
+              : null,
             showTime: data.showTime,
             description: data.description ?? null,
             hostUserId: session.user.id,
@@ -394,6 +409,8 @@ export const updateEvent = createServerFn({ method: "POST" })
       venueName: z.string().min(1).max(100),
       eventDate: z.string(),
       eventTime: z.string().optional(),
+      eventEndDate: z.string().optional(),
+      eventEndTime: z.string().optional(),
       showTime: z.boolean(),
       description: z.string().max(1000).optional().nullable(),
     }),
@@ -422,6 +439,9 @@ export const updateEvent = createServerFn({ method: "POST" })
           data.showTime,
           data.eventTime,
         ),
+        eventEndDate: data.eventEndDate
+          ? buildEventDate(data.eventEndDate, data.showTime, data.eventEndTime)
+          : null,
         showTime: data.showTime,
         description: data.description ?? null,
       })

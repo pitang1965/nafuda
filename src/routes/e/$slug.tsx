@@ -40,6 +40,28 @@ function formatEventDate(date: Date | string, showTime: boolean): string {
   });
 }
 
+function formatEventPeriod(
+  start: Date | string,
+  end: Date | string | null,
+  showTime: boolean,
+): string {
+  const startStr = formatEventDate(start, showTime);
+  if (!end) return startStr;
+  const s = new Date(start);
+  const e = new Date(end);
+  const sameDay = s.toDateString() === e.toDateString();
+  // 同日かつ時刻表示なら終了は時刻だけ、それ以外は終了も全体表示。
+  if (sameDay) {
+    if (!showTime) return startStr;
+    const endTime = e.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${startStr} 〜 ${endTime}`;
+  }
+  return `${startStr} 〜 ${formatEventDate(end, showTime)}`;
+}
+
 export const Route = createFileRoute("/e/$slug")({
   loader: async ({ params }) => {
     const [data, session] = await Promise.all([
@@ -218,7 +240,11 @@ function EventPage() {
           <div className="flex flex-col gap-1">
             <p className="text-sm text-gray-500">{data.event.venueName}</p>
             <p className="text-xs text-gray-400">
-              {formatEventDate(data.event.eventDate, data.event.showTime)}
+              {formatEventPeriod(
+                data.event.eventDate,
+                data.event.eventEndDate,
+                data.event.showTime,
+              )}
             </p>
             {data.event.description && (
               <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">

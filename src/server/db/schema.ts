@@ -150,7 +150,11 @@ export const events = pgTable("events", {
   shareToken: text("share_token").notNull().unique(), // 公開URL用ランダムトークン（推測不可）
   name: text("name").notNull(),
   venueName: text("venue_name"), // 即時イベントは null 可
+  // 開催期間の開始（[開始, 終了] の開始点）。即時イベントは作成時刻。
   eventDate: timestamp("event_date", { withTimezone: true }).notNull(),
+  // 開催期間の終了。null = 終了未指定（受付窓は開始日の終わりまでにフォールバック）。
+  // 即時イベントは常に null。チェックイン受付窓・終了による自動失効に使う（ADR-0020）。
+  eventEndDate: timestamp("event_end_date", { withTimezone: true }),
   showTime: boolean("show_time").notNull().default(false),
   description: text("description"),
   isInstant: boolean("is_instant").notNull().default(false),

@@ -14,6 +14,7 @@ import {
   pendingInvites,
 } from "../db/schema";
 import { auth } from "../auth";
+import { isValidConnectionContext } from "../lib/eventCheckinWindow";
 
 // 「なふだを交換する」用のつながりQRトークンを発行する（15分有効）
 export const createConnectionQrToken = createServerFn({ method: "POST" })
@@ -224,13 +225,18 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
 
     const issuerPersonaId = tokenRow.fromPersonaId;
 
-    // 文脈スナップショット: 発行者のアクティブチェックイン（企画・即時とも eventId 付き）
+    // 文脈スナップショット: 発行者のアクティブチェックイン（企画・即時とも eventId 付き）。
+    // ただし有効な文脈に限る（企画=開催期間内／即時=直近セッションのみ。ADR-0020）。
     const [activeCheckin] = await db
       .select({
         eventId: eventCheckins.eventId,
         eventName: events.name,
         venueName: events.venueName,
         eventDate: events.eventDate,
+        eventEndDate: events.eventEndDate,
+        showTime: events.showTime,
+        isInstant: events.isInstant,
+        checkedInAt: eventCheckins.checkedInAt,
       })
       .from(eventCheckins)
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
@@ -242,6 +248,11 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
       )
       .limit(1);
 
+    const ctx =
+      activeCheckin && isValidConnectionContext(activeCheckin)
+        ? activeCheckin
+        : null;
+
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
     const inviteToken = Array.from(bytes)
@@ -252,10 +263,10 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
     await db.insert(pendingInvites).values({
       inviteToken,
       issuerPersonaId,
-      eventId: activeCheckin?.eventId ?? null,
-      eventName: activeCheckin?.eventName ?? null,
-      venueName: activeCheckin?.venueName ?? null,
-      eventDate: activeCheckin?.eventDate ?? null,
+      eventId: ctx?.eventId ?? null,
+      eventName: ctx?.eventName ?? null,
+      venueName: ctx?.venueName ?? null,
+      eventDate: ctx?.eventDate ?? null,
       expiresAt,
     });
 
@@ -428,14 +439,18 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     if (issuerPersonaRow?.userId === session.user.id)
       throw new Error("自分自身にはつながれません");
 
-    // 文脈はQR発行側（A）のアクティブチェックインから取得する
+    // 文脈はQR発行側（A）のアクティブチェックインから取得する。ただし有効な文脈に限る
+    // （企画=開催期間内／即時=直近セッションのみ。古い即時チェックインは使わない。ADR-0020）。
     const [activeCheckin] = await db
       .select({
         eventId: eventCheckins.eventId,
         eventName: events.name,
         venueName: events.venueName,
         eventDate: events.eventDate,
+        eventEndDate: events.eventEndDate,
+        showTime: events.showTime,
         isInstant: events.isInstant,
+        checkedInAt: eventCheckins.checkedInAt,
       })
       .from(eventCheckins)
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
@@ -448,16 +463,17 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       .limit(1);
 
     // 文脈は双方のコネクション行に付与する（ADR-0012）。即時・企画とも eventId 付きで
-    // 双方にコピーする（即時イベント識別子は将来の複数人関連のために保持）。編集可否は
-    // ロック判定（isInstant）で出し分け、即時イベントは各自が自分の行を③で編集できる。
-    const ctx = activeCheckin
-      ? {
-          eventId: activeCheckin.eventId,
-          eventName: activeCheckin.eventName,
-          venueName: activeCheckin.venueName,
-          eventDate: activeCheckin.eventDate,
-        }
-      : { eventId: null, eventName: null, venueName: null, eventDate: null };
+    // 双方にコピーする。編集可否はロック判定（isInstant）で出し分け、即時イベントは
+    // 各自が自分の行を③で編集できる。
+    const ctx =
+      activeCheckin && isValidConnectionContext(activeCheckin)
+        ? {
+            eventId: activeCheckin.eventId,
+            eventName: activeCheckin.eventName,
+            venueName: activeCheckin.venueName,
+            eventDate: activeCheckin.eventDate,
+          }
+        : { eventId: null, eventName: null, venueName: null, eventDate: null };
     const issuerCtx = ctx;
     const scannerCtx = ctx;
 
