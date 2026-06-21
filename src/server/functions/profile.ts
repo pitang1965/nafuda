@@ -21,11 +21,18 @@ import { deleteFromR2 } from "../storage";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-// SNSリンクのURL: https のみ許可。z.url() は javascript:/data: を通すため
-// スキームを明示的に絞り格納型XSSを防ぐ。http も不許可（https 強制）。
-const httpUrl = z
-  .url("有効なURLを入力してください")
-  .refine((v) => /^https:\/\//i.test(v), "https のURLを入力してください");
+// SNSリンクのURL: https のみ許可。https 前置チェックで javascript:/data: を弾き
+// 格納型XSSを防ぐ。http も不許可（https 強制）。
+// handler 内で検証して clean な文を throw する（Zod refine だと ZodError の message が
+// JSON 化してクライアントに汚く出るため。isNafudaHost と同じ理由）。
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  return /^https:\/\//i.test(url);
+}
 
 // nafuda.me（およびサブドメイン）の URL は SNSリンクに登録させない。
 // SNSリンクは「外部サービス」へのリンクであり自社ドメインは対象外。プロフィールURL
@@ -390,7 +397,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "pixiv",
         "other",
       ]),
-      url: httpUrl,
+      url: z.string(),
       title: z.string().max(50).optional(),
       displayOrder: z.number().int().min(0),
     }),
@@ -411,6 +418,10 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
       )
       .limit(1);
     if (!persona[0]) throw new Error("Forbidden");
+
+    if (!isValidHttpsUrl(data.url)) {
+      throw new Error("URL は https:// から始まるフルURLを入力してください。");
+    }
 
     if (isNafudaHost(data.url)) {
       throw new Error(

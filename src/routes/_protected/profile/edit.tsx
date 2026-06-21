@@ -84,6 +84,9 @@ const USERNAME_BASE: Partial<Record<Platform, string>> = {
   linkedin: "https://www.linkedin.com/in/",
   note: "https://note.com/",
   pixiv: "https://www.pixiv.net/users/",
+  // vanity URL を補完。profile.php?id=... を貼っても https://www.facebook.com/profile.php?id=...
+  // になり成立する（http 始まりでないため base が前置される）。
+  facebook: "https://www.facebook.com/",
 };
 
 function normalizeUrl(platform: Platform, input: string): string {
@@ -93,12 +96,21 @@ function normalizeUrl(platform: Platform, input: string): string {
   return base ? `${base}${trimmed}` : trimmed;
 }
 
+// 正規化後の文字列が有効な https URL か。サーバの検証と同一ルール
+// （javascript:/data: は https 前置チェックで弾かれる）。
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  return /^https:\/\//i.test(url);
+}
+
 function getSnsPlaceholder(platform: Platform): string {
   if (platform in USERNAME_BASE) return "ユーザー名 または https://...";
   if (platform === "discord") return "https://discord.gg/...";
   if (platform === "line_openchat") return "https://line.me/ti/g2/...";
-  if (platform === "facebook")
-    return "https://www.facebook.com/groups/... または https://www.facebook.com/...";
   return "https://...";
 }
 
@@ -515,6 +527,19 @@ function EditForm({
     if (otherWithoutTitle) {
       showSaveError("「その他」のSNSリンクには表示名を入力してください。");
       return;
+    }
+    // SNSリンクのURLを保存前に一括検証（部分書き込みを避けるため mutation 前に行う）。
+    for (const link of snsLinks) {
+      if (!link.url.trim()) continue;
+      if (!isValidHttpsUrl(normalizeUrl(link.platform, link.url))) {
+        const label =
+          PLATFORMS.find((p) => p.value === link.platform)?.label ??
+          link.platform;
+        showSaveError(
+          `${label} の URL は https:// から始まるフルURLを入力してください。`,
+        );
+        return;
+      }
     }
     setSaveError(null);
     setSaving(true);

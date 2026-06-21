@@ -24,6 +24,9 @@ import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
+  // 遷移のたびに最新を取得する。キャッシュした古いデータを描画すると、
+  // なふだ削除直後に「消えたはずのなふだが一瞬見える」ちらつきが起きるため。
+  staleTime: 0,
   staticData: { title: "なふだ" },
   component: MePage,
 });
@@ -59,7 +62,14 @@ function MePage() {
       return fromCookie;
     return initialPersonaId ?? "";
   });
-  const currentPersona = personas.find((p) => p.id === currentPersonaId);
+  // 選択中IDは useState に凍結されるため、削除直後など loader が更新されて
+  // currentPersonaId が実在しないなふだを指すことがある。その場合は fresh な
+  // loader データ側へフォールバックして「切り替わらない／?表示」を防ぐ。
+  const currentPersona =
+    personas.find((p) => p.id === currentPersonaId) ??
+    personas.find((p) => p.id === initialPersonaId) ??
+    personas[0];
+  const activePersonaId = currentPersona?.id ?? "";
   const style = getNafudaStyle(currentPersona?.styleId ?? null);
   const subtextColor = style?.subtextColor;
   const [profileQrOpen, setProfileQrOpen] = useState(false);
@@ -81,9 +91,9 @@ function MePage() {
   // 前回使ったなふだをCookieに保存する。次回 /me 表示時にSSRが読み取り、
   // 正しいなふだを最初から描画できる（localStorageだとSSRから見えずフラッシュする）。
   useEffect(() => {
-    if (currentPersonaId)
-      document.cookie = `${LAST_PERSONA_KEY}=${currentPersonaId}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-  }, [currentPersonaId]);
+    if (activePersonaId)
+      document.cookie = `${LAST_PERSONA_KEY}=${activePersonaId}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  }, [activePersonaId]);
 
   useEffect(() => {
     if (!style?.fontUrl) return;
@@ -202,13 +212,13 @@ function MePage() {
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <PersonaSwitcher
           personas={personas}
-          currentPersonaId={currentPersonaId}
+          currentPersonaId={activePersonaId}
           onSwitch={setCurrentPersonaId}
           onCreateNew={() => navigate({ to: "/profile/wizard" })}
         />
         <Link
           to="/profile/edit"
-          search={{ personaId: currentPersonaId }}
+          search={{ personaId: activePersonaId }}
           className="text-sm text-gray-500 underline hover:text-gray-700"
         >
           編集
@@ -268,7 +278,7 @@ function MePage() {
             {!currentPersona?.label && (
               <Link
                 to="/profile/edit"
-                search={{ personaId: currentPersonaId }}
+                search={{ personaId: activePersonaId }}
                 className="text-xs underline"
                 style={{ color: subtextColor ?? "#9ca3af" }}
               >

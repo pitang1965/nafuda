@@ -112,6 +112,9 @@ function WizardPage() {
         is_first_persona: isFirstPersona,
         purpose,
       });
+      // 作成直後は /me でこの新しいなふだを表示したい。Cookie を更新しないと
+      // 直前まで見ていた既存なふだが initialPersonaId に採用されてしまう。
+      document.cookie = `nafuda_last_persona_id=${persona.id}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
       if (redirect?.startsWith("/") && !redirect.startsWith("//")) {
         window.location.href = redirect;
       } else if (dest === "edit") {
@@ -316,7 +319,7 @@ function WizardPage() {
           {step === 4 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
-                {isFromEvent ? "設定完了！" : "もうひといきです！"}
+                {isFromEvent ? "設定完了！" : "なふだができました！"}
               </h2>
               <p className="text-sm text-gray-500">
                 {isFromEvent
