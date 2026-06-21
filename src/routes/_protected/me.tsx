@@ -24,6 +24,9 @@ import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
+  // 遷移のたびに最新を取得する。キャッシュした古いデータを描画すると、
+  // なふだ削除直後に「消えたはずのなふだが一瞬見える」ちらつきが起きるため。
+  staleTime: 0,
   staticData: { title: "なふだ" },
   component: MePage,
 });
