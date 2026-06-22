@@ -887,6 +887,7 @@ function EditForm({
             </p>
             <OshiTagInput
               name="oshiTags"
+              purpose={purpose}
               onPendingChange={setHasPendingOshiInput}
             />
           </div>

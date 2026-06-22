@@ -294,7 +294,7 @@ function WizardPage() {
                 </kbd>{" "}
                 で追加、×で削除。複数登録OK。
               </p>
-              <OshiTagInput name="oshiTags" />
+              <OshiTagInput name="oshiTags" purpose={purpose} />
               <div className="flex gap-2">
                 <Button
                   type="button"
