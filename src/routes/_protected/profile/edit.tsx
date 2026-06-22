@@ -55,6 +55,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
@@ -437,10 +447,12 @@ function EditForm({
     purposeDirty ||
     hasPendingOshiInput;
 
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
   const handleBack = () => {
     if (anyDirty) {
-      if (!window.confirm("保存されていない変更があります。戻りますか？"))
-        return;
+      setShowLeaveConfirm(true);
+      return;
     }
     router.history.back();
   };
@@ -1282,6 +1294,26 @@ function EditForm({
           )}
         </div>
       </main>
+
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>変更内容が保存されていません</AlertDialogTitle>
+            <AlertDialogDescription>
+              このまま戻ると、保存されていない変更内容は破棄されます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>編集を続ける</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => router.history.back()}
+            >
+              破棄して戻る
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <NafudaPreviewDialog
         isOpen={previewOpen}
