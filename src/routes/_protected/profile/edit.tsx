@@ -889,11 +889,6 @@ function EditForm({
               name="oshiTags"
               onPendingChange={setHasPendingOshiInput}
             />
-            {hasPendingOshiInput && (
-              <p className="text-xs text-amber-600">
-                Enter で確定してから保存してください
-              </p>
-            )}
           </div>
 
           {/* Dojin reject — 推し活(oshi)と既存(null)でのみ表示。非表示でも DB の値は保持する */}

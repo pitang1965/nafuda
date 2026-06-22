@@ -77,6 +77,10 @@ export function OshiTagInput({
       enableAutocomplete={suggestions.length > 0}
       autocompleteOptions={suggestions}
       onInputChange={handleInputChange}
+      // Enter を押さずに保存/次へに進むと未確定テキストが捨てられていた（データ消失）。
+      // blur 時に入力欄の残り文字列を自動でタグ化して取りこぼしを防ぐ。
+      // 保存バー・「次へ」タップは先に input を blur させるため、確定後に save が読む。
+      addTagsOnBlur
       placeholder="推し・趣味・ジャンルを入力して Enter"
       maxTags={20}
       className="w-full"
