@@ -5,7 +5,8 @@ import {
   getOshiSuggestions,
   getPopularOshiTags,
 } from "../server/functions/oshi";
-import { purposePopularTagSeeds } from "@/lib/purpose";
+import { purposePopularTagSeeds, purposeEditTagLabel } from "@/lib/purpose";
+import { OshiTagPickerDialog } from "./OshiTagPickerDialog";
 
 interface OshiTagInputProps {
   name?: string; // RHF field name, defaults to 'oshiTags'
@@ -90,20 +91,25 @@ export function OshiTagInput({
     };
   }, [purpose]);
 
-  // ハイブリッド: キュレーション seed を優先し、usage 人気で補う。
-  // 重複・既に選択済みのタグを除き、最大12個まで。
-  const selected = new Set(rawTags);
-  const chipTags = [
+  // ハイブリッド: キュレーション seed を優先し、usage 人気で補う（重複除去）。
+  const allPopular = [
     ...new Set([...purposePopularTagSeeds(purpose), ...usageTags]),
-  ]
-    .filter((t) => !selected.has(t))
-    .slice(0, 12);
+  ];
+  // インラインチップは未選択のものを最大12個。残りは「もっと見る」モーダルへ。
+  const selected = new Set(rawTags);
+  const chipTags = allPopular.filter((t) => !selected.has(t)).slice(0, 12);
 
-  const addTag = useCallback(
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // タップで追加／再タップで解除。emblor 状態と RHF を同期する。
+  const toggleTag = useCallback(
     (text: string) => {
       setEmblorTags((prev) => {
-        if (prev.length >= 20 || prev.some((t) => t.text === text)) return prev;
-        const next = [...prev, { id: crypto.randomUUID(), text }];
+        const exists = prev.some((t) => t.text === text);
+        if (!exists && prev.length >= 20) return prev;
+        const next = exists
+          ? prev.filter((t) => t.text !== text)
+          : [...prev, { id: crypto.randomUUID(), text }];
         setValue(
           name,
           next.map((t) => t.text),
@@ -146,21 +152,39 @@ export function OshiTagInput({
           },
         }}
       />
-      {chipTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+      {allPopular.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
           {chipTags.map((tag) => (
             <button
               key={tag}
               type="button"
-              onClick={() => addTag(tag)}
+              onClick={() => toggleTag(tag)}
               className="inline-flex items-center gap-0.5 rounded-full border border-gray-300 bg-white px-2.5 py-1 text-sm text-gray-600 transition-colors hover:border-pink-300 hover:bg-pink-50 hover:text-pink-700"
             >
               <span className="text-gray-400">＋</span>
               {tag}
             </button>
           ))}
+          {allPopular.length > chipTags.length && (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium text-pink-600 hover:bg-pink-50"
+            >
+              もっと見る
+            </button>
+          )}
         </div>
       )}
+
+      <OshiTagPickerDialog
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        heading={purposeEditTagLabel(purpose)}
+        tags={allPopular}
+        selected={selected}
+        onToggle={toggleTag}
+      />
     </div>
   );
 }
