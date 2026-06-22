@@ -42,6 +42,19 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
@@ -954,19 +967,23 @@ function EditForm({
                   className="flex flex-col gap-1 p-3 border rounded-lg bg-gray-50"
                 >
                   <div className="flex items-center gap-2">
-                    <select
+                    <Select
                       value={link.platform}
-                      onChange={(e) =>
-                        updateSnsLinkField(index, "platform", e.target.value)
+                      onValueChange={(v) =>
+                        updateSnsLinkField(index, "platform", v)
                       }
-                      className="flex-1 min-w-0 px-2 py-1.5 border rounded text-sm bg-white outline-none"
                     >
-                      {orderedPlatforms.map((p) => (
-                        <option key={p.value} value={p.value}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="h-11! flex-1 min-w-0 bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderedPlatforms.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <div className="flex items-center gap-1">
                       <Button
                         type="button"
@@ -1120,21 +1137,21 @@ function EditForm({
                 </div>
 
                 {availablePersonas.length > 0 && (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      addNafudaLink(e.target.value);
-                      e.target.value = "";
-                    }}
-                    className="mt-1 w-full px-3 py-2 border border-dashed rounded-lg text-sm text-gray-500 bg-white outline-none"
-                  >
-                    <option value="">＋ なふだリンクを追加</option>
-                    {availablePersonas.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label || p.displayName}
-                      </option>
-                    ))}
-                  </select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="mt-1 w-full px-3 py-2 border border-dashed rounded-lg text-sm text-gray-500 bg-white outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                      ＋ なふだリンクを追加
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
+                      {availablePersonas.map((p) => (
+                        <DropdownMenuItem
+                          key={p.id}
+                          onSelect={() => addNafudaLink(p.id)}
+                        >
+                          {p.label || p.displayName}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </>
             )}
