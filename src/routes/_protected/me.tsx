@@ -12,6 +12,7 @@ import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaLinkChip } from "../../components/NafudaLinkChip";
+import { NafudaIcon } from "../../components/NafudaIcon";
 import { GalleryLightbox } from "../../components/GalleryLightbox";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
@@ -376,10 +377,10 @@ function MePage() {
             urlId && (
               <div className="w-full max-w-xs flex flex-col items-center gap-1">
                 <span
-                  className="text-xs font-medium"
+                  className="text-xs font-medium inline-flex items-center gap-1"
                   style={{ color: subtextColor ?? "#6b7280" }}
                 >
-                  📛 他のなふだ
+                  <NafudaIcon /> 他のなふだ
                 </span>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {currentPersona.nafudaLinks.map((link) => (

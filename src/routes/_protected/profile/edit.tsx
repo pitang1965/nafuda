@@ -36,6 +36,7 @@ import { AvatarUpload } from "../../../components/AvatarUpload";
 import { GalleryUpload } from "../../../components/GalleryUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { NafudaPreviewDialog } from "../../../components/NafudaPreviewDialog";
+import { NafudaIcon } from "../../../components/NafudaIcon";
 import type { NafudaCardProfile } from "../../../components/NafudaCardView";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -1076,9 +1077,7 @@ function EditForm({
                             className="w-8 h-8 rounded-full object-cover shrink-0"
                           />
                         ) : (
-                          <span className="text-lg leading-none shrink-0">
-                            📛
-                          </span>
+                          <NafudaIcon className="size-8 shrink-0 text-gray-400" />
                         )}
                         <span className="flex-1 text-sm truncate">
                           {target.label || target.displayName}

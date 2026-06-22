@@ -9,6 +9,7 @@ import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { buildOgpDescription } from "../../lib/ogp";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { EmptyState } from "../../components/EmptyState";
+import { NafudaIcon } from "../../components/NafudaIcon";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
@@ -77,7 +78,7 @@ function PublicProfilePage() {
   if (!profile)
     return (
       <EmptyState
-        icon="📛"
+        icon={<NafudaIcon />}
         title="なふだが見つかりません"
         description="削除されたか、URLが間違っている可能性があります。"
         cta={{ label: "トップへ戻る", to: "/" }}

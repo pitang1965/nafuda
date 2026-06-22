@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { InitialsAvatar } from "./InitialsAvatar";
 import { SnsLinkButton } from "./SnsLinkButton";
 import { NafudaLinkChip } from "./NafudaLinkChip";
+import { NafudaIcon } from "./NafudaIcon";
 import { NafudaFrame } from "./NafudaFrame";
 import { HolographicOverlay } from "./HolographicOverlay";
 import { GalleryLightbox } from "./GalleryLightbox";
@@ -148,10 +149,10 @@ export function NafudaCardView({
         {profile.nafudaLinks.length > 0 && (
           <div className="w-full max-w-sm flex flex-col items-center gap-1">
             <span
-              className="text-xs font-medium"
+              className="text-xs font-medium inline-flex items-center gap-1"
               style={{ color: subtextColor ?? "#6b7280" }}
             >
-              📛 他のなふだ
+              <NafudaIcon /> 他のなふだ
             </span>
             <div className="flex flex-wrap gap-2 justify-center">
               {profile.nafudaLinks.map((link, i) => (

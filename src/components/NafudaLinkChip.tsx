@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { NafudaIcon } from "./NafudaIcon";
 
 interface NafudaLinkChipProps {
   urlId?: string;
@@ -17,7 +18,7 @@ interface NafudaLinkChipProps {
 }
 
 // 自分の別のなふだへの内部リンク（ADR-0015）。
-// アバター丸＋displayName のコンパクトなチップ。アバター無しは 📛 にフォールバックする。
+// アバター丸＋displayName のコンパクトなチップ。アバター無しはなふだアイコンにフォールバックする。
 export function NafudaLinkChip({
   urlId,
   shareToken,
@@ -52,9 +53,7 @@ export function NafudaLinkChip({
           className="w-5 h-5 rounded-full object-cover shrink-0"
         />
       ) : (
-        <span className="text-sm leading-none shrink-0" aria-hidden>
-          📛
-        </span>
+        <NafudaIcon className="size-5 shrink-0" />
       )}
       <span className="truncate">{displayName}</span>
     </>

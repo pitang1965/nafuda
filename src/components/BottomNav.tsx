@@ -1,13 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { NafudaIcon } from "./NafudaIcon";
 
 // 保護画面で常設するボトムナビ。主要な行き先（なふだ・つながり・イベント）を
 // 親指の届く下部に置く。アカウント・プライバシー等の二次導線はヘッダーの
 // バーガー（AppMenu）に残し、ここには載せない（行き先＝下／メニュー＝上 の役割分離）。
-const TABS = [
-  { to: "/me", label: "なふだ", emoji: "📛" },
-  { to: "/connections", label: "つながり", emoji: "🤝" },
-  { to: "/events", label: "イベント", emoji: "📅" },
-] as const;
+const TABS: { to: string; label: string; icon: ReactNode }[] = [
+  { to: "/me", label: "なふだ", icon: <NafudaIcon /> },
+  { to: "/connections", label: "つながり", icon: "🤝" },
+  { to: "/events", label: "イベント", icon: "📅" },
+];
 
 export function BottomNav() {
   const pathname = useRouterState({
@@ -32,7 +34,7 @@ export function BottomNav() {
                 }`}
                 aria-current={active ? "page" : undefined}
               >
-                <span className="text-lg leading-none">{tab.emoji}</span>
+                <span className="text-lg leading-none">{tab.icon}</span>
                 <span>{tab.label}</span>
               </Link>
             </li>

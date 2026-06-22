@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 interface EmptyStateProps {
-  /** 大きめのアイコン（絵文字 or SVG）。例: "📛" "⏰" */
+  /** 大きめのアイコン（絵文字 or SVG要素）。例: "⏰" や <NafudaIcon /> */
   icon?: ReactNode;
   title: string;
   description?: ReactNode;
