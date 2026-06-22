@@ -8,6 +8,7 @@ import {
 import { InitialsAvatar } from "../../components/InitialsAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -345,14 +346,13 @@ function EditDialog({
               </span>
             </label>
             <div className="relative">
-              <textarea
+              <Textarea
                 id="conn-memo"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
-                rows={4}
                 maxLength={500}
                 placeholder="相手についての覚え書き"
-                className="w-full px-3 py-3 border rounded-lg text-base md:text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {memo.length}/500

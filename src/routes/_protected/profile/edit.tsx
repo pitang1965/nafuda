@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
@@ -799,12 +800,12 @@ function EditForm({
               />
             </div>
             <div className="relative">
-              <textarea
+              <Textarea
                 {...register("bio")}
-                rows={3}
+                aria-invalid={!!errors.bio}
                 maxLength={200}
                 placeholder="推し活のきっかけや活動スタイルなど、自由に書いてください"
-                className="w-full px-3 py-3 border rounded-lg text-base md:text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {bio.length}/200
