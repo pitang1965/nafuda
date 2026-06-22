@@ -13,6 +13,7 @@ import {
 } from "../../server/functions/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
@@ -100,6 +101,8 @@ function EditEventPage() {
   });
 
   const showTime = useWatch({ control, name: "showTime", defaultValue: false });
+  const description =
+    useWatch({ control, name: "description", defaultValue: "" }) ?? "";
 
   const onSubmit: SubmitHandler<FormValues> = async (formData) => {
     setSubmitError(null);
@@ -266,14 +269,19 @@ function EditEventPage() {
                   （任意）
                 </span>
               </label>
-              <textarea
-                id="description"
-                {...register("description")}
-                rows={4}
-                maxLength={1000}
-                placeholder="イベントの詳細・注意事項など"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-              />
+              <div className="relative">
+                <Textarea
+                  id="description"
+                  {...register("description")}
+                  aria-invalid={!!errors.description}
+                  maxLength={1000}
+                  placeholder="イベントの詳細・注意事項など"
+                  className="pb-6"
+                />
+                <span className="absolute bottom-2 right-3 text-xs text-gray-400">
+                  {description.length}/1000
+                </span>
+              </div>
               {errors.description && (
                 <p className="text-xs text-red-500">
                   {errors.description.message}
