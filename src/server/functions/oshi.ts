@@ -29,6 +29,27 @@ export const getOshiSuggestions = createServerFn({ method: 'GET' })
     return (results.rows as Array<{ tag: string; count: string }>).map(r => r.tag)
   })
 
+// ゼロ入力で見せる人気タグ（usage 集計）。purpose 指定時はその用途のなふだに絞って
+// relevance を上げる（薄い分はクライアント側でキュレーション seed が埋める＝ハイブリッド）。
+// 匿名のタグ文字列＋件数のみ返す（getOshiSuggestions と同じく個人データではない）。
+export const getPopularOshiTags = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ purpose: z.string().max(20).nullable().optional() }))
+  .handler(async ({ data }) => {
+    const purpose = data.purpose ?? null
+    const results = await db.execute(sql`
+      SELECT tag, COUNT(*) as count
+      FROM (
+        SELECT UNNEST(oshi_tags) as tag
+        FROM personas
+        ${purpose ? sql`WHERE purpose = ${purpose}` : sql``}
+      ) t
+      GROUP BY tag
+      ORDER BY count DESC
+      LIMIT 30
+    `)
+    return (results.rows as Array<{ tag: string; count: string }>).map(r => r.tag)
+  })
+
 // Update oshi tags for a persona
 export const updateOshiTags = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
