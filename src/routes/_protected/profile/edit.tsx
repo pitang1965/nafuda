@@ -5,7 +5,7 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useWatch, FormProvider } from "react-hook-form";
+import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -66,6 +66,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
@@ -923,30 +924,44 @@ function EditForm({
           {purposeShowsDojinReject(purpose) && (
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-medium">同担設定</h3>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="false"
-                    {...register("dojinReject")}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm">
-                    同担の方にも表示される（デフォルト）
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="true"
-                    {...register("dojinReject")}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm">
-                    同担の方の一覧に表示されたくない場合はオンにしてください
-                  </span>
-                </label>
-              </div>
+              <Controller
+                control={control}
+                name="dojinReject"
+                render={({ field }) => (
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="flex flex-col gap-2"
+                  >
+                    <label
+                      htmlFor="dojin-false"
+                      className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <RadioGroupItem
+                        id="dojin-false"
+                        value="false"
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm">
+                        同担の方にも表示される（デフォルト）
+                      </span>
+                    </label>
+                    <label
+                      htmlFor="dojin-true"
+                      className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <RadioGroupItem
+                        id="dojin-true"
+                        value="true"
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm">
+                        同担の方の一覧に表示されたくない場合はオンにしてください
+                      </span>
+                    </label>
+                  </RadioGroup>
+                )}
+              />
             </div>
           )}
 
@@ -1276,8 +1291,8 @@ function EditForm({
           {isLastPersona ? (
             <p className="text-xs text-gray-400">
               これは最後のなふだのため削除できません。アカウントごと消す場合は{" "}
-              <Link to="/me" className="underline">
-                マイページの「退会する」
+              <Link to="/account" className="underline">
+                アカウント画面の「退会」
               </Link>
               から手続きしてください。
             </p>

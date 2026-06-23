@@ -9,7 +9,7 @@ import {
 } from "../../server/functions/connection";
 import { createInstantEventAndCheckin } from "../../server/functions/event";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
-import { InitialsAvatar } from "../../components/InitialsAvatar";
+import { UserAvatar } from "../../components/UserAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaLinkChip } from "../../components/NafudaLinkChip";
 import { NafudaIcon } from "../../components/NafudaIcon";
@@ -248,18 +248,11 @@ function MePage() {
           <div
             className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
           >
-            {currentPersona?.avatarUrl ? (
-              <img
-                src={currentPersona.avatarUrl}
-                alt=""
-                className="w-20 h-20 rounded-full object-cover"
-              />
-            ) : (
-              <InitialsAvatar
-                name={currentPersona?.displayName ?? "?"}
-                size={80}
-              />
-            )}
+            <UserAvatar
+              avatarUrl={currentPersona?.avatarUrl}
+              name={currentPersona?.displayName ?? "?"}
+              size={80}
+            />
             {isPrivate("avatar_url") && (
               <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
                 🔒
