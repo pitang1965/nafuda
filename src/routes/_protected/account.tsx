@@ -58,7 +58,7 @@ function AccountPage() {
               className="w-full text-red-600 hover:bg-red-50 hover:text-red-600"
               onClick={() => setShowDeleteModal(true)}
             >
-              退会する
+              退会手続きに進む
             </Button>
           </section>
         </div>

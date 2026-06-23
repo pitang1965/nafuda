@@ -1292,8 +1292,8 @@ function EditForm({
           {isLastPersona ? (
             <p className="text-xs text-gray-400">
               これは最後のなふだのため削除できません。アカウントごと消す場合は{" "}
-              <Link to="/me" className="underline">
-                マイページの「退会する」
+              <Link to="/account" className="underline">
+                アカウント画面の「退会」
               </Link>
               から手続きしてください。
             </p>
