@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { InitialsAvatar } from "./InitialsAvatar";
+import { UserAvatar } from "./UserAvatar";
 import { SnsLinkButton } from "./SnsLinkButton";
 import { NafudaLinkChip } from "./NafudaLinkChip";
 import { NafudaFrame } from "./NafudaFrame";
@@ -69,20 +69,14 @@ export function NafudaCardView({
       {style?.holographic && <HolographicOverlay />}
       {style?.petalsFall && <CherryBlossomOverlay />}
       <div className="p-6 flex flex-col items-center gap-4 relative z-20">
-        {profile.avatarUrl ? (
-          <img
-            src={profile.avatarUrl}
-            alt=""
-            className="w-20 h-20 rounded-full object-cover"
-            style={
-              style
-                ? { boxShadow: `0 0 0 3px ${style.textColor}40` }
-                : undefined
-            }
-          />
-        ) : (
-          <InitialsAvatar name={profile.displayName} size={80} />
-        )}
+        <UserAvatar
+          avatarUrl={profile.avatarUrl}
+          name={profile.displayName}
+          size={80}
+          style={
+            style ? { boxShadow: `0 0 0 3px ${style.textColor}40` } : undefined
+          }
+        />
         <h1
           className="text-2xl font-bold"
           style={{ color: textColor ?? undefined }}

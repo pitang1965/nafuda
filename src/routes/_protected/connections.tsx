@@ -5,7 +5,7 @@ import {
   deleteConnection,
   updateConnection,
 } from "../../server/functions/connection";
-import { InitialsAvatar } from "../../components/InitialsAvatar";
+import { UserAvatar } from "../../components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,15 +105,11 @@ function ConnectionCard({
           className="flex items-start gap-3 p-4 flex-1 min-w-0 hover:bg-gray-50 transition-colors"
         >
           <div className="shrink-0">
-            {conn.toAvatarUrl ? (
-              <img
-                src={conn.toAvatarUrl}
-                alt=""
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <InitialsAvatar name={conn.toDisplayName} size={48} />
-            )}
+            <UserAvatar
+              avatarUrl={conn.toAvatarUrl}
+              name={conn.toDisplayName}
+              size={48}
+            />
           </div>
 
           <div className="flex-1 min-w-0">
