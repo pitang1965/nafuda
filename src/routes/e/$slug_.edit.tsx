@@ -16,6 +16,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -64,6 +74,15 @@ function EditEventPage() {
   const [deleteAgreed, setDeleteAgreed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  const handleBack = () => {
+    if (isDirty) {
+      setShowLeaveConfirm(true);
+      return;
+    }
+    router.history.back();
+  };
 
   // 保存値（UTC instant）から JST のウォールクロック文字列を取り出す（入力欄の初期値用）。
   // sv-SE ロケールは "YYYY-MM-DD" / "HH:MM" 形式を返すため date/time input にそのまま使える。
@@ -86,7 +105,7 @@ function EditEventPage() {
     handleSubmit,
     control,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -151,7 +170,7 @@ function EditEventPage() {
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={() => router.history.back()}
+          onClick={handleBack}
           aria-label="戻る"
         >
           <svg
@@ -230,7 +249,9 @@ function EditEventPage() {
             <label className="flex items-center gap-2 cursor-pointer">
               <Switch
                 checked={showTime}
-                onCheckedChange={(v) => setValue("showTime", v)}
+                onCheckedChange={(v) =>
+                  setValue("showTime", v, { shouldDirty: true })
+                }
               />
               <span className="text-sm">時刻を追加</span>
             </label>
@@ -366,6 +387,26 @@ function EditEventPage() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>変更内容が保存されていません</AlertDialogTitle>
+            <AlertDialogDescription>
+              このまま戻ると、保存されていない変更内容は破棄されます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>編集を続ける</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => router.history.back()}
+            >
+              破棄して戻る
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
