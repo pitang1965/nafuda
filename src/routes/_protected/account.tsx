@@ -3,6 +3,7 @@ import { useState } from "react";
 import { authClient } from "../../lib/auth-client";
 import { deleteAccount } from "../../server/functions/profile";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_protected/account")({
   staticData: { title: "アカウント", hideBottomNav: true },
@@ -72,11 +73,14 @@ function AccountPage() {
               <p className="text-sm text-gray-600 mb-4">
                 ただし、あなたが作成したイベントは記録として残ります（あなた自身の情報は消えます）。
               </p>
-              <label className="flex items-start gap-2 mb-4 cursor-pointer">
-                <input
-                  type="checkbox"
+              <label
+                htmlFor="delete-agree"
+                className="flex items-start gap-2 mb-4 cursor-pointer"
+              >
+                <Checkbox
+                  id="delete-agree"
                   checked={deleteAgreed}
-                  onChange={(e) => setDeleteAgreed(e.target.checked)}
+                  onCheckedChange={(c) => setDeleteAgreed(c === true)}
                   className="mt-0.5"
                 />
                 <span className="text-sm">

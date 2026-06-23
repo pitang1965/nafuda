@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -325,11 +326,14 @@ function EditEventPage() {
             <p className="text-sm text-gray-600 mb-4">
               イベントとすべての参加履歴を削除します。この操作は取り消せません。
             </p>
-            <label className="flex items-start gap-2 mb-4 cursor-pointer">
-              <input
-                type="checkbox"
+            <label
+              htmlFor="event-delete-agree"
+              className="flex items-start gap-2 mb-4 cursor-pointer"
+            >
+              <Checkbox
+                id="event-delete-agree"
                 checked={deleteAgreed}
-                onChange={(e) => setDeleteAgreed(e.target.checked)}
+                onCheckedChange={(c) => setDeleteAgreed(c === true)}
                 className="mt-0.5"
               />
               <span className="text-sm">削除することに同意します</span>
