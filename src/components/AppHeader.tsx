@@ -1,5 +1,5 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { AppMenu } from "./AppMenu";
 
 // 保護画面で常設するヘッダー。画面タイトル（ルートの staticData.title）と
@@ -22,7 +22,7 @@ export function AppHeader({ title }: { title: string }) {
           aria-label="戻る"
           className="text-gray-500 transition-colors hover:text-gray-700"
         >
-          <ArrowLeft className="size-5" />
+          <ChevronLeft className="size-5" />
         </button>
       )}
       <h1 className="text-base font-bold">{title}</h1>

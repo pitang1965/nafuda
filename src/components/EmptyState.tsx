@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 interface EmptyStateProps {
@@ -55,7 +55,7 @@ export function EmptyState({
               onClick={() => router.history.back()}
               className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <ArrowLeft className="size-4" />
+              <ChevronLeft className="size-4" />
               戻る
             </button>
           )}

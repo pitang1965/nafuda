@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import {
   createFileRoute,
   useNavigate,
@@ -226,18 +227,7 @@ function ConnectPage() {
               style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
               aria-label="戻る"
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <ChevronLeft className="size-5" />
             </button>
           </div>
         )}
