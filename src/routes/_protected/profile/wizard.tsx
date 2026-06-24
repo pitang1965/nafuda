@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { capture } from "@/lib/analytics";
@@ -136,7 +136,7 @@ function WizardPage() {
           to="/me"
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
         >
-          <ArrowLeft className="size-4" />
+          <ChevronLeft className="size-4" />
           トップに戻る
         </Link>
       </div>
@@ -371,7 +371,7 @@ function WizardPage() {
                     onClick={() => setStep(3)}
                     className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mt-1"
                   >
-                    <ArrowLeft className="size-4" />
+                    <ChevronLeft className="size-4" />
                     <span className="underline underline-offset-2">戻る</span>
                   </button>
                 </div>

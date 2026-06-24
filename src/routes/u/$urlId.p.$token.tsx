@@ -2,7 +2,9 @@ import {
   createFileRoute,
   useRouter,
   useCanGoBack,
+  Link,
 } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { getPublicProfile } from "../../server/functions/profile";
 import { NafudaCardView } from "../../components/NafudaCardView";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
@@ -68,6 +70,7 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
 
 function PublicProfilePage() {
   const profile = Route.useLoaderData();
+  const params = Route.useParams();
   const router = useRouter();
   // アプリ内遷移（公開→公開の「他のなふだ」、イベントページ等）では履歴があり戻れる。
   // QR からのコールドロードでは履歴が無く戻り先も無いので出さない（ADR-0019）。
@@ -105,18 +108,7 @@ function PublicProfilePage() {
               style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
               aria-label="戻る"
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <ChevronLeft className="size-5" />
               <span className="text-sm">戻る</span>
             </button>
           </div>
@@ -127,6 +119,20 @@ function PublicProfilePage() {
           <NafudaCardView profile={profile} className="flex-1" />
         </main>
         {/* /なふだ領域 */}
+
+        {/* お気に入り保存CTA（ADR-0021）。閲覧者に依存しない全員同一の静的リンクで、
+            セッションは読まない（ADR-0019 補遺）。タップで _protected の追加ルートへ遷移し、
+            未ログインならそこでログイン誘導する。「保存済み」状態は公開ページでは出せない。 */}
+        <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white px-4 py-3">
+          <Link
+            to="/favorites/add/$token"
+            params={{ token: params.token }}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-pink-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-pink-600"
+          >
+            <span aria-hidden="true">⭐</span>
+            このなふだをお気に入りに保存
+          </Link>
+        </div>
       </div>
     </div>
   );

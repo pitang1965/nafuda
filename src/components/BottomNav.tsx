@@ -5,9 +5,11 @@ import { NafudaIcon } from "./NafudaIcon";
 // 保護画面で常設するボトムナビ。主要な行き先（なふだ・つながり・イベント）を
 // 親指の届く下部に置く。アカウント・プライバシー等の二次導線はヘッダーの
 // バーガー（AppMenu）に残し、ここには載せない（行き先＝下／メニュー＝上 の役割分離）。
+// タブ順は概念の近さで並べる（人＝なふだ/つながり/お気に入り、場＝イベント。ADR-0018 補遺）。
 const TABS: { to: string; label: string; icon: ReactNode }[] = [
   { to: "/me", label: "なふだ", icon: <NafudaIcon /> },
   { to: "/connections", label: "つながり", icon: "🤝" },
+  { to: "/favorites", label: "お気に入り", icon: "⭐" },
   { to: "/events", label: "イベント", icon: "📅" },
 ];
 

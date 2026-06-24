@@ -40,7 +40,7 @@ import { NafudaIcon } from "../../../components/NafudaIcon";
 import type { NafudaCardProfile } from "../../../components/NafudaCardView";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ArrowUp, ArrowDown, X } from "lucide-react";
+import { ArrowUp, ArrowDown, X, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -707,18 +707,7 @@ function EditForm({
             onClick={handleBack}
             aria-label="戻る"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <ChevronLeft className="size-5" />
           </Button>
           <h1 className="text-xl font-bold">
             {initialLabel || initialDisplayName} を編集
