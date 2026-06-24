@@ -129,6 +129,29 @@ export const nafudaLinks = pgTable(
   ],
 );
 
+// Favorite personas table: 他者の公開なふだを自分の手元に保存する私的ブックマーク（ADR-0021）。
+// 片側・相手に不可視・ユーザー所有のライブ参照。コネクション（対面QR交換の対称な記録）とは別系統。
+// 所有者は個別ペルソナではなく userId（私的リストは自分のなふだ削除に巻き込まれない）。
+// targetPersonaId に onDelete: cascade を張り、相手がそのなふだを削除/退会したら自動で消える。
+// 自分の退会時の userId 起点の削除は deleteAccount で明示（userId は FK ではないため）。
+export const favoritePersonas = pgTable(
+  "favorite_personas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(), // 所有者（保存した人）= Better Auth user.id
+    targetPersonaId: uuid("target_persona_id")
+      .notNull()
+      .references(() => personas.id, { onDelete: "cascade" }), // お気に入りした相手のなふだ
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    // 同じなふだを二重に保存させない（冪等保存の土台）
+    unique().on(table.userId, table.targetPersonaId),
+  ],
+);
+
 // Gallery photos table: アバター以外の「対象物」写真を最大6枚並べる独立コンテンツ（ADR-0014）。
 // なふだスタイル（コード管理の装飾）とは別レイヤーのユーザーアップロードコンテンツ。
 export const galleryPhotos = pgTable("gallery_photos", {

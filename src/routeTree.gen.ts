@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ConnectTokenRouteImport } from './routes/connect/$token'
 import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
+import { Route as ProtectedFavoritesRouteImport } from './routes/_protected/favorites'
 import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
 import { Route as ProtectedAccountRouteImport } from './routes/_protected/account'
 import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
@@ -24,6 +25,7 @@ import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/
 import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
 import { Route as ProtectedEventsNewRouteImport } from './routes/_protected/events/new'
 import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
+import { Route as ProtectedFavoritesAddTokenRouteImport } from './routes/_protected/favorites_.add.$token'
 
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
@@ -57,6 +59,11 @@ const ConnectTokenRoute = ConnectTokenRouteImport.update({
 const ProtectedMeRoute = ProtectedMeRouteImport.update({
   id: '/me',
   path: '/me',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedFavoritesRoute = ProtectedFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedConnectionsRoute = ProtectedConnectionsRouteImport.update({
@@ -99,6 +106,12 @@ const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
   path: '/u/$urlId/p/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedFavoritesAddTokenRoute =
+  ProtectedFavoritesAddTokenRouteImport.update({
+    id: '/favorites_/add/$token',
+    path: '/favorites/add/$token',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -106,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/account': typeof ProtectedAccountRoute
   '/connections': typeof ProtectedConnectionsRoute
+  '/favorites': typeof ProtectedFavoritesRoute
   '/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
@@ -114,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/profile/wizard': typeof ProtectedProfileWizardRoute
   '/e/$slug/edit': typeof ESlugEditRoute
   '/events/': typeof ProtectedEventsIndexRoute
+  '/favorites/add/$token': typeof ProtectedFavoritesAddTokenRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRoutesByTo {
@@ -122,6 +137,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/account': typeof ProtectedAccountRoute
   '/connections': typeof ProtectedConnectionsRoute
+  '/favorites': typeof ProtectedFavoritesRoute
   '/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
@@ -130,6 +146,7 @@ export interface FileRoutesByTo {
   '/profile/wizard': typeof ProtectedProfileWizardRoute
   '/e/$slug/edit': typeof ESlugEditRoute
   '/events': typeof ProtectedEventsIndexRoute
+  '/favorites/add/$token': typeof ProtectedFavoritesAddTokenRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRoutesById {
@@ -140,6 +157,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/_protected/account': typeof ProtectedAccountRoute
   '/_protected/connections': typeof ProtectedConnectionsRoute
+  '/_protected/favorites': typeof ProtectedFavoritesRoute
   '/_protected/me': typeof ProtectedMeRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
@@ -148,6 +166,7 @@ export interface FileRoutesById {
   '/_protected/profile/wizard': typeof ProtectedProfileWizardRoute
   '/e/$slug_/edit': typeof ESlugEditRoute
   '/_protected/events/': typeof ProtectedEventsIndexRoute
+  '/_protected/favorites_/add/$token': typeof ProtectedFavoritesAddTokenRoute
   '/u/$urlId/p/$token': typeof UUrlIdPTokenRoute
 }
 export interface FileRouteTypes {
@@ -158,6 +177,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/account'
     | '/connections'
+    | '/favorites'
     | '/me'
     | '/connect/$token'
     | '/e/$slug'
@@ -166,6 +186,7 @@ export interface FileRouteTypes {
     | '/profile/wizard'
     | '/e/$slug/edit'
     | '/events/'
+    | '/favorites/add/$token'
     | '/u/$urlId/p/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -174,6 +195,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/account'
     | '/connections'
+    | '/favorites'
     | '/me'
     | '/connect/$token'
     | '/e/$slug'
@@ -182,6 +204,7 @@ export interface FileRouteTypes {
     | '/profile/wizard'
     | '/e/$slug/edit'
     | '/events'
+    | '/favorites/add/$token'
     | '/u/$urlId/p/$token'
   id:
     | '__root__'
@@ -191,6 +214,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/_protected/account'
     | '/_protected/connections'
+    | '/_protected/favorites'
     | '/_protected/me'
     | '/connect/$token'
     | '/e/$slug'
@@ -199,6 +223,7 @@ export interface FileRouteTypes {
     | '/_protected/profile/wizard'
     | '/e/$slug_/edit'
     | '/_protected/events/'
+    | '/_protected/favorites_/add/$token'
     | '/u/$urlId/p/$token'
   fileRoutesById: FileRoutesById
 }
@@ -264,6 +289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedMeRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/favorites': {
+      id: '/_protected/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof ProtectedFavoritesRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/connections': {
       id: '/_protected/connections'
       path: '/connections'
@@ -320,27 +352,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUrlIdPTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_protected/favorites_/add/$token': {
+      id: '/_protected/favorites_/add/$token'
+      path: '/favorites/add/$token'
+      fullPath: '/favorites/add/$token'
+      preLoaderRoute: typeof ProtectedFavoritesAddTokenRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
   }
 }
 
 interface ProtectedRouteChildren {
   ProtectedAccountRoute: typeof ProtectedAccountRoute
   ProtectedConnectionsRoute: typeof ProtectedConnectionsRoute
+  ProtectedFavoritesRoute: typeof ProtectedFavoritesRoute
   ProtectedMeRoute: typeof ProtectedMeRoute
   ProtectedEventsNewRoute: typeof ProtectedEventsNewRoute
   ProtectedProfileEditRoute: typeof ProtectedProfileEditRoute
   ProtectedProfileWizardRoute: typeof ProtectedProfileWizardRoute
   ProtectedEventsIndexRoute: typeof ProtectedEventsIndexRoute
+  ProtectedFavoritesAddTokenRoute: typeof ProtectedFavoritesAddTokenRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAccountRoute: ProtectedAccountRoute,
   ProtectedConnectionsRoute: ProtectedConnectionsRoute,
+  ProtectedFavoritesRoute: ProtectedFavoritesRoute,
   ProtectedMeRoute: ProtectedMeRoute,
   ProtectedEventsNewRoute: ProtectedEventsNewRoute,
   ProtectedProfileEditRoute: ProtectedProfileEditRoute,
   ProtectedProfileWizardRoute: ProtectedProfileWizardRoute,
   ProtectedEventsIndexRoute: ProtectedEventsIndexRoute,
+  ProtectedFavoritesAddTokenRoute: ProtectedFavoritesAddTokenRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
