@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
+import { RainbowBorderOverlay } from "../../components/RainbowBorderOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
@@ -243,6 +244,9 @@ function MePage() {
       >
         {style?.frameId && <NafudaFrame frameId={style.frameId} />}
         {style?.holographic && <HolographicOverlay />}
+        {style?.rainbowBorder && (
+          <RainbowBorderOverlay innerBg={style.background} />
+        )}
         {style?.petalsFall && <CherryBlossomOverlay />}
         <div className="p-6 flex flex-col items-center gap-4 relative z-20">
           <div
@@ -354,6 +358,10 @@ function MePage() {
                           border: `${style.textColor}50`,
                           text: style.textColor,
                           hoverBg: `${style.textColor}15`,
+                          rainbowBorder: !!style.rainbowBorder,
+                          cardBg: style.rainbowBorder
+                            ? style.background
+                            : undefined,
                         }
                       : undefined
                   }

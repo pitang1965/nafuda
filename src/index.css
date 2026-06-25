@@ -38,7 +38,7 @@
   to { --rba: 360deg; }
 }
 
-/* カード全面用 — 4px リング */
+/* カード全面用 — 内側に地を重ねて 4px リングを残す */
 .rainbow-border {
   animation: rba-spin 4s linear infinite;
   background: conic-gradient(
@@ -52,15 +52,6 @@
     hsl(300,100%,63%),
     hsl(360,100%,65%)
   );
-  padding: 4px;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
 }
 
 /* SNSリンクボタン用ラッパー — 2px リング */

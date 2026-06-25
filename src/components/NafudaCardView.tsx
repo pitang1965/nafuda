@@ -56,7 +56,7 @@ export function NafudaCardView({
         text: style.textColor,
         hoverBg: `${style.textColor}15`,
         rainbowBorder: !!style.rainbowBorder,
-        cardBg: style.rainbowBorder ? "#0a0a0f" : undefined,
+        cardBg: style.rainbowBorder ? style.background : undefined,
       }
     : undefined;
 
@@ -71,7 +71,9 @@ export function NafudaCardView({
     >
       {style?.frameId && <NafudaFrame frameId={style.frameId} />}
       {style?.holographic && <HolographicOverlay />}
-      {style?.rainbowBorder && <RainbowBorderOverlay />}
+      {style?.rainbowBorder && (
+        <RainbowBorderOverlay innerBg={style.background} />
+      )}
       {style?.petalsFall && <CherryBlossomOverlay />}
       <div className="p-6 flex flex-col items-center gap-4 relative z-20">
         <UserAvatar
