@@ -5,6 +5,7 @@ import { NafudaLinkChip } from "./NafudaLinkChip";
 import { NafudaIcon } from "./NafudaIcon";
 import { NafudaFrame } from "./NafudaFrame";
 import { HolographicOverlay } from "./HolographicOverlay";
+import { RainbowBorderOverlay } from "./RainbowBorderOverlay";
 import { GalleryLightbox } from "./GalleryLightbox";
 import { CherryBlossomOverlay } from "./CherryBlossomOverlay";
 import { getNafudaStyle } from "../lib/nafuda-styles";
@@ -54,6 +55,8 @@ export function NafudaCardView({
         border: `${style.textColor}50`,
         text: style.textColor,
         hoverBg: `${style.textColor}15`,
+        rainbowBorder: !!style.rainbowBorder,
+        cardBg: style.rainbowBorder ? "#0a0a0f" : undefined,
       }
     : undefined;
 
@@ -68,6 +71,7 @@ export function NafudaCardView({
     >
       {style?.frameId && <NafudaFrame frameId={style.frameId} />}
       {style?.holographic && <HolographicOverlay />}
+      {style?.rainbowBorder && <RainbowBorderOverlay />}
       {style?.petalsFall && <CherryBlossomOverlay />}
       <div className="p-6 flex flex-col items-center gap-4 relative z-20">
         <UserAvatar

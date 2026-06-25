@@ -13,6 +13,8 @@ interface SnsLinkButtonProps {
     border: string;
     text: string;
     hoverBg: string;
+    rainbowBorder?: boolean;
+    cardBg?: string;
   };
 }
 
@@ -174,30 +176,46 @@ function PlatformIcon({ platform }: { platform: string }) {
 
 export function SnsLinkButton({ platform, url, title, colorOverride }: SnsLinkButtonProps) {
   const displayText = title?.trim() || extractHandle(platform, url);
+  const useRainbow = colorOverride?.rainbowBorder;
+  const cardBg = colorOverride?.cardBg ?? '#0a0a0f';
 
   const anchor = (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm transition-colors"
+      className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
       style={
-        colorOverride
-          ? { border: `1px solid ${colorOverride.border}`, color: colorOverride.text }
-          : { border: '1px solid #e5e7eb', color: '#1f2937' }
+        useRainbow
+          ? { borderRadius: 'calc(0.5rem - 2px)', border: 'none', color: colorOverride!.text, background: cardBg }
+          : colorOverride
+          ? { borderRadius: '0.5rem', border: `1px solid ${colorOverride.border}`, color: colorOverride.text }
+          : { borderRadius: '0.5rem', border: '1px solid #e5e7eb', color: '#1f2937' }
       }
-      onMouseEnter={colorOverride ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colorOverride.hoverBg } : undefined}
-      onMouseLeave={colorOverride ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '' } : undefined}
+      onMouseEnter={
+        colorOverride && !useRainbow
+          ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colorOverride.hoverBg; }
+          : undefined
+      }
+      onMouseLeave={
+        colorOverride && !useRainbow
+          ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = ''; }
+          : undefined
+      }
     >
       <PlatformIcon platform={platform} />
       <span className="truncate">{displayText}</span>
     </a>
   );
 
+  const trigger = useRainbow ? (
+    <div className="rainbow-btn-wrap">{anchor}</div>
+  ) : anchor;
+
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>{anchor}</TooltipTrigger>
+        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
         <TooltipContent side="top">
           <span className="max-w-xs block truncate">{url}</span>
         </TooltipContent>
