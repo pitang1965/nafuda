@@ -18,7 +18,7 @@ import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
-import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { getNafudaStyle, contrastText } from "../../lib/nafuda-styles";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { RainbowBorderOverlay } from "../../components/RainbowBorderOverlay";
@@ -74,6 +74,14 @@ function MePage() {
   const activePersonaId = currentPersona?.id ?? "";
   const style = getNafudaStyle(currentPersona?.styleId ?? null);
   const subtextColor = style?.subtextColor;
+  // スタイル適用時、CTAの bg-primary が暗地カードに埋もれるため、
+  // textColor を地に・明度から決めた文字色を載せて高コントラスト化する。
+  const ctaOverride = style
+    ? {
+        background: style.textColor,
+        color: contrastText(style.textColor),
+      }
+    : undefined;
   const [profileQrOpen, setProfileQrOpen] = useState(false);
   const [connectQrOpen, setConnectQrOpen] = useState(false);
   const [connectQrUrl, setConnectQrUrl] = useState<string | null>(null);
@@ -414,7 +422,8 @@ function MePage() {
               <Button
                 onClick={() => setProfileQrOpen(true)}
                 size="lg"
-                className="w-full rounded-xl"
+                className="w-full rounded-xl hover:opacity-90"
+                style={ctaOverride}
               >
                 なふだを見せる
               </Button>
@@ -430,7 +439,8 @@ function MePage() {
                 onClick={handleExchangeNafuda}
                 disabled={connectQrLoading}
                 size="lg"
-                className="w-full rounded-xl"
+                className="w-full rounded-xl hover:opacity-90"
+                style={ctaOverride}
               >
                 {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
               </Button>

@@ -64,7 +64,7 @@ export function NafudaLinkChip({
       <button
         type="button"
         onClick={onSelect}
-        className={className}
+        className={`${className} cursor-pointer`}
         style={style}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -87,7 +87,7 @@ export function NafudaLinkChip({
     <Link
       to="/u/$urlId/p/$token"
       params={{ urlId, token: shareToken }}
-      className={className}
+      className={`${className} cursor-pointer`}
       style={style}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

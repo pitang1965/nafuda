@@ -136,3 +136,16 @@ export function getNafudaStyle(
   if (!styleId) return null;
   return NAFUDA_STYLES.find((s) => s.id === styleId) ?? null;
 }
+
+// 与えた色（#rrggbb）の上に置くと読める文字色を返す。
+// なふだスタイルの textColor を「塗りボタンの地」に使うとき、その上の
+// 文字色を明度で出し分ける（白地→濃色、暗地→白）。
+export function contrastText(hex: string): string {
+  const h = hex.replace("#", "");
+  if (h.length < 6) return "#111827";
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? "#111827" : "#ffffff";
+}
