@@ -5,7 +5,8 @@ export type NafudaStyleId =
   | "ocean"
   | "sunset"
   | "stardust"
-  | "rainbow";
+  | "rainbow"
+  | "pearl";
 export type FrameId = "sakura" | "moon" | "stardust";
 
 export interface NafudaStyleDef {
@@ -23,6 +24,7 @@ export interface NafudaStyleDef {
   holographic?: boolean;
   petalsFall?: boolean;
   rainbowBorder?: boolean;
+  pearlBorder?: boolean;
 }
 
 export const NAFUDA_STYLES: NafudaStyleDef[] = [
@@ -127,6 +129,21 @@ export const NAFUDA_STYLES: NafudaStyleDef[] = [
     frameId: null,
     isFree: true,
     rainbowBorder: true,
+  },
+  {
+    id: "pearl",
+    name: "真珠",
+    background: "linear-gradient(135deg, #faf8fb 0%, #efebf3 55%, #f6f1f4 100%)",
+    textColor: "#4a4458",
+    subtextColor: "rgba(74,68,88,0.7)",
+    tagBg: "rgba(74,68,88,0.08)",
+    tagText: "#4a4458",
+    fontFamily: '"Noto Serif JP", serif',
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap",
+    frameId: null,
+    isFree: true,
+    pearlBorder: true,
   },
 ];
 

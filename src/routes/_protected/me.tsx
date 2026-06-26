@@ -22,6 +22,7 @@ import { getNafudaStyle, contrastText } from "../../lib/nafuda-styles";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { RainbowBorderOverlay } from "../../components/RainbowBorderOverlay";
+import { PearlBorderOverlay } from "../../components/PearlBorderOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
@@ -255,6 +256,7 @@ function MePage() {
         {style?.rainbowBorder && (
           <RainbowBorderOverlay innerBg={style.background} />
         )}
+        {style?.pearlBorder && <PearlBorderOverlay />}
         {style?.petalsFall && <CherryBlossomOverlay />}
         <div className="p-6 flex flex-col items-center gap-4 relative z-20">
           <div

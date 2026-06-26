@@ -6,6 +6,7 @@ import { NafudaIcon } from "./NafudaIcon";
 import { NafudaFrame } from "./NafudaFrame";
 import { HolographicOverlay } from "./HolographicOverlay";
 import { RainbowBorderOverlay } from "./RainbowBorderOverlay";
+import { PearlBorderOverlay } from "./PearlBorderOverlay";
 import { GalleryLightbox } from "./GalleryLightbox";
 import { CherryBlossomOverlay } from "./CherryBlossomOverlay";
 import { getNafudaStyle } from "../lib/nafuda-styles";
@@ -74,6 +75,7 @@ export function NafudaCardView({
       {style?.rainbowBorder && (
         <RainbowBorderOverlay innerBg={style.background} />
       )}
+      {style?.pearlBorder && <PearlBorderOverlay />}
       {style?.petalsFall && <CherryBlossomOverlay />}
       <div className="p-6 flex flex-col items-center gap-4 relative z-20">
         <UserAvatar
