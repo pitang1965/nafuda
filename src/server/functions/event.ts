@@ -6,6 +6,13 @@ import { db } from "../db/client";
 import { events, eventCheckins, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
 import { isWithinCheckinWindow } from "../lib/eventCheckinWindow";
+import { pushToRoom } from "../realtimePush";
+
+// 参加者一覧（presence）の更新を、そのイベントの EventRoom 閲覧者全員へ通知する。
+// 正本は Postgres。クライアントは通知を受けてローダーを再取得し収束する（realtime 無効環境では no-op）。
+function notifyEventRoster(eventId: string): Promise<void> {
+  return pushToRoom(`event:${eventId}`, { type: "roster" });
+}
 
 function generateShareToken(): string {
   const bytes = new Uint8Array(16);
@@ -92,6 +99,8 @@ export const checkinToEvent = createServerFn({ method: "POST" })
         gpsCoordinates: null,
       })
       .returning();
+
+    await notifyEventRoster(eventRow[0].id);
 
     return { checkin: newCheckin[0], event: eventRow[0] };
   });
@@ -219,6 +228,8 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         gpsCoordinates: data.gpsCoordinates ?? null,
       })
       .returning();
+
+    await notifyEventRoster(eventRow[0].id);
 
     return { checkin: newCheckin[0], event: eventRow[0] };
   });
@@ -397,6 +408,8 @@ export const cancelCheckin = createServerFn({ method: "POST" })
           eq(eventCheckins.personaId, data.personaId),
         ),
       );
+
+    await notifyEventRoster(eventRow[0].id);
 
     return { success: true };
   });

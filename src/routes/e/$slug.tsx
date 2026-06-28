@@ -11,6 +11,7 @@ import {
   cancelCheckin,
 } from "../../server/functions/event";
 import { getOwnProfile } from "../../server/functions/profile";
+import { useEventRoomRealtime } from "../../hooks/useEventRoomRealtime";
 import { ParticipantCard } from "../../components/ParticipantCard";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
@@ -140,6 +141,16 @@ function EventPage() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  // 参加者一覧をリアルタイムに保つ（realtime無効環境では不活性＝従来の静的一覧）。
+  // チェックイン/取消の通知・再接続のたびにローダーを再取得して名簿を更新する。
+  useEventRoomRealtime({
+    enabled: !!data,
+    token,
+    onChange: () => {
+      void router.invalidate();
+    },
+  });
 
   const isCheckedIn = selectedPersonaId
     ? checkedInPersonaIds.includes(selectedPersonaId)

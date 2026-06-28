@@ -15,7 +15,7 @@ import {
 } from "../db/schema";
 import { auth } from "../auth";
 import { isValidConnectionContext } from "../lib/eventCheckinWindow";
-import { pushToPersona } from "../realtimePush";
+import { pushToRoom } from "../realtimePush";
 
 // 「なふだを交換する」用のつながりQRトークンを発行する（15分有効）
 export const createConnectionQrToken = createServerFn({ method: "POST" })
@@ -513,7 +513,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     // 発行者A の PersonaChannel へ「つながりました」を push（realtime 確認用）。
     // realtime 無効環境では no-op。失敗しても Postgres は書けており、A 側は
     // reconcile-on-connect / 縮退ポーリングで必ず収束する。
-    await pushToPersona(issuerPersonaId, {
+    await pushToRoom(`persona:${issuerPersonaId}`, {
       type: "connection",
       displayName: scannerPersona?.displayName ?? "相手",
       since: now.toISOString(),

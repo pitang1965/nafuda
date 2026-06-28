@@ -2,11 +2,12 @@
 // 同じアルゴリズムで検証する。形式: base64url(payloadJson) + "." + base64url(hmacSha256)。
 // 署名アルゴリズムを変える時は realtime/src/ticket.ts と同時に変えること。
 //
-// 用途: クライアントが WebSocket 接続する直前に server fn（issueRealtimeTicket）が短命トークン
-// を発行する。コンパニオン Worker は共有シークレットで署名検証するだけで DB に触れず本人性を確定する。
+// 用途: クライアントが WebSocket 接続する直前に server fn が短命トークンを発行する。
+// コンパニオン Worker は共有シークレットで署名検証するだけで DB に触れず room への接続権を確定する。
+// room は "persona:<id>" / "event:<id>" 形式で、接続先 DO を決める。
 
 export type TicketPayload = {
-  personaId: string;
+  room: string;
   exp: number; // エポック秒
 };
 
@@ -16,14 +17,14 @@ function base64urlEncode(bytes: Uint8Array): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// 指定ペルソナ宛の短命チケット（既定60秒）を署名して返す。
+// 指定 room 宛の短命チケット（既定60秒）を署名して返す。
 export async function signTicket(
-  personaId: string,
+  room: string,
   secret: string,
   ttlSeconds = 60,
 ): Promise<string> {
   const payload: TicketPayload = {
-    personaId,
+    room,
     exp: Math.floor(Date.now() / 1000) + ttlSeconds,
   };
   const payloadPart = base64urlEncode(

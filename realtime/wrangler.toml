@@ -16,9 +16,17 @@ compatibility_flags = [ "nodejs_compat" ]
 name = "PERSONA_CHANNEL"
 class_name = "PersonaChannel"
 
+[[durable_objects.bindings]]
+name = "EVENT_ROOM"
+class_name = "EventRoom"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = [ "PersonaChannel" ]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = [ "EventRoom" ]
 
 [observability]
 enabled = true

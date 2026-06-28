@@ -1,13 +1,14 @@
 // realtime チケットの検証（コンパニオン Worker 側）。
 // 本体アプリ（src/server/lib/ticket.ts）が同じアルゴリズムで署名する。
 // 形式: base64url(payloadJson) + "." + base64url(hmacSha256)
-// payload: { personaId: string, exp: number(エポック秒) }
+// payload: { room: string, exp: number(エポック秒) }
+//   room は "persona:<id>" / "event:<id>" 形式。接続先 DO を決める。
 //
 // このファイルは本体アプリと別ビルド単位なので意図的に独立コピー。
 // 署名アルゴリズムを変える時は src/server/lib/ticket.ts と同時に変えること。
 
 export type TicketPayload = {
-  personaId: string;
+  room: string;
   exp: number;
 };
 
@@ -70,7 +71,7 @@ export async function verifyTicket(
   } catch {
     return null;
   }
-  if (typeof payload.personaId !== "string" || typeof payload.exp !== "number")
+  if (typeof payload.room !== "string" || typeof payload.exp !== "number")
     return null;
   if (payload.exp < Math.floor(Date.now() / 1000)) return null;
   return payload;

@@ -11,10 +11,10 @@ type RealtimeEnv = {
   INTERNAL_PUSH_SECRET?: string;
 };
 
-// 指定ペルソナの PersonaChannel へ payload を push する。
+// 指定 room（"persona:<id>" / "event:<id>"）へ payload を push する。
 // REALTIME バインディングが無ければ no-op（フラグOFF＝本番では何も起きない）。
-export async function pushToPersona(
-  personaId: string,
+export async function pushToRoom(
+  room: string,
   payload: unknown,
 ): Promise<void> {
   const e = env as unknown as RealtimeEnv;
@@ -27,12 +27,12 @@ export async function pushToPersona(
           "content-type": "application/json",
           "x-internal-secret": e.INTERNAL_PUSH_SECRET ?? "",
         },
-        body: JSON.stringify({ personaId, payload }),
+        body: JSON.stringify({ room, payload }),
       }),
     );
   } catch (err) {
     // realtime が落ちていても接続フロー（Postgres 書き込み）は完了済み。
     // クライアントは reconcile-on-connect で必ず収束するので握りつぶす。
-    console.error("[pushToPersona] realtime push 失敗", String(err));
+    console.error("[pushToRoom] realtime push 失敗", String(err));
   }
 }
