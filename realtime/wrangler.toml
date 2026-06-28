@@ -1,0 +1,24 @@
+# なふだ realtime コンパニオン Worker（staging 実験用）。
+# 本体 Pages (nafuda) とは別デプロイ単位。`cd realtime && wrangler deploy` で上げる。
+# 後戻り: `wrangler delete nafuda-realtime-staging` で丸ごと消える（DB変更ゼロ）。
+#
+# シークレットはこのファイルに書かず secret で投入する:
+#   wrangler secret put REALTIME_SECRET
+#   wrangler secret put INTERNAL_PUSH_SECRET
+# 同じ値を本体 Pages の Preview 環境にも設定する（REALTIME_SECRET / INTERNAL_PUSH_SECRET）。
+
+name = "nafuda-realtime-staging"
+main = "src/index.ts"
+compatibility_date = "2026-04-23"
+compatibility_flags = [ "nodejs_compat" ]
+
+[[durable_objects.bindings]]
+name = "PERSONA_CHANNEL"
+class_name = "PersonaChannel"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = [ "PersonaChannel" ]
+
+[observability]
+enabled = true

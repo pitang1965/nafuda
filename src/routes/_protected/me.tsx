@@ -8,6 +8,10 @@ import {
   checkQrConnectionStatus,
 } from "../../server/functions/connection";
 import { createInstantEventAndCheckin } from "../../server/functions/event";
+import {
+  useQrConnectionRealtime,
+  realtimeEnabled,
+} from "../../hooks/useQrConnectionRealtime";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { UserAvatar } from "../../components/UserAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
@@ -116,8 +120,20 @@ function MePage() {
     document.head.appendChild(link);
   }, [style?.fontUrl, style?.id]);
 
-  // QR表示中に接続成立をポーリングで検知する
+  // QR表示中に接続成立を realtime（WebSocket）で検知する（フラグ有効時のみ）。
+  // 正本は Postgres で、(再)接続のたびに reconcile して取りこぼしを収束させる。
+  useQrConnectionRealtime({
+    enabled: connectQrOpen,
+    personaId: currentPersona?.id ?? null,
+    token: connectQrToken,
+    since: connectQrSince,
+    onConnected: (displayName) => setConnectionNotification({ displayName }),
+  });
+
+  // realtime 無効環境（本番＝フラグ未設定）では従来どおり3秒ポーリングで検知する。
+  // realtime 有効時はこの effect は何もしない（上のフックが WS ＋縮退ポーリングを担う）。
   useEffect(() => {
+    if (realtimeEnabled) return;
     if (!connectQrOpen || !connectQrToken || !currentPersona || !connectQrSince)
       return;
     const token = connectQrToken;

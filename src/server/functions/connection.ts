@@ -15,6 +15,7 @@ import {
 } from "../db/schema";
 import { auth } from "../auth";
 import { isValidConnectionContext } from "../lib/eventCheckinWindow";
+import { pushToPersona } from "../realtimePush";
 
 // 「なふだを交換する」用のつながりQRトークンを発行する（15分有効）
 export const createConnectionQrToken = createServerFn({ method: "POST" })
@@ -439,6 +440,14 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     if (issuerPersonaRow?.userId === session.user.id)
       throw new Error("自分自身にはつながれません");
 
+    // 発行者A（QRを見せて /me で待っている側）へ realtime 通知するため、
+    // スキャンした側（B）の表示名を取得しておく。
+    const [scannerPersona] = await db
+      .select({ displayName: personas.displayName })
+      .from(personas)
+      .where(eq(personas.id, scannerPersonaRow.id))
+      .limit(1);
+
     // 文脈はQR発行側（A）のアクティブチェックインから取得する。ただし有効な文脈に限る
     // （企画=開催期間内／即時=直近セッションのみ。古い即時チェックインは使わない。ADR-0020）。
     const [activeCheckin] = await db
@@ -500,6 +509,15 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
         },
       ])
       .onConflictDoNothing();
+
+    // 発行者A の PersonaChannel へ「つながりました」を push（realtime 確認用）。
+    // realtime 無効環境では no-op。失敗しても Postgres は書けており、A 側は
+    // reconcile-on-connect / 縮退ポーリングで必ず収束する。
+    await pushToPersona(issuerPersonaId, {
+      type: "connection",
+      displayName: scannerPersona?.displayName ?? "相手",
+      since: now.toISOString(),
+    });
 
     return { alreadyConnected: false, connectedAt: new Date().toISOString() };
   });
