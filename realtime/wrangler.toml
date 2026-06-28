@@ -30,3 +30,20 @@ new_sqlite_classes = [ "EventRoom" ]
 
 [observability]
 enabled = true
+
+# 本番環境。`wrangler deploy -e production` で別名の本番Workerを上げる。
+# 素の `wrangler deploy` は従来どおり staging（top-level）を上げる。
+# DO バインディングは環境継承の取りこぼしを避けるため明示的に再宣言する（migrations は top-level 共有）。
+[env.production]
+name = "nafuda-realtime"
+
+[[env.production.durable_objects.bindings]]
+name = "PERSONA_CHANNEL"
+class_name = "PersonaChannel"
+
+[[env.production.durable_objects.bindings]]
+name = "EVENT_ROOM"
+class_name = "EventRoom"
+
+[env.production.observability]
+enabled = true
