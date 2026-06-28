@@ -13,6 +13,9 @@ export const realtimeEnabled = Boolean(REALTIME_URL);
 const MAX_WS_RETRIES = 3;
 const FALLBACK_POLL_MS = 12000; // WS 不成立時の縮退ポーリング間隔
 const PING_MS = 30000;
+// WS は繋がっているのに push だけ取りこぼした場合に永久に気づけない穴を塞ぐ安全網。
+// 接続中も低頻度で正本(Postgres)を読み、必ず収束させる。会場の不安定回線向けの保険。
+const SAFETY_RECONCILE_MS = 30000;
 
 type Params = {
   enabled: boolean; // QRシート表示中など、検知すべき状態か
@@ -45,6 +48,7 @@ export function useQrConnectionRealtime({
     let retries = 0;
     let fallbackTimer: ReturnType<typeof setInterval> | null = null;
     let pingTimer: ReturnType<typeof setInterval> | null = null;
+    let safetyTimer: ReturnType<typeof setInterval> | null = null;
 
     // Postgres から成立を1回読む。成立していれば通知して true を返す。
     const reconcile = async (): Promise<boolean> => {
@@ -73,6 +77,7 @@ export function useQrConnectionRealtime({
       disposed = true;
       if (pingTimer) clearInterval(pingTimer);
       if (fallbackTimer) clearInterval(fallbackTimer);
+      if (safetyTimer) clearInterval(safetyTimer);
       if (ws) {
         ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
         try {
@@ -123,6 +128,10 @@ export function useQrConnectionRealtime({
             /* no-op */
           }
         }, PING_MS);
+        // 安全網: WSが健全でも push 取りこぼしに備えて低頻度で正本を読む
+        safetyTimer = setInterval(async () => {
+          if (await reconcile()) cleanup();
+        }, SAFETY_RECONCILE_MS);
       };
 
       ws.onmessage = (ev) => {
@@ -144,6 +153,10 @@ export function useQrConnectionRealtime({
         if (pingTimer) {
           clearInterval(pingTimer);
           pingTimer = null;
+        }
+        if (safetyTimer) {
+          clearInterval(safetyTimer);
+          safetyTimer = null;
         }
         retries += 1;
         if (retries <= MAX_WS_RETRIES) {
