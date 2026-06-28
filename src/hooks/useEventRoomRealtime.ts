@@ -129,8 +129,14 @@ export function useEventRoomRealtime({ enabled, token, onChange }: Params) {
         }
       };
 
-      ws.onerror = onDrop;
-      ws.onclose = onDrop;
+      ws.onerror = () => {
+        console.warn("[realtime] event WS error");
+        onDrop();
+      };
+      ws.onclose = (e) => {
+        console.warn("[realtime] event WS closed", e.code, e.reason);
+        onDrop();
+      };
     };
 
     connect();
