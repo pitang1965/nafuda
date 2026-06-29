@@ -1,30 +1,40 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { capture } from "../../lib/analytics";
 import { useState, useEffect } from "react";
-import { getOwnProfile, deleteAccount } from "../../server/functions/profile";
+import { getOwnProfile } from "../../server/functions/profile";
 import {
   createConnectionQrToken,
   deleteConnectionQrToken,
   checkQrConnectionStatus,
 } from "../../server/functions/connection";
 import { createInstantEventAndCheckin } from "../../server/functions/event";
-import { authClient } from "../../lib/auth-client";
+import {
+  useQrConnectionRealtime,
+  realtimeEnabled,
+} from "../../hooks/useQrConnectionRealtime";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
-import { InitialsAvatar } from "../../components/InitialsAvatar";
+import { UserAvatar } from "../../components/UserAvatar";
 import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaLinkChip } from "../../components/NafudaLinkChip";
+import { NafudaIcon } from "../../components/NafudaIcon";
 import { GalleryLightbox } from "../../components/GalleryLightbox";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
-import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { getNafudaStyle, contrastText } from "../../lib/nafuda-styles";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { HolographicOverlay } from "../../components/HolographicOverlay";
+import { RainbowBorderOverlay } from "../../components/RainbowBorderOverlay";
+import { PearlBorderOverlay } from "../../components/PearlBorderOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
+  // 遷移のたびに最新を取得する。キャッシュした古いデータを描画すると、
+  // なふだ削除直後に「消えたはずのなふだが一瞬見える」ちらつきが起きるため。
+  staleTime: 0,
+  staticData: { title: "なふだ" },
   component: MePage,
 });
 
@@ -59,9 +69,24 @@ function MePage() {
       return fromCookie;
     return initialPersonaId ?? "";
   });
-  const currentPersona = personas.find((p) => p.id === currentPersonaId);
+  // 選択中IDは useState に凍結されるため、削除直後など loader が更新されて
+  // currentPersonaId が実在しないなふだを指すことがある。その場合は fresh な
+  // loader データ側へフォールバックして「切り替わらない／?表示」を防ぐ。
+  const currentPersona =
+    personas.find((p) => p.id === currentPersonaId) ??
+    personas.find((p) => p.id === initialPersonaId) ??
+    personas[0];
+  const activePersonaId = currentPersona?.id ?? "";
   const style = getNafudaStyle(currentPersona?.styleId ?? null);
   const subtextColor = style?.subtextColor;
+  // スタイル適用時、CTAの bg-primary が暗地カードに埋もれるため、
+  // textColor を地に・明度から決めた文字色を載せて高コントラスト化する。
+  const ctaOverride = style
+    ? {
+        background: style.textColor,
+        color: contrastText(style.textColor),
+      }
+    : undefined;
   const [profileQrOpen, setProfileQrOpen] = useState(false);
   const [connectQrOpen, setConnectQrOpen] = useState(false);
   const [connectQrUrl, setConnectQrUrl] = useState<string | null>(null);
@@ -77,17 +102,13 @@ function MePage() {
   const [exchangeContextOpen, setExchangeContextOpen] = useState(false);
   const [exchangeContextSubmitting, setExchangeContextSubmitting] =
     useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteAgreed, setDeleteAgreed] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // 前回使ったなふだをCookieに保存する。次回 /me 表示時にSSRが読み取り、
   // 正しいなふだを最初から描画できる（localStorageだとSSRから見えずフラッシュする）。
   useEffect(() => {
-    if (currentPersonaId)
-      document.cookie = `${LAST_PERSONA_KEY}=${currentPersonaId}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-  }, [currentPersonaId]);
+    if (activePersonaId)
+      document.cookie = `${LAST_PERSONA_KEY}=${activePersonaId}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  }, [activePersonaId]);
 
   useEffect(() => {
     if (!style?.fontUrl) return;
@@ -99,8 +120,20 @@ function MePage() {
     document.head.appendChild(link);
   }, [style?.fontUrl, style?.id]);
 
-  // QR表示中に接続成立をポーリングで検知する
+  // QR表示中に接続成立を realtime（WebSocket）で検知する（フラグ有効時のみ）。
+  // 正本は Postgres で、(再)接続のたびに reconcile して取りこぼしを収束させる。
+  useQrConnectionRealtime({
+    enabled: connectQrOpen,
+    personaId: currentPersona?.id ?? null,
+    token: connectQrToken,
+    since: connectQrSince,
+    onConnected: (displayName) => setConnectionNotification({ displayName }),
+  });
+
+  // realtime 無効環境（本番＝フラグ未設定）では従来どおり3秒ポーリングで検知する。
+  // realtime 有効時はこの effect は何もしない（上のフックが WS ＋縮退ポーリングを担う）。
   useEffect(() => {
+    if (realtimeEnabled) return;
     if (!connectQrOpen || !connectQrToken || !currentPersona || !connectQrSince)
       return;
     const token = connectQrToken;
@@ -121,24 +154,6 @@ function MePage() {
     const id = setInterval(poll, 3000);
     return () => clearInterval(id);
   }, [connectQrOpen, connectQrToken, currentPersona, connectQrSince]);
-
-  const handleLogout = async () => {
-    await authClient.signOut();
-    await navigate({ to: "/login" });
-  };
-
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteAccount();
-      await authClient.signOut();
-      await navigate({ to: "/login" });
-    } catch {
-      setDeleteError("退会処理に失敗しました。再度お試しください。");
-      setIsDeleting(false);
-    }
-  };
 
   const handleExchangeNafuda = () => {
     if (!currentPersona) return;
@@ -219,154 +234,133 @@ function MePage() {
   const isPrivate = (field: string) => vis[field] === "private";
 
   return (
-    <div
-      className={
-        style ? "min-h-screen bg-gray-900" : "min-h-screen bg-gray-100"
-      }
-    >
-      <div
-        className={`mx-auto sm:max-w-sm w-full min-h-screen flex flex-col${style ? "" : " bg-white sm:shadow-sm"}`}
-      >
-        {/* Top bar - なふだ領域外 */}
-        <div
-          className="flex items-center justify-between p-4"
-          style={
-            style
-              ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
-              : { borderBottom: "1px solid #e5e7eb" }
-          }
+    <>
+      {/* なふだ切り替え・編集（ホーム固有・中立色のストリップ） */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <PersonaSwitcher
+          personas={personas}
+          currentPersonaId={activePersonaId}
+          onSwitch={setCurrentPersonaId}
+          onCreateNew={() => navigate({ to: "/profile/wizard" })}
+        />
+        <Link
+          to="/profile/edit"
+          search={{ personaId: activePersonaId }}
+          className="text-sm text-gray-500 underline hover:text-gray-700"
         >
-          <PersonaSwitcher
-            personas={personas}
-            currentPersonaId={currentPersonaId}
-            onSwitch={setCurrentPersonaId}
-            onCreateNew={() => navigate({ to: "/profile/wizard" })}
-          />
-          <div className="flex items-center gap-3">
+          編集
+        </Link>
+      </div>
+
+      <PwaInstallBanner />
+
+      {/* なふだ領域 */}
+      <div
+        className="flex-1 relative"
+        style={
+          style
+            ? {
+                background: style.background,
+                fontFamily: style.fontFamily,
+                color: style.textColor,
+              }
+            : undefined
+        }
+      >
+        {style?.frameId && <NafudaFrame frameId={style.frameId} />}
+        {style?.holographic && <HolographicOverlay />}
+        {style?.rainbowBorder && (
+          <RainbowBorderOverlay innerBg={style.background} />
+        )}
+        {style?.pearlBorder && <PearlBorderOverlay />}
+        {style?.petalsFall && <CherryBlossomOverlay />}
+        <div className="p-6 flex flex-col items-center gap-4 relative z-20">
+          <div
+            className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
+          >
+            <UserAvatar
+              avatarUrl={currentPersona?.avatarUrl}
+              name={currentPersona?.displayName ?? "?"}
+              size={80}
+            />
+            {isPrivate("avatar_url") && (
+              <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
+                🔒
+              </span>
+            )}
+          </div>
+
+          <div
+            className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
+          >
+            <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
+            {isPrivate("display_name") && <PrivateBadge />}
+          </div>
+
+          {!currentPersona?.label && (
             <Link
               to="/profile/edit"
-              search={{ personaId: currentPersonaId }}
-              className="text-sm underline"
-              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
+              search={{ personaId: activePersonaId }}
+              className="text-xs underline"
+              style={{ color: subtextColor ?? "#9ca3af" }}
             >
-              編集
+              ラベルを設定する →
             </Link>
-            <Link
-              to="/events"
-              className="text-sm underline"
-              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
-            >
-              イベント
-            </Link>
-            <Button
-              variant="link"
-              size="sm"
-              onClick={handleLogout}
-              className="p-0 h-auto"
-              style={{ color: style ? "rgba(255,255,255,0.65)" : "#6b7280" }}
-            >
-              ログアウト
-            </Button>
-          </div>
-        </div>
+          )}
 
-        <PwaInstallBanner />
-
-        {/* なふだ領域 */}
-        <main
-          className="flex-1 relative"
-          style={
-            style
-              ? {
-                  background: style.background,
-                  fontFamily: style.fontFamily,
-                  color: style.textColor,
-                }
-              : undefined
-          }
-        >
-          {style?.frameId && <NafudaFrame frameId={style.frameId} />}
-          {style?.holographic && <HolographicOverlay />}
-          {style?.petalsFall && <CherryBlossomOverlay />}
-          <div className="p-6 flex flex-col items-center gap-4 relative z-20">
+          {currentPersona?.bio && (
             <div
-              className={`relative ${isPrivate("avatar_url") ? "opacity-50" : ""}`}
+              className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
             >
-              {currentPersona?.avatarUrl ? (
-                <img
-                  src={currentPersona.avatarUrl}
-                  alt=""
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-              ) : (
-                <InitialsAvatar
-                  name={currentPersona?.displayName ?? "?"}
-                  size={80}
-                />
-              )}
-              {isPrivate("avatar_url") && (
-                <span className="absolute -bottom-1 -right-1 bg-white rounded-full text-sm leading-none px-0.5">
-                  🔒
-                </span>
+              <p
+                className="text-sm whitespace-pre-wrap"
+                style={{ color: subtextColor ?? "#4b5563" }}
+              >
+                {currentPersona.bio}
+              </p>
+              {isPrivate("bio") && (
+                <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
               )}
             </div>
+          )}
 
+          {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
             <div
-              className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
+              className={`w-full max-w-xs ${isPrivate("oshi_tags") ? "opacity-50" : ""}`}
             >
-              <h1 className="text-xl font-bold">
-                {currentPersona?.displayName}
-              </h1>
-              {isPrivate("display_name") && <PrivateBadge />}
-            </div>
-
-            {!currentPersona?.label && (
-              <Link
-                to="/profile/edit"
-                search={{ personaId: currentPersonaId }}
-                className="text-xs underline"
-                style={{ color: subtextColor ?? "#9ca3af" }}
-              >
-                ラベルを設定する →
-              </Link>
-            )}
-
-            {currentPersona?.bio && (
-              <div
-                className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
-              >
-                <p
-                  className="text-sm whitespace-pre-wrap"
-                  style={{ color: subtextColor ?? "#4b5563" }}
-                >
-                  {currentPersona.bio}
-                </p>
-                {isPrivate("bio") && (
-                  <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
-                )}
+              <div className="flex flex-wrap gap-1 justify-center">
+                {currentPersona.oshiTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 rounded-full text-xs"
+                    style={
+                      style
+                        ? { background: style.tagBg, color: style.tagText }
+                        : { background: "#fce7f3", color: "#be185d" }
+                    }
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
-            )}
+              {isPrivate("oshi_tags") && (
+                <p className="text-xs text-gray-400 text-center mt-1">
+                  🔒 非公開
+                </p>
+              )}
+            </div>
+          )}
 
-            {currentPersona?.oshiTags && currentPersona.oshiTags.length > 0 && (
+          {currentPersona?.galleryPhotos &&
+            currentPersona.galleryPhotos.length > 0 && (
               <div
-                className={`w-full max-w-xs ${isPrivate("oshi_tags") ? "opacity-50" : ""}`}
+                className={`w-full max-w-xs ${isPrivate("gallery") ? "opacity-50" : ""}`}
               >
-                <div className="flex flex-wrap gap-1 justify-center">
-                  {currentPersona.oshiTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-0.5 rounded-full text-xs"
-                      style={
-                        style
-                          ? { background: style.tagBg, color: style.tagText }
-                          : { background: "#fce7f3", color: "#be185d" }
-                      }
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                {isPrivate("oshi_tags") && (
+                <GalleryLightbox
+                  photos={currentPersona.galleryPhotos}
+                  accentColor={style?.textColor}
+                />
+                {isPrivate("gallery") && (
                   <p className="text-xs text-gray-400 text-center mt-1">
                     🔒 非公開
                   </p>
@@ -374,235 +368,158 @@ function MePage() {
               </div>
             )}
 
-            {currentPersona?.galleryPhotos &&
-              currentPersona.galleryPhotos.length > 0 && (
-                <div
-                  className={`w-full max-w-xs ${isPrivate("gallery") ? "opacity-50" : ""}`}
-                >
-                  <GalleryLightbox
-                    photos={currentPersona.galleryPhotos}
-                    accentColor={style?.textColor}
-                  />
-                  {isPrivate("gallery") && (
-                    <p className="text-xs text-gray-400 text-center mt-1">
-                      🔒 非公開
-                    </p>
-                  )}
-                </div>
+          {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
+            <div
+              className={`flex flex-col gap-2 w-full max-w-xs ${isPrivate("sns_links") ? "opacity-50" : ""}`}
+            >
+              {currentPersona.snsLinks.map((link) => (
+                <SnsLinkButton
+                  key={link.id}
+                  platform={link.platform}
+                  url={link.url}
+                  title={link.title}
+                  colorOverride={
+                    style
+                      ? {
+                          border: `${style.textColor}50`,
+                          text: style.textColor,
+                          hoverBg: `${style.textColor}15`,
+                          rainbowBorder: !!style.rainbowBorder,
+                          cardBg: style.rainbowBorder
+                            ? style.background
+                            : undefined,
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+              {isPrivate("sns_links") && (
+                <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
               )}
+            </div>
+          )}
 
-            {currentPersona?.snsLinks && currentPersona.snsLinks.length > 0 && (
-              <div
-                className={`flex flex-col gap-2 w-full max-w-xs ${isPrivate("sns_links") ? "opacity-50" : ""}`}
-              >
-                {currentPersona.snsLinks.map((link) => (
-                  <SnsLinkButton
-                    key={link.id}
-                    platform={link.platform}
-                    url={link.url}
-                    title={link.title}
-                    colorOverride={
-                      style
-                        ? {
-                            border: `${style.textColor}50`,
-                            text: style.textColor,
-                            hoverBg: `${style.textColor}15`,
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-                {isPrivate("sns_links") && (
-                  <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
-                )}
+          {currentPersona?.nafudaLinks &&
+            currentPersona.nafudaLinks.length > 0 &&
+            urlId && (
+              <div className="w-full max-w-xs flex flex-col items-center gap-1">
+                <span
+                  className="text-xs font-medium inline-flex items-center gap-1"
+                  style={{ color: subtextColor ?? "#6b7280" }}
+                >
+                  <NafudaIcon /> 他のなふだ
+                </span>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {currentPersona.nafudaLinks.map((link) => (
+                    <NafudaLinkChip
+                      key={link.targetShareToken}
+                      urlId={urlId}
+                      shareToken={link.targetShareToken}
+                      displayName={link.targetDisplayName}
+                      avatarUrl={link.targetAvatarUrl}
+                      // /me ではシェルから出ず、PersonaSwitcher と同じ in-place
+                      // 切り替えにする（ADR-0019）。なふだリンクは必ず自分の別ペルソナを指す。
+                      onSelect={() => setCurrentPersonaId(link.targetPersonaId)}
+                      colorOverride={
+                        style
+                          ? {
+                              border: `${style.textColor}50`,
+                              text: style.textColor,
+                              hoverBg: `${style.textColor}15`,
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
-            {currentPersona?.nafudaLinks &&
-              currentPersona.nafudaLinks.length > 0 &&
-              urlId && (
-                <div className="w-full max-w-xs flex flex-col items-center gap-1">
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color: subtextColor ?? "#6b7280" }}
-                  >
-                    📛 他のなふだ
-                  </span>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {currentPersona.nafudaLinks.map((link) => (
-                      <NafudaLinkChip
-                        key={link.targetShareToken}
-                        urlId={urlId}
-                        shareToken={link.targetShareToken}
-                        displayName={link.targetDisplayName}
-                        avatarUrl={link.targetAvatarUrl}
-                        colorOverride={
-                          style
-                            ? {
-                                border: `${style.textColor}50`,
-                                text: style.textColor,
-                                hoverBg: `${style.textColor}15`,
-                              }
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
+          <div className="w-full max-w-xs pt-2 flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <Button
                 onClick={() => setProfileQrOpen(true)}
                 size="lg"
-                className="w-full rounded-xl"
+                className="w-full rounded-xl hover:opacity-90"
+                style={ctaOverride}
               >
                 なふだを見せる
               </Button>
+              <p
+                className="text-xs text-center"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                プロフィールを見せるだけ。つながりません。
+              </p>
+            </div>
+            <div className="flex flex-col gap-1">
               <Button
                 onClick={handleExchangeNafuda}
                 disabled={connectQrLoading}
                 size="lg"
-                className="w-full rounded-xl"
+                className="w-full rounded-xl hover:opacity-90"
+                style={ctaOverride}
               >
                 {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="w-full rounded-xl text-gray-700 bg-white border-gray-200 hover:bg-gray-50 hover:text-gray-800"
-              >
-                <Link to="/connections">つながりを見る</Link>
-              </Button>
-            </div>
-
-            <div className="pt-6 pb-2">
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="text-xs underline hover:text-red-500"
+              <p
+                className="text-xs text-center"
                 style={{ color: subtextColor ?? "#9ca3af" }}
               >
-                退会する
-              </button>
-            </div>
-          </div>
-        </main>
-        {/* /なふだ領域 */}
-
-        {currentPersona && urlId && (
-          <QRBottomSheet
-            isOpen={profileQrOpen}
-            onClose={() => setProfileQrOpen(false)}
-            url={
-              origin
-                ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}`
-                : ""
-            }
-            label={`${currentPersona.displayName} のなふだ（閲覧用）`}
-          />
-        )}
-        <ExchangeContextSheet
-          isOpen={exchangeContextOpen}
-          isSubmitting={exchangeContextSubmitting}
-          onSubmit={handleContextSubmit}
-          onSkip={handleContextSkip}
-        />
-        {connectQrUrl && (
-          <QRBottomSheet
-            isOpen={connectQrOpen}
-            onClose={() => {}}
-            url={connectQrUrl}
-            label="相手にスキャンしてもらう（15分有効）"
-            exchangeMode={{
-              onExchanged: handleExchanged,
-              onNotExchanged: handleNotExchanged,
-              connectionNotification,
-            }}
-          />
-        )}
-
-        {showDeleteModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-              <h2 className="text-lg font-bold mb-3">退会の確認</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                退会すると、あなたが入力したデータや築いたつながりはすべて削除され、元に戻せません。印刷・共有済みのQRコードも使えなくなります。
+                その場でお互いにつながります。
               </p>
-              <p className="text-sm text-gray-600 mb-4">
-                ただし、あなたが作成したイベントは記録として残ります（あなた自身の情報は消えます）。
-              </p>
-              <label className="flex items-start gap-2 mb-4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={deleteAgreed}
-                  onChange={(e) => setDeleteAgreed(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  上記の内容をすべて削除することに同意します
-                </span>
-              </label>
-              {deleteError && (
-                <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setDeleteAgreed(false);
-                    setDeleteError(null);
-                  }}
-                  disabled={isDeleting}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={handleDeleteAccount}
-                  disabled={!deleteAgreed || isDeleting}
-                >
-                  {isDeleting ? "処理中..." : "退会する"}
-                </Button>
-              </div>
             </div>
+            {currentPersona && (
+              <Link
+                to="/u/$urlId/p/$token"
+                params={{ urlId, token: currentPersona.shareToken }}
+                className="text-xs text-center underline underline-offset-2 transition-colors"
+                style={{ color: subtextColor ?? "#9ca3af" }}
+              >
+                👁 人から見た画面で確認
+              </Link>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+      {/* /なふだ領域 */}
+
+      {currentPersona && urlId && (
+        <QRBottomSheet
+          isOpen={profileQrOpen}
+          onClose={() => setProfileQrOpen(false)}
+          url={
+            origin ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}` : ""
+          }
+          label={`${currentPersona.displayName} のなふだ（閲覧用）`}
+        />
+      )}
+      <ExchangeContextSheet
+        isOpen={exchangeContextOpen}
+        isSubmitting={exchangeContextSubmitting}
+        onSubmit={handleContextSubmit}
+        onSkip={handleContextSkip}
+      />
+      {connectQrUrl && (
+        <QRBottomSheet
+          isOpen={connectQrOpen}
+          onClose={() => {}}
+          url={connectQrUrl}
+          label="相手にスキャンしてもらう（15分有効）"
+          exchangeMode={{
+            onExchanged: handleExchanged,
+            onNotExchanged: handleNotExchanged,
+            connectionNotification,
+          }}
+        />
+      )}
+    </>
   );
 }
 
 function RedirectToWizard() {
-  const navigate = useNavigate();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteAgreed, setDeleteAgreed] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const handleLogout = async () => {
-    await authClient.signOut();
-    await navigate({ to: "/login" });
-  };
-
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteAccount();
-      await authClient.signOut();
-      await navigate({ to: "/login" });
-    } catch {
-      setDeleteError("退会処理に失敗しました。再度お試しください。");
-      setIsDeleting(false);
-    }
-  };
-
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
         <p className="text-sm text-gray-400">ようこそ！</p>
@@ -615,63 +532,6 @@ function RedirectToWizard() {
       <Button asChild size="lg">
         <Link to="/profile/wizard">なふだを作る</Link>
       </Button>
-      <button
-        onClick={handleLogout}
-        className="text-sm text-gray-400 underline hover:text-gray-600"
-      >
-        ログアウト
-      </button>
-      <button
-        onClick={() => setShowDeleteModal(true)}
-        className="text-xs text-gray-300 underline hover:text-red-400"
-      >
-        退会する
-      </button>
-
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-3">退会の確認</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              アカウントを削除します。この操作は取り消せません。
-            </p>
-            <label className="flex items-start gap-2 mb-4 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={deleteAgreed}
-                onChange={(e) => setDeleteAgreed(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span className="text-sm">削除することに同意します</span>
-            </label>
-            {deleteError && (
-              <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteAgreed(false);
-                  setDeleteError(null);
-                }}
-                disabled={isDeleting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDeleteAccount}
-                disabled={!deleteAgreed || isDeleting}
-              >
-                {isDeleting ? "処理中..." : "退会する"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+    </div>
   );
 }

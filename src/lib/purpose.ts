@@ -29,6 +29,8 @@ export interface PurposeConfig {
   editTagLabel: string;
   /** タグ入力欄の補足説明文 */
   editTagHint: string;
+  /** ゼロ入力で見せる人気タグのキュレーション初期値（cold start を埋める seed） */
+  popularTagSeeds: string[];
 }
 
 const DEFAULT_LABEL_PLACEHOLDER = "例: 推し活用・趣味用";
@@ -45,6 +47,17 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     snsPriority: ["instagram", "x", "line_openchat"],
     editTagLabel: "興味タグ",
     editTagHint: "興味のあること・ジャンル・趣味など",
+    popularTagSeeds: [
+      "サウナ",
+      "ボードゲーム",
+      "お酒",
+      "登山",
+      "ランニング",
+      "カメラ",
+      "旅行",
+      "カフェ巡り",
+      "食べ歩き",
+    ],
   },
   oshi: {
     id: "oshi",
@@ -57,6 +70,18 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     snsPriority: ["x", "instagram", "discord", "pixiv", "youtube"],
     editTagLabel: "推しタグ",
     editTagHint: "推しの名前・グループ名・ジャンルなど",
+    popularTagSeeds: [
+      "アイドル",
+      "K-POP",
+      "声優",
+      "VTuber",
+      "2.5次元",
+      "バンド",
+      "舞台",
+      "メン限",
+      "遠征",
+      "キャラクター",
+    ],
   },
   car: {
     id: "car",
@@ -69,6 +94,16 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     snsPriority: ["minkara", "x", "youtube", "instagram"],
     editTagLabel: "興味タグ",
     editTagHint: "車種・走り方・カスタムの方向性など",
+    popularTagSeeds: [
+      "車中泊",
+      "ドライブ",
+      "カスタム",
+      "旧車",
+      "JDM",
+      "モータースポーツ",
+      "スポーツカー",
+      "オープンカー",
+    ],
   },
   other: {
     id: "other",
@@ -81,6 +116,18 @@ export const PURPOSE_CONFIGS: Record<PurposeId, PurposeConfig> = {
     snsPriority: [],
     editTagLabel: "興味タグ",
     editTagHint: "興味のあること・ジャンル・趣味など",
+    popularTagSeeds: [
+      "ゲーム",
+      "アニメ",
+      "マンガ",
+      "映画",
+      "音楽",
+      "アート",
+      "読書",
+      "ガジェット",
+      "料理",
+      "散歩",
+    ],
   },
 };
 
@@ -107,6 +154,13 @@ export function purposeTagHeading(
   purpose: string | null | undefined,
 ): string | null {
   return getPurposeConfig(purpose)?.tagHeading ?? null;
+}
+
+/** ゼロ入力で見せる人気タグのキュレーション seed（null/未知 → 空。usage が埋める） */
+export function purposePopularTagSeeds(
+  purpose: string | null | undefined,
+): string[] {
+  return getPurposeConfig(purpose)?.popularTagSeeds ?? [];
 }
 
 export function purposeLabelPlaceholder(

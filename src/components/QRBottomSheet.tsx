@@ -1,6 +1,6 @@
 import { Sheet } from "react-modal-sheet";
 import { QRCodeSVG } from "qrcode.react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAnimate } from "motion/react";
 
 interface QRBottomSheetProps {
@@ -25,6 +25,16 @@ export function QRBottomSheet({
   const [mounted] = useState(() => typeof window !== "undefined");
   const [copied, setCopied] = useState(false);
   const [scope, animate] = useAnimate();
+
+  // PC で Esc キーで閉じる（閲覧系QRのみ。交換系は意図的に対象外）
+  useEffect(() => {
+    if (!isOpen || exchangeMode) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, exchangeMode, onClose]);
 
   const handleBackdropTap = async () => {
     if (!exchangeMode) {

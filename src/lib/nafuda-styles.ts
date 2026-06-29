@@ -4,7 +4,9 @@ export type NafudaStyleId =
   | "moon"
   | "ocean"
   | "sunset"
-  | "stardust";
+  | "stardust"
+  | "rainbow"
+  | "pearl";
 export type FrameId = "sakura" | "moon" | "stardust";
 
 export interface NafudaStyleDef {
@@ -21,6 +23,8 @@ export interface NafudaStyleDef {
   isFree: boolean;
   holographic?: boolean;
   petalsFall?: boolean;
+  rainbowBorder?: boolean;
+  pearlBorder?: boolean;
 }
 
 export const NAFUDA_STYLES: NafudaStyleDef[] = [
@@ -111,6 +115,36 @@ export const NAFUDA_STYLES: NafudaStyleDef[] = [
     isFree: true,
     holographic: true,
   },
+  {
+    id: "rainbow",
+    name: "虹",
+    background: "linear-gradient(135deg, #0a0a0f 0%, #14141c 100%)",
+    textColor: "#ffffff",
+    subtextColor: "rgba(255,255,255,0.78)",
+    tagBg: "rgba(255,255,255,0.16)",
+    tagText: "#ffffff",
+    fontFamily: '"Noto Sans JP", sans-serif',
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap",
+    frameId: null,
+    isFree: true,
+    rainbowBorder: true,
+  },
+  {
+    id: "pearl",
+    name: "真珠",
+    background: "linear-gradient(135deg, #faf8fb 0%, #efebf3 55%, #f6f1f4 100%)",
+    textColor: "#4a4458",
+    subtextColor: "rgba(74,68,88,0.7)",
+    tagBg: "rgba(74,68,88,0.08)",
+    tagText: "#4a4458",
+    fontFamily: '"Noto Serif JP", serif',
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap",
+    frameId: null,
+    isFree: true,
+    pearlBorder: true,
+  },
 ];
 
 export function getNafudaStyle(
@@ -118,4 +152,17 @@ export function getNafudaStyle(
 ): NafudaStyleDef | null {
   if (!styleId) return null;
   return NAFUDA_STYLES.find((s) => s.id === styleId) ?? null;
+}
+
+// 与えた色（#rrggbb）の上に置くと読める文字色を返す。
+// なふだスタイルの textColor を「塗りボタンの地」に使うとき、その上の
+// 文字色を明度で出し分ける（白地→濃色、暗地→白）。
+export function contrastText(hex: string): string {
+  const h = hex.replace("#", "");
+  if (h.length < 6) return "#111827";
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? "#111827" : "#ffffff";
 }

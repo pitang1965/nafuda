@@ -2,10 +2,13 @@
 
 QRコードを見せるだけでSNSつながりができる、イベント特化型デジタル名刺アプリ。
 
+アーキテクチャ的には、Cloudflare Pages 上の TanStack Start (React SSR) を基盤とし、リアルタイムな状態同期に Cloudflare Durable Objects を使用しています（Cloudflare Workers への移行は将来的に検討中。経緯は [ADR-0022](docs/adr/0022-realtime-via-durable-objects.md) を参照）。
+
 ## 技術スタック
 
 - **フレームワーク:** TanStack Start v1 (React SSR)
 - **デプロイ:** Cloudflare Pages + Workers
+- **リアルタイム:** Cloudflare Durable Objects（コンパニオン Worker・WebSocket）
 - **DB:** Neon Postgres + Drizzle ORM
 - **認証:** Better Auth (Google / Facebook OAuth)
 - **スタイル:** Tailwind CSS + shadcn/ui
@@ -121,7 +124,15 @@ pnpm build        # 本番ビルド
 pnpm db:generate  # Drizzleマイグレーションファイルを生成
 pnpm db:migrate   # マイグレーションをNeonに適用
 pnpm db:studio    # Drizzle Studio (DBブラウザ) を起動
+
+pnpm realtime:deploy:staging  # realtime コンパニオンWorkerを staging へデプロイ
+pnpm realtime:deploy:prod     # realtime コンパニオンWorkerを本番へデプロイ
+pnpm realtime:tail:staging    # realtime Worker (staging) のログを表示
+pnpm realtime:tail:prod       # realtime Worker (本番) のログを表示
 ```
+
+> realtime コマンドは `node_modules` のローカル `wrangler` を使うため npx 不要です。
+> wrangler を直接叩く場合は `pnpm exec wrangler ...` を使ってください（グローバルインストールは不要）。
 
 ---
 
@@ -143,4 +154,57 @@ GitHub の `master` ブランチへのプッシュで Cloudflare Pages が自動
 | 変数 | 管理場所 |
 |---|---|
 | `VITE_POSTHOG_KEY` | `wrangler.toml` の `[vars]`（クライアント公開鍵のためコミット可） |
+| `VITE_REALTIME_URL` / Service Binding `REALTIME` | `wrangler.toml`（下記「リアルタイム通信」参照） |
+| `REALTIME_SECRET` / `INTERNAL_PUSH_SECRET` | Cloudflare Dashboard（Pages）＋ コンパニオンWorker（secret） |
 | その他のシークレット | Cloudflare Dashboard → Environment Variables |
+
+---
+
+## リアルタイム通信 (Durable Objects)
+
+QR接続検知（「つながりました」通知）とイベント参加者一覧の更新を WebSocket でリアルタイム化しています。設計の経緯と判断は [ADR-0022](docs/adr/0022-realtime-via-durable-objects.md) を参照。
+
+### 構成
+
+- **コンパニオン Worker**（`realtime/`）— Durable Object を持つ、本体（Pages）とは別デプロイの Worker。Cloudflare Pages からは Durable Object クラスを定義（export）できないため、独立した Worker として上げ、Service Binding で連携する。
+  - `PersonaChannel`（room=`persona:<id>`）— 本人宛の通知（QR接続成立など）
+  - `EventRoom`（room=`event:<id>`）— イベント参加者一覧の更新通知（presence）
+  - 中継ロジックは共通基底 `BroadcastRoom`（標準 WebSocket API）に集約。
+- **認証** — 本体が HMAC 署名した短命チケットを発行し、Worker は署名を検証するだけ（DB・セッションを持たない）。サーバー→Worker の push は Service Binding（内部シークレット）経由。
+- **正本は Postgres** — Worker は状態を持たない中継で、クライアントは (再)接続のたびに正本を読み直して収束する（reconcile-on-connect）。`VITE_REALTIME_URL` 未設定の環境では realtime を使わず**従来のポーリングへ自動縮退**する。
+
+### 環境変数・シークレット
+
+| 変数 | 役割 | 設定場所 |
+|---|---|---|
+| `VITE_REALTIME_URL` | クライアントの WS 接続先（`wss://...workers.dev`・ビルド時変数） | `wrangler.toml`（本番=top-level `[vars]` / staging=`[env.preview.vars]`） |
+| Service Binding `REALTIME` | 本体→Worker の内部呼び出し | `wrangler.toml`（本番=top-level `[[services]]` / staging=`[env.preview]`） |
+| `REALTIME_SECRET` | チケットの署名・検証（本体とWorkerで共有） | **Pages**（Production/Preview の secret）＋ **コンパニオンWorker**（secret） |
+| `INTERNAL_PUSH_SECRET` | push の内部呼び出し検証 | 同上 |
+
+> `REALTIME_SECRET` / `INTERNAL_PUSH_SECRET` は本体とWorkerで**同じ値**を設定する。staging と本番は**別の値**にする。
+
+### デプロイ手順
+
+```bash
+# 1. コンパニオンWorkerをデプロイ（Durable Object と migration が作られる）
+pnpm realtime:deploy:staging   # staging: nafuda-realtime-staging
+pnpm realtime:deploy:prod      # 本番:    nafuda-realtime
+
+# 2. Worker にシークレットを投入（対話式・同じ値を Pages 側にも設定する）
+pnpm exec wrangler secret put REALTIME_SECRET --config realtime/wrangler.toml --env=""            # staging
+pnpm exec wrangler secret put INTERNAL_PUSH_SECRET --config realtime/wrangler.toml --env=""        # staging
+pnpm exec wrangler secret put REALTIME_SECRET --config realtime/wrangler.toml --env production      # 本番
+pnpm exec wrangler secret put INTERNAL_PUSH_SECRET --config realtime/wrangler.toml --env production # 本番
+
+# 3. Pages 側のシークレットをダッシュボードで設定
+#    Pages → 設定 → 変数とシークレット → Production / Preview に
+#    REALTIME_SECRET と INTERNAL_PUSH_SECRET を上と同じ値で設定
+
+# ログ確認
+pnpm realtime:tail:prod
+```
+
+> ⚠️ デプロイ後の動作確認は **シークレットウィンドウ**で行う（PWA の Service Worker が旧JSをキャッシュし、通常ウィンドウでは realtime が有効化されないことがあるため）。
+>
+> 後戻りが必要な場合は `wrangler.toml` の top-level realtime 設定（`[[services]]` と `VITE_REALTIME_URL`）を外して再デプロイすれば、本番は従来のポーリングへ戻ります（DB変更はありません）。

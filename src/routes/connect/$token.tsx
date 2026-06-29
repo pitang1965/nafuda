@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import {
   createFileRoute,
   useNavigate,
@@ -13,7 +14,7 @@ import {
   getPendingInviteData,
   applyPendingInvite,
 } from "../../server/functions/connection";
-import { InitialsAvatar } from "../../components/InitialsAvatar";
+import { UserAvatar } from "../../components/UserAvatar";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { EmptyState } from "../../components/EmptyState";
@@ -226,18 +227,7 @@ function ConnectPage() {
               style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
               aria-label="戻る"
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <ChevronLeft className="size-5" />
             </button>
           </div>
         )}
@@ -252,20 +242,16 @@ function ConnectPage() {
         >
           {style?.frameId && <NafudaFrame frameId={style.frameId} />}
           <div className="p-6 flex flex-col items-center gap-4 relative z-20">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="w-20 h-20 rounded-full object-cover"
-                style={
-                  style
-                    ? { boxShadow: `0 0 0 3px ${style.textColor}40` }
-                    : undefined
-                }
-              />
-            ) : (
-              <InitialsAvatar name={profile.displayName} size={80} />
-            )}
+            <UserAvatar
+              avatarUrl={profile.avatarUrl}
+              name={profile.displayName}
+              size={80}
+              style={
+                style
+                  ? { boxShadow: `0 0 0 3px ${style.textColor}40` }
+                  : undefined
+              }
+            />
 
             <div className="text-center">
               <h1

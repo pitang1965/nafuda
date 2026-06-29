@@ -120,7 +120,7 @@ export function ExchangeContextSheet({
               placeholder="例：バーナイト＠立川"
               maxLength={100}
               disabled={busy}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 disabled:opacity-50"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 disabled:opacity-50"
             />
             {gpsStatus && (
               <p className={`text-xs ${gpsStatus.className}`}>

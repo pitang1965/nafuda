@@ -1,0 +1,49 @@
+# なふだ realtime コンパニオン Worker（staging 実験用）。
+# 本体 Pages (nafuda) とは別デプロイ単位。`cd realtime && wrangler deploy` で上げる。
+# 後戻り: `wrangler delete nafuda-realtime-staging` で丸ごと消える（DB変更ゼロ）。
+#
+# シークレットはこのファイルに書かず secret で投入する:
+#   wrangler secret put REALTIME_SECRET
+#   wrangler secret put INTERNAL_PUSH_SECRET
+# 同じ値を本体 Pages の Preview 環境にも設定する（REALTIME_SECRET / INTERNAL_PUSH_SECRET）。
+
+name = "nafuda-realtime-staging"
+main = "src/index.ts"
+compatibility_date = "2026-04-23"
+compatibility_flags = [ "nodejs_compat" ]
+
+[[durable_objects.bindings]]
+name = "PERSONA_CHANNEL"
+class_name = "PersonaChannel"
+
+[[durable_objects.bindings]]
+name = "EVENT_ROOM"
+class_name = "EventRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = [ "PersonaChannel" ]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = [ "EventRoom" ]
+
+[observability]
+enabled = true
+
+# 本番環境。`wrangler deploy -e production` で別名の本番Workerを上げる。
+# 素の `wrangler deploy` は従来どおり staging（top-level）を上げる。
+# DO バインディングは環境継承の取りこぼしを避けるため明示的に再宣言する（migrations は top-level 共有）。
+[env.production]
+name = "nafuda-realtime"
+
+[[env.production.durable_objects.bindings]]
+name = "PERSONA_CHANNEL"
+class_name = "PersonaChannel"
+
+[[env.production.durable_objects.bindings]]
+name = "EVENT_ROOM"
+class_name = "EventRoom"
+
+[env.production.observability]
+enabled = true

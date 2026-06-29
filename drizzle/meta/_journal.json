@@ -127,6 +127,20 @@
       "when": 1781588854508,
       "tag": "0017_dark_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1782039243460,
+      "tag": "0018_bumpy_morbius",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782303999090,
+      "tag": "0019_colorful_madame_masque",
+      "breakpoints": true
     }
   ]
 }

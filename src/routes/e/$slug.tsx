@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { useState, useCallback } from "react";
@@ -10,6 +11,7 @@ import {
   cancelCheckin,
 } from "../../server/functions/event";
 import { getOwnProfile } from "../../server/functions/profile";
+import { useEventRoomRealtime } from "../../hooks/useEventRoomRealtime";
 import { ParticipantCard } from "../../components/ParticipantCard";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
@@ -26,6 +28,7 @@ function formatEventDate(date: Date | string, showTime: boolean): string {
   const d = new Date(date);
   if (showTime) {
     return d.toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -34,10 +37,34 @@ function formatEventDate(date: Date | string, showTime: boolean): string {
     });
   }
   return d.toLocaleDateString("ja-JP", {
+    timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+}
+
+function formatEventPeriod(
+  start: Date | string,
+  end: Date | string | null,
+  showTime: boolean,
+): string {
+  const startStr = formatEventDate(start, showTime);
+  if (!end) return startStr;
+  const s = new Date(start);
+  const e = new Date(end);
+  const sameDay = s.toDateString() === e.toDateString();
+  // 同日かつ時刻表示なら終了は時刻だけ、それ以外は終了も全体表示。
+  if (sameDay) {
+    if (!showTime) return startStr;
+    const endTime = e.toLocaleTimeString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${startStr} 〜 ${endTime}`;
+  }
+  return `${startStr} 〜 ${formatEventDate(end, showTime)}`;
 }
 
 export const Route = createFileRoute("/e/$slug")({
@@ -115,8 +142,32 @@ function EventPage() {
   const [qrOpen, setQrOpen] = useState(false);
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
+  // 参加者一覧と自分の参加状況は state で持つ。realtime/操作時はローダー全体ではなく
+  // 参加者一覧だけを取り直して更新する（重い getOwnProfile/getMyCheckinStatus を巻き込まない）。
+  const [participants, setParticipants] = useState(data?.participants ?? []);
+  const [checkedInIds, setCheckedInIds] =
+    useState<string[]>(checkedInPersonaIds);
+
+  // 参加者一覧だけを取り直す（軽い1リクエスト）。realtime 通知・自分の操作の両方から呼ぶ。
+  const refreshParticipants = useCallback(async () => {
+    try {
+      const fresh = await getEventParticipants({ data: { token } });
+      if (fresh) setParticipants(fresh.participants);
+    } catch {
+      // 一時エラーは無視。次の通知/再接続で収束する。
+    }
+  }, [token]);
+
+  // 参加者一覧をリアルタイムに保つ（realtime無効環境では不活性＝従来の静的一覧）。
+  // チェックイン/取消の通知・再接続のたびに参加者一覧だけを取り直す。
+  useEventRoomRealtime({
+    enabled: !!data,
+    token,
+    onChange: refreshParticipants,
+  });
+
   const isCheckedIn = selectedPersonaId
-    ? checkedInPersonaIds.includes(selectedPersonaId)
+    ? checkedInIds.includes(selectedPersonaId)
     : false;
   const myPersonaName =
     personas.find((p) => p.id === selectedPersonaId)?.displayName ?? null;
@@ -129,11 +180,9 @@ function EventPage() {
       await checkinToEvent({
         data: { token, personaId: selectedPersonaId },
       });
-      await router.navigate({
-        to: "/e/$slug",
-        params: { slug: token },
-        replace: true,
-      });
+      // 1ユーザー=1エントリ: 自分のチェックイン済みは選択中のなふだのみになる
+      setCheckedInIds([selectedPersonaId]);
+      await refreshParticipants();
     } catch (err) {
       setCheckinError(
         err instanceof Error ? err.message : "チェックインに失敗しました",
@@ -141,7 +190,7 @@ function EventPage() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [selectedPersonaId, data, isCheckedIn, router, token]);
+  }, [selectedPersonaId, data, isCheckedIn, token, refreshParticipants]);
 
   const handleCancel = useCallback(async () => {
     if (!selectedPersonaId || !data) return;
@@ -151,11 +200,8 @@ function EventPage() {
       await cancelCheckin({
         data: { token, personaId: selectedPersonaId },
       });
-      await router.navigate({
-        to: "/e/$slug",
-        params: { slug: token },
-        replace: true,
-      });
+      setCheckedInIds((prev) => prev.filter((id) => id !== selectedPersonaId));
+      await refreshParticipants();
     } catch (err) {
       setCancelError(
         err instanceof Error ? err.message : "取り消しに失敗しました",
@@ -163,7 +209,7 @@ function EventPage() {
     } finally {
       setIsCancelling(false);
     }
-  }, [selectedPersonaId, data, router, token]);
+  }, [selectedPersonaId, data, token, refreshParticipants]);
 
   if (!data) {
     return (
@@ -186,18 +232,7 @@ function EventPage() {
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="戻る"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <ChevronLeft className="size-5" />
           </button>
           <h1 className="text-lg font-bold truncate flex-1">
             {data.event.name}
@@ -218,7 +253,11 @@ function EventPage() {
           <div className="flex flex-col gap-1">
             <p className="text-sm text-gray-500">{data.event.venueName}</p>
             <p className="text-xs text-gray-400">
-              {formatEventDate(data.event.eventDate, data.event.showTime)}
+              {formatEventPeriod(
+                data.event.eventDate,
+                data.event.eventEndDate,
+                data.event.showTime,
+              )}
             </p>
             {data.event.description && (
               <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">
@@ -311,10 +350,10 @@ function EventPage() {
 
           {/* 参加者カウント */}
           <p className="text-sm text-gray-600 font-medium">
-            {data.participants.length}人が参加
+            {participants.length}人が参加
           </p>
 
-          {!isLoggedIn && data.participants.length > 0 && (
+          {!isLoggedIn && participants.length > 0 && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
               <Link to="/login" className="font-semibold underline">
                 ログイン
@@ -324,9 +363,9 @@ function EventPage() {
           )}
 
           {/* 参加者グリッド */}
-          {data.participants.length > 0 ? (
+          {participants.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {data.participants.map((p) => (
+              {participants.map((p) => (
                 <ParticipantCard
                   key={p.checkinId}
                   displayName={p.displayName}

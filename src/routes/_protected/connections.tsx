@@ -5,9 +5,10 @@ import {
   deleteConnection,
   updateConnection,
 } from "../../server/functions/connection";
-import { InitialsAvatar } from "../../components/InitialsAvatar";
+import { UserAvatar } from "../../components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ import {
 
 export const Route = createFileRoute("/_protected/connections")({
   loader: () => getMyConnections(),
+  staticData: { title: "つながり" },
   component: ConnectionsPage,
 });
 
@@ -30,44 +32,20 @@ function ConnectionsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="p-4 border-b flex items-center gap-3">
-        <button
-          onClick={() => router.history.back()}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="戻る"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <h1 className="text-lg font-bold">つながり</h1>
-      </div>
-
-      <main className="flex-1 p-4">
-        {connections.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {connections.map((conn) => (
-              <ConnectionCard
-                key={conn.connectionId}
-                conn={conn}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+    <div className="flex-1 p-4">
+      {connections.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {connections.map((conn) => (
+            <ConnectionCard
+              key={conn.connectionId}
+              conn={conn}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -127,15 +105,11 @@ function ConnectionCard({
           className="flex items-start gap-3 p-4 flex-1 min-w-0 hover:bg-gray-50 transition-colors"
         >
           <div className="shrink-0">
-            {conn.toAvatarUrl ? (
-              <img
-                src={conn.toAvatarUrl}
-                alt=""
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <InitialsAvatar name={conn.toDisplayName} size={48} />
-            )}
+            <UserAvatar
+              avatarUrl={conn.toAvatarUrl}
+              name={conn.toDisplayName}
+              size={48}
+            />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -157,6 +131,7 @@ function ConnectionCard({
                     {" "}
                     (
                     {new Date(conn.eventDate).toLocaleDateString("ja-JP", {
+                      timeZone: "Asia/Tokyo",
                       month: "short",
                       day: "numeric",
                     })}
@@ -367,14 +342,13 @@ function EditDialog({
               </span>
             </label>
             <div className="relative">
-              <textarea
+              <Textarea
                 id="conn-memo"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
-                rows={4}
                 maxLength={500}
                 placeholder="相手についての覚え書き"
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {memo.length}/500

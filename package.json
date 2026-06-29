@@ -11,8 +11,15 @@
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:staging": "drizzle-kit migrate --config drizzle.config.staging.ts",
+    "db:migrate:prod": "drizzle-kit migrate --config drizzle.config.production.ts",
     "db:studio": "drizzle-kit studio",
-    "auth:generate": "npx auth generate"
+    "db:studio:staging": "drizzle-kit studio --config drizzle.config.staging.ts",
+    "auth:generate": "npx auth generate",
+    "realtime:deploy:staging": "wrangler deploy --config realtime/wrangler.toml --env=\"\"",
+    "realtime:deploy:prod": "wrangler deploy --config realtime/wrangler.toml --env production",
+    "realtime:tail:staging": "wrangler tail --config realtime/wrangler.toml --env=\"\"",
+    "realtime:tail:prod": "wrangler tail --config realtime/wrangler.toml --env production"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

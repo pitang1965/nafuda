@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { capture } from "@/lib/analytics";
@@ -25,6 +26,9 @@ export const Route = createFileRoute("/_protected/profile/wizard")({
     redirect: z.string().optional(),
   }),
   loader: () => getOwnProfile(),
+  // 初回オンボーディングの多段フロー。独自の内部ナビを持つため、シェルの
+  // ヘッダー/ボトムナビを被せず全画面で表示する。
+  staticData: { hideChrome: true },
   component: WizardPage,
 });
 
@@ -108,6 +112,9 @@ function WizardPage() {
         is_first_persona: isFirstPersona,
         purpose,
       });
+      // 作成直後は /me でこの新しいなふだを表示したい。Cookie を更新しないと
+      // 直前まで見ていた既存なふだが initialPersonaId に採用されてしまう。
+      document.cookie = `nafuda_last_persona_id=${persona.id}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
       if (redirect?.startsWith("/") && !redirect.startsWith("//")) {
         window.location.href = redirect;
       } else if (dest === "edit") {
@@ -125,8 +132,12 @@ function WizardPage() {
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
       <div className="mb-4">
-        <Link to="/me" className="text-sm text-gray-400 hover:text-gray-600">
-          ← トップに戻る
+        <Link
+          to="/me"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
+        >
+          <ChevronLeft className="size-4" />
+          トップに戻る
         </Link>
       </div>
       {/* Step indicator */}
@@ -206,7 +217,7 @@ function WizardPage() {
               <div>
                 <Input
                   {...register("displayName")}
-                  placeholder="ゆきたん⭐"
+                  placeholder="例：ゆきたん⭐"
                   className="h-12"
                 />
                 {errors.displayName && (
@@ -283,7 +294,7 @@ function WizardPage() {
                 </kbd>{" "}
                 で追加、×で削除。複数登録OK。
               </p>
-              <OshiTagInput name="oshiTags" />
+              <OshiTagInput name="oshiTags" purpose={purpose} />
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -308,7 +319,7 @@ function WizardPage() {
           {step === 4 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
-                {isFromEvent ? "設定完了！" : "もうひといきです！"}
+                {isFromEvent ? "設定完了！" : "なふだができました！"}
               </h2>
               <p className="text-sm text-gray-500">
                 {isFromEvent
@@ -358,9 +369,10 @@ function WizardPage() {
                   <button
                     type="button"
                     onClick={() => setStep(3)}
-                    className="text-sm text-gray-400 hover:text-gray-600 underline underline-offset-2 mt-1"
+                    className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mt-1"
                   >
-                    ← 戻る
+                    <ChevronLeft className="size-4" />
+                    <span className="underline underline-offset-2">戻る</span>
                   </button>
                 </div>
               )}

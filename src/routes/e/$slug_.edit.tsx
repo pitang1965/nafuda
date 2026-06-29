@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { useState } from "react";
@@ -13,7 +14,19 @@ import {
 } from "../../server/functions/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -35,14 +48,21 @@ export const Route = createFileRoute("/e/$slug_/edit")({
   component: EditEventPage,
 });
 
-const schema = z.object({
-  name: z.string().min(1, "イベント名を入力してください").max(100),
-  venueName: z.string().min(1, "会場名を入力してください").max(100),
-  eventDate: z.string().min(1, "日付を選択してください"),
-  eventTime: z.string().optional(),
-  showTime: z.boolean(),
-  description: z.string().max(1000).optional(),
-});
+const schema = z
+  .object({
+    name: z.string().min(1, "イベント名を入力してください").max(100),
+    venueName: z.string().min(1, "会場名を入力してください").max(100),
+    eventDate: z.string().min(1, "日付を選択してください"),
+    eventTime: z.string().optional(),
+    eventEndDate: z.string().optional(),
+    eventEndTime: z.string().optional(),
+    showTime: z.boolean(),
+    description: z.string().max(1000).optional(),
+  })
+  .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
+    message: "終了日は開始日以降にしてください",
+    path: ["eventEndDate"],
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -55,22 +75,38 @@ function EditEventPage() {
   const [deleteAgreed, setDeleteAgreed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  const eventDateStr = new Date(event.eventDate).toISOString().slice(0, 10);
-  const eventTimeStr = event.showTime
-    ? new Date(event.eventDate).toLocaleTimeString("ja-JP", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-    : "";
+  const handleBack = () => {
+    if (isDirty) {
+      setShowLeaveConfirm(true);
+      return;
+    }
+    router.history.back();
+  };
+
+  // 保存値（UTC instant）から JST のウォールクロック文字列を取り出す（入力欄の初期値用）。
+  // sv-SE ロケールは "YYYY-MM-DD" / "HH:MM" 形式を返すため date/time input にそのまま使える。
+  const toJstDate = (d: Date | string) =>
+    new Date(d).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+  const toJstTime = (d: Date | string) =>
+    new Date(d).toLocaleTimeString("sv-SE", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  const eventDateStr = toJstDate(event.eventDate);
+  const eventTimeStr = event.showTime ? toJstTime(event.eventDate) : "";
+  const eventEndDateStr = event.eventEndDate ? toJstDate(event.eventEndDate) : "";
+  const eventEndTimeStr =
+    event.eventEndDate && event.showTime ? toJstTime(event.eventEndDate) : "";
 
   const {
     register,
     handleSubmit,
     control,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -78,12 +114,16 @@ function EditEventPage() {
       venueName: event.venueName ?? "",
       eventDate: eventDateStr,
       eventTime: eventTimeStr,
+      eventEndDate: eventEndDateStr,
+      eventEndTime: eventEndTimeStr,
       showTime: event.showTime,
       description: event.description ?? "",
     },
   });
 
   const showTime = useWatch({ control, name: "showTime", defaultValue: false });
+  const description =
+    useWatch({ control, name: "description", defaultValue: "" }) ?? "";
 
   const onSubmit: SubmitHandler<FormValues> = async (formData) => {
     setSubmitError(null);
@@ -96,6 +136,8 @@ function EditEventPage() {
           venueName: formData.venueName,
           eventDate: formData.eventDate,
           eventTime: formData.eventTime,
+          eventEndDate: formData.eventEndDate || undefined,
+          eventEndTime: formData.eventEndTime || undefined,
           showTime: formData.showTime,
           description: formData.description || null,
         },
@@ -129,21 +171,10 @@ function EditEventPage() {
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={() => router.history.back()}
+          onClick={handleBack}
           aria-label="戻る"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <ChevronLeft className="size-5" />
         </Button>
         <h1 className="text-lg font-bold">イベントを編集</h1>
       </div>
@@ -173,32 +204,73 @@ function EditEventPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="eventDate">
-                日付
-              </label>
-              <Input id="eventDate" type="date" {...register("eventDate")} />
-              {errors.eventDate && (
-                <p className="text-xs text-red-500">
-                  {errors.eventDate.message}
-                </p>
-              )}
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-medium" htmlFor="eventDate">
+                  開始日
+                </label>
+                <Input id="eventDate" type="date" {...register("eventDate")} />
+                {errors.eventDate && (
+                  <p className="text-xs text-red-500">
+                    {errors.eventDate.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-medium" htmlFor="eventEndDate">
+                  終了日{" "}
+                  <span className="text-xs text-gray-400 font-normal">
+                    （任意）
+                  </span>
+                </label>
+                <Input
+                  id="eventEndDate"
+                  type="date"
+                  {...register("eventEndDate")}
+                />
+                {errors.eventEndDate && (
+                  <p className="text-xs text-red-500">
+                    {errors.eventEndDate.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
               <Switch
                 checked={showTime}
-                onCheckedChange={(v) => setValue("showTime", v)}
+                onCheckedChange={(v) =>
+                  setValue("showTime", v, { shouldDirty: true })
+                }
               />
               <span className="text-sm">時刻を追加</span>
             </label>
 
             {showTime && (
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" htmlFor="eventTime">
-                  開始時刻
-                </label>
-                <Input id="eventTime" type="time" {...register("eventTime")} />
+              <div className="flex gap-3">
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-sm font-medium" htmlFor="eventTime">
+                    開始時刻
+                  </label>
+                  <Input
+                    id="eventTime"
+                    type="time"
+                    {...register("eventTime")}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-sm font-medium" htmlFor="eventEndTime">
+                    終了時刻{" "}
+                    <span className="text-xs text-gray-400 font-normal">
+                      （任意）
+                    </span>
+                  </label>
+                  <Input
+                    id="eventEndTime"
+                    type="time"
+                    {...register("eventEndTime")}
+                  />
+                </div>
               </div>
             )}
 
@@ -209,14 +281,19 @@ function EditEventPage() {
                   （任意）
                 </span>
               </label>
-              <textarea
-                id="description"
-                {...register("description")}
-                rows={4}
-                maxLength={1000}
-                placeholder="イベントの詳細・注意事項など"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-              />
+              <div className="relative">
+                <Textarea
+                  id="description"
+                  {...register("description")}
+                  aria-invalid={!!errors.description}
+                  maxLength={1000}
+                  placeholder="イベントの詳細・注意事項など"
+                  className="pb-6"
+                />
+                <span className="absolute bottom-2 right-3 text-xs text-gray-400">
+                  {description.length}/1000
+                </span>
+              </div>
               {errors.description && (
                 <p className="text-xs text-red-500">
                   {errors.description.message}
@@ -260,11 +337,14 @@ function EditEventPage() {
             <p className="text-sm text-gray-600 mb-4">
               イベントとすべての参加履歴を削除します。この操作は取り消せません。
             </p>
-            <label className="flex items-start gap-2 mb-4 cursor-pointer">
-              <input
-                type="checkbox"
+            <label
+              htmlFor="event-delete-agree"
+              className="flex items-start gap-2 mb-4 cursor-pointer"
+            >
+              <Checkbox
+                id="event-delete-agree"
                 checked={deleteAgreed}
-                onChange={(e) => setDeleteAgreed(e.target.checked)}
+                onCheckedChange={(c) => setDeleteAgreed(c === true)}
                 className="mt-0.5"
               />
               <span className="text-sm">削除することに同意します</span>
@@ -297,6 +377,26 @@ function EditEventPage() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>変更内容が保存されていません</AlertDialogTitle>
+            <AlertDialogDescription>
+              このまま戻ると、保存されていない変更内容は破棄されます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>編集を続ける</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => router.history.back()}
+            >
+              破棄して戻る
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

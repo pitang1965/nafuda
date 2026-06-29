@@ -7,9 +7,34 @@ compatibility_flags = [ "nodejs_compat" ]
 binding = "AVATARS_BUCKET"
 bucket_name = "nafuda-avatars"
 
+# 本番の realtime コンパニオン Worker への Service Binding。
+# REALTIME_SECRET / INTERNAL_PUSH_SECRET は本番 Pages の Production 環境に secret として設定する。
+[[services]]
+binding = "REALTIME"
+service = "nafuda-realtime"
+
 [vars]
 VITE_POSTHOG_KEY = "phc_zcgFaCQVCT68NPuPpnXnCSweL826tr4TDqpg2GFXs3dY"
 R2_PUBLIC_URL = "https://pub-005c2707053246c7961f7082094d34f8.r2.dev"
+# 本番 WebSocket 接続先（ビルド時変数）。
+VITE_REALTIME_URL = "wss://nafuda-realtime.pitang1965.workers.dev"
+
+[env.preview]
+
+[[env.preview.r2_buckets]]
+binding = "AVATARS_BUCKET"
+bucket_name = "nafuda-avatars-staging"
+
+# realtime コンパニオン Worker への Service Binding（staging 実験用）。
+# Preview 環境にのみ存在 → 本番（top-level）には無いため pushToPersona は no-op になる。
+[[env.preview.services]]
+binding = "REALTIME"
+service = "nafuda-realtime-staging"
+
+[env.preview.vars]
+R2_PUBLIC_URL = "https://pub-4b271ae313654596b3a0f88236892b5b.r2.dev"
+# WebSocket 接続先（ビルド時変数）。Preview のみ＝本番は未設定でフラグOFF（既存ポーリング）。
+VITE_REALTIME_URL = "wss://nafuda-realtime-staging.pitang1965.workers.dev"
 
 [observability]
 enabled = true

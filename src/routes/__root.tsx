@@ -86,6 +86,7 @@ export const Route = createRootRoute({
       { property: "og:site_name", content: "なふだ" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
   }),
   component: () => (
     <RootDocument>

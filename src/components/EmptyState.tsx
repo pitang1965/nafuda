@@ -1,8 +1,9 @@
 import { Link, useRouter } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 interface EmptyStateProps {
-  /** 大きめのアイコン（絵文字 or SVG）。例: "📛" "⏰" */
+  /** 大きめのアイコン（絵文字 or SVG要素）。例: "⏰" や <NafudaIcon /> */
   icon?: ReactNode;
   title: string;
   description?: ReactNode;
@@ -52,9 +53,10 @@ export function EmptyState({
           {showBack && canGoBack && (
             <button
               onClick={() => router.history.back()}
-              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
-              ← 戻る
+              <ChevronLeft className="size-4" />
+              戻る
             </button>
           )}
         </div>

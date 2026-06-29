@@ -5,7 +5,7 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useWatch, FormProvider } from "react-hook-form";
+import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -35,9 +35,39 @@ import {
 import { AvatarUpload } from "../../../components/AvatarUpload";
 import { GalleryUpload } from "../../../components/GalleryUpload";
 import { OshiTagInput } from "../../../components/OshiTagInput";
+import { NafudaPreviewDialog } from "../../../components/NafudaPreviewDialog";
+import { NafudaIcon } from "../../../components/NafudaIcon";
+import type { NafudaCardProfile } from "../../../components/NafudaCardView";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowUp, ArrowDown, X, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -46,6 +76,9 @@ export const Route = createFileRoute("/_protected/profile/edit")({
   }),
   loader: () => getOwnProfile(),
   staleTime: 0,
+  // 未保存変更の確認（handleBack）を自前で持つ集中フローのため、シェルの
+  // ヘッダー/ボトムナビを被せずガードを温存する。
+  staticData: { hideChrome: true },
   component: EditPage,
 });
 
@@ -79,6 +112,9 @@ const USERNAME_BASE: Partial<Record<Platform, string>> = {
   linkedin: "https://www.linkedin.com/in/",
   note: "https://note.com/",
   pixiv: "https://www.pixiv.net/users/",
+  // vanity URL を補完。profile.php?id=... を貼っても https://www.facebook.com/profile.php?id=...
+  // になり成立する（http 始まりでないため base が前置される）。
+  facebook: "https://www.facebook.com/",
 };
 
 function normalizeUrl(platform: Platform, input: string): string {
@@ -88,12 +124,21 @@ function normalizeUrl(platform: Platform, input: string): string {
   return base ? `${base}${trimmed}` : trimmed;
 }
 
+// 正規化後の文字列が有効な https URL か。サーバの検証と同一ルール
+// （javascript:/data: は https 前置チェックで弾かれる）。
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  return /^https:\/\//i.test(url);
+}
+
 function getSnsPlaceholder(platform: Platform): string {
   if (platform in USERNAME_BASE) return "ユーザー名 または https://...";
   if (platform === "discord") return "https://discord.gg/...";
   if (platform === "line_openchat") return "https://line.me/ti/g2/...";
-  if (platform === "facebook")
-    return "https://www.facebook.com/groups/... または https://www.facebook.com/...";
   return "https://...";
 }
 
@@ -130,23 +175,29 @@ type EditForm = z.infer<typeof EditSchema>;
 function VisibilityToggle({
   value,
   onChange,
+  label,
 }: {
   value: "public" | "private";
   onChange: (v: "public" | "private") => void;
+  label: string;
 }) {
+  const isPublic = value === "public";
   return (
-    <button
-      type="button"
-      onClick={() => onChange(value === "public" ? "private" : "public")}
-      title={
-        value === "public"
-          ? "公開中（タップで非公開に）"
-          : "非公開（タップで公開に）"
-      }
-      className="text-lg select-none"
-    >
-      {value === "public" ? "👁" : "🔒"}
-    </button>
+    <label className="flex cursor-pointer items-center gap-2 select-none">
+      <span
+        className={cn(
+          "text-xs",
+          isPublic ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {isPublic ? "公開" : "非公開"}
+      </span>
+      <Switch
+        checked={isPublic}
+        onCheckedChange={(checked) => onChange(checked ? "public" : "private")}
+        aria-label={`${label}の公開設定`}
+      />
+    </label>
   );
 }
 
@@ -327,6 +378,11 @@ function EditForm({
     (p) => !nafudaLinkTargets.includes(p.id),
   );
   const [hasPendingOshiInput, setHasPendingOshiInput] = useState(false);
+  // ギャラリーは GalleryUpload がローカルに持つため、プレビュー用に親へリフトする
+  const [galleryPhotos, setGalleryPhotos] = useState(() =>
+    [...initialGalleryPhotos].sort((a, b) => a.displayOrder - b.displayOrder),
+  );
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(
     initialStyleId,
   );
@@ -393,10 +449,12 @@ function EditForm({
     purposeDirty ||
     hasPendingOshiInput;
 
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
   const handleBack = () => {
     if (anyDirty) {
-      if (!window.confirm("保存されていない変更があります。戻りますか？"))
-        return;
+      setShowLeaveConfirm(true);
+      return;
     }
     router.history.back();
   };
@@ -505,6 +563,19 @@ function EditForm({
       showSaveError("「その他」のSNSリンクには表示名を入力してください。");
       return;
     }
+    // SNSリンクのURLを保存前に一括検証（部分書き込みを避けるため mutation 前に行う）。
+    for (const link of snsLinks) {
+      if (!link.url.trim()) continue;
+      if (!isValidHttpsUrl(normalizeUrl(link.platform, link.url))) {
+        const label =
+          PLATFORMS.find((p) => p.value === link.platform)?.label ??
+          link.platform;
+        showSaveError(
+          `${label} の URL は https:// から始まるフルURLを入力してください。`,
+        );
+        return;
+      }
+    }
     setSaveError(null);
     setSaving(true);
     try {
@@ -589,6 +660,41 @@ function EditForm({
   };
 
   const label = useWatch({ control, name: "label", defaultValue: "" });
+  const oshiTags =
+    useWatch({ control, name: "oshiTags", defaultValue: initialOshiTags }) ??
+    [];
+
+  // プレビュー用に「人から見た画面」を組む。公開範囲が非公開の項目は除外し、
+  // SNS URL はユーザー名入力を正規化する（getPublicProfile のフィルタと同じ規則）。
+  const previewProfile: NafudaCardProfile = {
+    displayName,
+    bio: bioVisibility === "private" ? null : bio || null,
+    avatarUrl: avatarVisibility === "private" ? null : avatarUrl,
+    oshiTags: oshiTagsVisibility === "private" ? [] : oshiTags,
+    purpose,
+    galleryPhotos:
+      galleryVisibility === "private"
+        ? []
+        : galleryPhotos.map((p) => ({
+            imageUrl: p.imageUrl,
+            caption: p.caption,
+          })),
+    snsLinks:
+      snsLinksVisibility === "private"
+        ? []
+        : snsLinks
+            .filter((l) => l.url.trim())
+            .map((l) => ({
+              platform: l.platform,
+              url: normalizeUrl(l.platform, l.url),
+              title: l.title,
+            })),
+    nafudaLinks: nafudaLinkTargets
+      .map((id) => personaById.get(id))
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+      .map((t) => ({ displayName: t.displayName, avatarUrl: t.avatarUrl })),
+    styleId: selectedStyleId,
+  };
 
   return (
     <FormProvider {...methods}>
@@ -601,18 +707,7 @@ function EditForm({
             onClick={handleBack}
             aria-label="戻る"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <ChevronLeft className="size-5" />
           </Button>
           <h1 className="text-xl font-bold">
             {initialLabel || initialDisplayName} を編集
@@ -634,6 +729,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">表示名</label>
               <VisibilityToggle
+                label="表示名"
                 value={displayNameVisibility}
                 onChange={(v) => {
                   setDisplayNameVisibility(v);
@@ -711,6 +807,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">自己紹介</label>
               <VisibilityToggle
+                label="自己紹介"
                 value={bioVisibility}
                 onChange={(v) => {
                   setBioVisibility(v);
@@ -719,12 +816,12 @@ function EditForm({
               />
             </div>
             <div className="relative">
-              <textarea
+              <Textarea
                 {...register("bio")}
-                rows={3}
+                aria-invalid={!!errors.bio}
                 maxLength={200}
                 placeholder="推し活のきっかけや活動スタイルなど、自由に書いてください"
-                className="w-full px-3 py-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-black resize-none"
+                className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {bio.length}/200
@@ -740,6 +837,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">アバター</label>
               <VisibilityToggle
+                label="アバター"
                 value={avatarVisibility}
                 onChange={(v) => {
                   setAvatarVisibility(v);
@@ -767,6 +865,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">ギャラリー</label>
               <VisibilityToggle
+                label="ギャラリー"
                 value={galleryVisibility}
                 onChange={(v) => {
                   setGalleryVisibility(v);
@@ -777,6 +876,7 @@ function EditForm({
             <GalleryUpload
               personaId={personaId}
               initialPhotos={initialGalleryPhotos}
+              onChange={setGalleryPhotos}
             />
           </div>
 
@@ -787,6 +887,7 @@ function EditForm({
                 {purposeEditTagLabel(purpose)}
               </label>
               <VisibilityToggle
+                label={purposeEditTagLabel(purpose)}
                 value={oshiTagsVisibility}
                 onChange={(v) => {
                   setOshiTagsVisibility(v);
@@ -803,43 +904,53 @@ function EditForm({
             </p>
             <OshiTagInput
               name="oshiTags"
+              purpose={purpose}
               onPendingChange={setHasPendingOshiInput}
             />
-            {hasPendingOshiInput && (
-              <p className="text-xs text-amber-600">
-                Enter で確定してから保存してください
-              </p>
-            )}
           </div>
 
           {/* Dojin reject — 推し活(oshi)と既存(null)でのみ表示。非表示でも DB の値は保持する */}
           {purposeShowsDojinReject(purpose) && (
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-medium">同担設定</h3>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="false"
-                    {...register("dojinReject")}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm">
-                    同担の方にも表示される（デフォルト）
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="true"
-                    {...register("dojinReject")}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm">
-                    同担の方の一覧に表示されたくない場合はオンにしてください
-                  </span>
-                </label>
-              </div>
+              <Controller
+                control={control}
+                name="dojinReject"
+                render={({ field }) => (
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="flex flex-col gap-2"
+                  >
+                    <label
+                      htmlFor="dojin-false"
+                      className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <RadioGroupItem
+                        id="dojin-false"
+                        value="false"
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm">
+                        同担の方にも表示される（デフォルト）
+                      </span>
+                    </label>
+                    <label
+                      htmlFor="dojin-true"
+                      className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <RadioGroupItem
+                        id="dojin-true"
+                        value="true"
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm">
+                        同担の方の一覧に表示されたくない場合はオンにしてください
+                      </span>
+                    </label>
+                  </RadioGroup>
+                )}
+              />
             </div>
           )}
 
@@ -848,6 +959,7 @@ function EditForm({
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">SNSリンク</label>
               <VisibilityToggle
+                label="SNSリンク"
                 value={snsLinksVisibility}
                 onChange={(v) => {
                   setSnsLinksVisibility(v);
@@ -855,6 +967,11 @@ function EditForm({
                 }}
               />
             </div>
+
+            <p className="text-xs text-gray-500">
+              「表示名」はボタンに表示される文字です。空欄ならURLからユーザー名（例:
+              @username）を自動表示します。
+            </p>
 
             {snsLinks.length === 0 && (
               <p className="text-xs text-gray-400">SNSリンクがありません</p>
@@ -867,19 +984,23 @@ function EditForm({
                   className="flex flex-col gap-1 p-3 border rounded-lg bg-gray-50"
                 >
                   <div className="flex items-center gap-2">
-                    <select
+                    <Select
                       value={link.platform}
-                      onChange={(e) =>
-                        updateSnsLinkField(index, "platform", e.target.value)
+                      onValueChange={(v) =>
+                        updateSnsLinkField(index, "platform", v)
                       }
-                      className="flex-1 px-2 py-1.5 border rounded text-sm bg-white outline-none"
                     >
-                      {orderedPlatforms.map((p) => (
-                        <option key={p.value} value={p.value}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="h-11! flex-1 min-w-0 bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderedPlatforms.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <div className="flex items-center gap-1">
                       <Button
                         type="button"
@@ -986,9 +1107,7 @@ function EditForm({
                             className="w-8 h-8 rounded-full object-cover shrink-0"
                           />
                         ) : (
-                          <span className="text-lg leading-none shrink-0">
-                            📛
-                          </span>
+                          <NafudaIcon className="size-8 shrink-0 text-gray-400" />
                         )}
                         <span className="flex-1 text-sm truncate">
                           {target.label || target.displayName}
@@ -1033,21 +1152,21 @@ function EditForm({
                 </div>
 
                 {availablePersonas.length > 0 && (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      addNafudaLink(e.target.value);
-                      e.target.value = "";
-                    }}
-                    className="mt-1 w-full px-3 py-2 border border-dashed rounded-lg text-sm text-gray-500 bg-white outline-none"
-                  >
-                    <option value="">＋ なふだリンクを追加</option>
-                    {availablePersonas.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label || p.displayName}
-                      </option>
-                    ))}
-                  </select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="mt-1 w-full px-3 py-2 border border-dashed rounded-lg text-sm text-gray-500 bg-white outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                      ＋ なふだリンクを追加
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
+                      {availablePersonas.map((p) => (
+                        <DropdownMenuItem
+                          key={p.id}
+                          onSelect={() => addNafudaLink(p.id)}
+                        >
+                          {p.label || p.displayName}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </>
             )}
@@ -1134,9 +1253,26 @@ function EditForm({
             </div>
           </div>
 
-          <Button type="submit" disabled={saving} size="lg" className="w-full">
-            {saving ? "保存中..." : "保存する"}
-          </Button>
+          {/* 下固定アクションバー: スクロール不要で保存でき、プレビュー導線も常時表示 */}
+          <div className="sticky bottom-0 -mx-6 mt-2 flex gap-2 border-t border-gray-200 bg-white/95 px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1"
+              onClick={() => setPreviewOpen(true)}
+            >
+              プレビュー
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              size="lg"
+              className="flex-1"
+            >
+              {saving ? "保存中..." : "保存する"}
+            </Button>
+          </div>
         </form>
 
         {/* 危険ゾーン: なふだの削除（最後の1枚は退会に委ねる — ADR-0011） */}
@@ -1144,8 +1280,8 @@ function EditForm({
           {isLastPersona ? (
             <p className="text-xs text-gray-400">
               これは最後のなふだのため削除できません。アカウントごと消す場合は{" "}
-              <Link to="/me" className="underline">
-                マイページの「退会する」
+              <Link to="/account" className="underline">
+                アカウント画面の「退会」
               </Link>
               から手続きしてください。
             </p>
@@ -1161,6 +1297,37 @@ function EditForm({
           )}
         </div>
       </main>
+
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>変更内容が保存されていません</AlertDialogTitle>
+            <AlertDialogDescription>
+              このまま戻ると、保存されていない変更内容は破棄されます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>編集を続ける</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => router.history.back()}
+            >
+              破棄して戻る
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <NafudaPreviewDialog
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        profile={previewProfile}
+        selectedStyleId={selectedStyleId}
+        onSelectStyle={(id) => {
+          setSelectedStyleId(id);
+          setStyleDirty(true);
+        }}
+      />
 
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

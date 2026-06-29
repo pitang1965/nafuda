@@ -12,6 +12,7 @@ import {
   connections,
   eventCheckins,
   events,
+  favoritePersonas,
   user as userTable,
   session as sessionTable,
   account as accountTable,
@@ -21,11 +22,18 @@ import { deleteFromR2 } from "../storage";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-// SNSリンクのURL: https のみ許可。z.url() は javascript:/data: を通すため
-// スキームを明示的に絞り格納型XSSを防ぐ。http も不許可（https 強制）。
-const httpUrl = z
-  .url("有効なURLを入力してください")
-  .refine((v) => /^https:\/\//i.test(v), "https のURLを入力してください");
+// SNSリンクのURL: https のみ許可。https 前置チェックで javascript:/data: を弾き
+// 格納型XSSを防ぐ。http も不許可（https 強制）。
+// handler 内で検証して clean な文を throw する（Zod refine だと ZodError の message が
+// JSON 化してクライアントに汚く出るため。isNafudaHost と同じ理由）。
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  return /^https:\/\//i.test(url);
+}
 
 // nafuda.me（およびサブドメイン）の URL は SNSリンクに登録させない。
 // SNSリンクは「外部サービス」へのリンクであり自社ドメインは対象外。プロフィールURL
@@ -390,7 +398,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "pixiv",
         "other",
       ]),
-      url: httpUrl,
+      url: z.string(),
       title: z.string().max(50).optional(),
       displayOrder: z.number().int().min(0),
     }),
@@ -411,6 +419,10 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
       )
       .limit(1);
     if (!persona[0]) throw new Error("Forbidden");
+
+    if (!isValidHttpsUrl(data.url)) {
+      throw new Error("URL は https:// から始まるフルURLを入力してください。");
+    }
 
     if (isNafudaHost(data.url)) {
       throw new Error(
@@ -566,6 +578,12 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
       .set({ hostUserId: null })
       .where(eq(events.hostUserId, userId));
 
+    // 自分が保存したお気に入りを削除（userId は FK でないため明示削除。ADR-0021）。
+    // 自分のなふだが他者に保存されていた被参照分は personas 削除時に FK cascade で消える。
+    await db
+      .delete(favoritePersonas)
+      .where(eq(favoritePersonas.userId, userId));
+
     if (personaIds.length > 0) {
       // R2 画像（アバター＋ギャラリー）を先に物理削除（孤児を残さない）
       await cleanupPersonaR2Assets(personaIds);
@@ -625,8 +643,10 @@ export const deletePersona = createServerFn({ method: "POST" })
     await cleanupPersonaR2Assets(personaIds);
 
     // FK 制約順: connections（相手側の鏡像行も含む）→ event_checkins → sns_links → personas
-    // connection_qr_tokens・gallery_photos・nafuda_links は onDelete: cascade で自動削除される
-    // （nafuda_links はこのなふだが指す行＋他のなふだからこのなふだを指す被参照の双方が消える）
+    // connection_qr_tokens・gallery_photos・nafuda_links・favorite_personas は onDelete: cascade で自動削除される
+    // （nafuda_links はこのなふだが指す行＋他のなふだからこのなふだを指す被参照の双方が消える。
+    //   favorite_personas は他者がこのなふだを保存していた被参照分が消える。自分が他者を保存した分は
+    //   userId 起点なので自分のなふだ削除では消えない — ADR-0021）
     await db
       .delete(connections)
       .where(
