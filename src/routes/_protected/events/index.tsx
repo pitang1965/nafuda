@@ -79,8 +79,9 @@ function EventCard({
 function MyEventsPage() {
   const { hostedEvents, participatedEvents } = Route.useLoaderData();
 
+  // 即時イベントは交換の裏方データ（コネクションの正本＋GPS保管庫）であり、
+  // ユーザーが一覧・管理する対象ではないため表示しない（出会いの記録の本体はコネクション一覧）。
   const plannedEvents = hostedEvents.filter((e) => !e.isInstant);
-  const instantEvents = hostedEvents.filter((e) => e.isInstant);
 
   return (
     <div className="flex-1 p-6 flex flex-col gap-8">
@@ -113,25 +114,6 @@ function MyEventsPage() {
             ))
           )}
         </section>
-
-        {instantEvents.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              出会いの記録
-            </h2>
-            {instantEvents.map((event) => (
-              <EventCard
-                key={event.id}
-                name={event.name}
-                venueName={event.venueName}
-                eventDate={event.eventDate}
-                showTime={false}
-                isInstant={true}
-                shareToken={event.shareToken}
-              />
-            ))}
-          </section>
-        )}
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
