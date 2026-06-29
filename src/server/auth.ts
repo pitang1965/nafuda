@@ -39,10 +39,15 @@ export const auth = betterAuth({
       // email + public_profile are default scopes — sufficient for Phase 1
     },
   },
-  accountLinking: {
-    enabled: true,
-    // LINE のメールは LINE 側で確認済みのものを id_token で受け取るため信頼する
-    trustedProviders: ["google", "facebook", "line"],
+  account: {
+    accountLinking: {
+      enabled: true,
+      // LINE のメールは LINE 側で確認済みのものを id_token で受け取るため信頼する。
+      // 注意: accountLinking は account の下に置く。トップレベルだと無視され（better-auth は
+      // options.account.accountLinking のみ参照）、trustedProviders が空＝LINE は emailVerified:false
+      // を返すため account_not_linked になる。
+      trustedProviders: ["google", "facebook", "line"],
+    },
   },
   session: {
     storeSessionInDatabase: true,
