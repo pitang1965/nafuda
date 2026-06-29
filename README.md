@@ -52,6 +52,18 @@ pnpm install
 3. アプリの設定 → ベーシック の「アプリID」と「app secret」を `.env.local` の該当箇所に記入する
 4. 公開前にアプリを**ライブモード**へ切り替え（開発モードはテストユーザーのみ有効）
 
+#### LINE OAuth
+
+better-auth ビルトインの social ではなく `genericOAuth` で実装しているため、**コールバックのパスに `oauth2` が入る**点に注意（Google/Facebook とは異なる）。
+
+1. [LINE Developers Console](https://developers.line.biz/console/) で **LINE Login チャンネル**を作成（プロバイダー配下）
+2. チャンネルの **「LINE Login」タブ → Callback URL** に以下を登録（1チャンネルに改行区切りでまとめて登録可）:
+   - `http://localhost:5173/api/auth/oauth2/callback/line` (開発環境)
+   - `https://staging.nafuda-dxn.pages.dev/api/auth/oauth2/callback/line` (ステージング)
+   - `https://nafuda.me/api/auth/oauth2/callback/line` (本番環境)
+3. **email を取得するには「Email address permission」の審査通過が必須**（チャンネル設定から申請）。未通過だと `email_is_missing` でログイン失敗する。
+4. Channel ID と Channel secret を `LINE_CLIENT_ID` / `LINE_CLIENT_SECRET` に設定（設置先は `.env.example` 参照）
+
 #### PostHog (アナリティクス)
 
 1. [posthog.com](https://posthog.com) でプロジェクトを作成（US Cloud を選択）
@@ -86,11 +98,17 @@ GOOGLE_CLIENT_SECRET=<Google Cloud Consoleで取得>
 FACEBOOK_CLIENT_ID=<Facebook for Developersで取得>
 FACEBOOK_CLIENT_SECRET=<Facebook for Developersで取得>
 
+# LINE OAuth (LINE Login チャンネルの Channel ID / secret)
+LINE_CLIENT_ID=<LINE Developers Consoleで取得>
+LINE_CLIENT_SECRET=<LINE Developers Consoleで取得>
+
 # PostHog (wrangler.toml の [vars] に記載するため .env.local は不要)
 # VITE_POSTHOG_KEY=phc_<PostHogで取得>
 ```
 
 > `.env.local` はGit管理外です。シークレットをコミットしないでください。
+>
+> **どの変数を・どこに設定するかの正本は [`.env.example`](./.env.example) を参照。** ローカル開発のアプリ実行時の秘密は workerd が読む `.dev.vars` に、staging/本番の実行時の変数は Cloudflare Pages ダッシュボード（Preview/Production）に設定する。`.env.staging` / `.env.production` は drizzle マイグレーション用に `DATABASE_URL` のみを保持する。
 
 ### 4. データベースのセットアップ
 
