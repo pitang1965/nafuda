@@ -1,6 +1,6 @@
 import { Sheet } from "react-modal-sheet";
-import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
+import { useEffect, useRef, useState } from "react";
 import { useAnimate } from "motion/react";
 
 interface QRBottomSheetProps {
@@ -25,6 +25,7 @@ export function QRBottomSheet({
   const [mounted] = useState(() => typeof window !== "undefined");
   const [copied, setCopied] = useState(false);
   const [scope, animate] = useAnimate();
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // PC で Esc キーで閉じる（閲覧系QRのみ。交換系は意図的に対象外）
   useEffect(() => {
@@ -54,6 +55,25 @@ export function QRBottomSheet({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // 高解像度の隠しキャンバスから PNG を書き出して保存する。
+  // iOS Safari では download が効かず画像が開くだけのことがあるが、
+  // その場合も長押しで写真に保存できるため許容する。
+  const saveQrImage = () => {
+    const canvas = canvasContainerRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = "nafuda-qr.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+    }, "image/png");
+  };
+
   return (
     <Sheet
       isOpen={isOpen}
@@ -81,20 +101,57 @@ export function QRBottomSheet({
                 fgColor="#000000"
               />
             )}
-            <button
-              onClick={handleCopy}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <p className="text-xs text-gray-400 break-all text-center max-w-60 group-hover:text-gray-600 transition-colors">
-                {url}
-              </p>
-              <span
-                className="text-xs font-medium transition-colors"
-                style={{ color: copied ? "#16a34a" : "#9ca3af" }}
-              >
-                {copied ? "コピーしました" : "タップしてコピー"}
-              </span>
-            </button>
+            {/* 配布手段（コピー＋QR画像保存）は永続QR（プロフィール／イベント）
+                のみが持つ。対面・短命のつながりQR（exchangeMode）には持たせない
+                ── 対面でない接続を作らないため（ADR-0013）。 */}
+            {!exchangeMode && (
+              <>
+                <button
+                  onClick={handleCopy}
+                  className="flex flex-col items-center gap-1 group"
+                >
+                  <p className="text-xs text-gray-400 break-all text-center max-w-60 group-hover:text-gray-600 transition-colors">
+                    {url}
+                  </p>
+                  <span
+                    className="text-xs font-medium transition-colors"
+                    style={{ color: copied ? "#16a34a" : "#9ca3af" }}
+                  >
+                    {copied ? "コピーしました" : "タップしてコピー"}
+                  </span>
+                </button>
+                <button
+                  onClick={saveQrImage}
+                  className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span aria-hidden>⬇</span>
+                  QR画像を保存
+                </button>
+                {/* PNG 書き出し用の隠しキャンバス（高解像度）。表示は上の SVG。 */}
+                {mounted && url && (
+                  <div
+                    ref={canvasContainerRef}
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      width: 0,
+                      height: 0,
+                      overflow: "hidden",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <QRCodeCanvas
+                      value={url}
+                      size={1024}
+                      level="M"
+                      marginSize={4}
+                      bgColor="#FFFFFF"
+                      fgColor="#000000"
+                    />
+                  </div>
+                )}
+              </>
+            )}
 
             {exchangeMode &&
               (exchangeMode.connectionNotification ? (
