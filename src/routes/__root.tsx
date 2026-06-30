@@ -7,13 +7,30 @@ import {
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import "../index.css";
-import { initAnalytics } from "../lib/analytics";
+import { initAnalytics, setInternalUser } from "../lib/analytics";
+import { useSession } from "../lib/auth-client";
 import { EmptyState } from "../components/EmptyState";
+
+// ログイン中ユーザーが内部ユーザー（自分）なら is_internal を付与し、PostHog で除外できるようにする。
+function useInternalUserTag() {
+  const { data: session } = useSession();
+  const uid = session?.user?.id;
+  useEffect(() => {
+    const raw = (import.meta.env.VITE_POSTHOG_INTERNAL_USER_IDS ?? "") as string;
+    const ids = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setInternalUser(!!uid && ids.includes(uid));
+  }, [uid]);
+}
 
 function RootDocument({ children }: { children: ReactNode }) {
   useEffect(() => {
     initAnalytics();
   }, []);
+
+  useInternalUserTag();
 
   useEffect(() => {
     if ("serviceWorker" in navigator && typeof window !== "undefined") {

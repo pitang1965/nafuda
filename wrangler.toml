@@ -15,6 +15,8 @@ service = "nafuda-realtime"
 
 [vars]
 VITE_POSTHOG_KEY = "phc_zcgFaCQVCT68NPuPpnXnCSweL826tr4TDqpg2GFXs3dY"
+# 内部ユーザー(自分)の better-auth user id。is_internal:true を付け PostHog の Activity から除外する。
+VITE_POSTHOG_INTERNAL_USER_IDS = "F8He2jW3ycsnDrMyOPQNYstETjkokZX6"
 R2_PUBLIC_URL = "https://pub-005c2707053246c7961f7082094d34f8.r2.dev"
 # 本番 WebSocket 接続先（ビルド時変数）。
 VITE_REALTIME_URL = "wss://nafuda-realtime.pitang1965.workers.dev"
