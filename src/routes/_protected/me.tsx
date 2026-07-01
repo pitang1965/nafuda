@@ -491,7 +491,7 @@ function MePage() {
           url={
             origin ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}` : ""
           }
-          label={`${currentPersona.displayName} のなふだ（閲覧用）`}
+          label={`${currentPersona.displayName} のなふだ`}
         />
       )}
       <ExchangeContextSheet

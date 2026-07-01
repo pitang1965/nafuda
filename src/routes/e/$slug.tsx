@@ -388,7 +388,7 @@ function EventPage() {
             isOpen={qrOpen}
             onClose={() => setQrOpen(false)}
             url={currentUrl}
-            label={`${data.event.name} のQRコード`}
+            label={`イベント：${data.event.name}`}
           />
         </main>
       </div>

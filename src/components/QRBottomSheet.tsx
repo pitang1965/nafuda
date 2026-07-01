@@ -15,6 +15,36 @@ interface QRBottomSheetProps {
   };
 }
 
+// ラベルを指定幅に収まるよう最大 maxLines 行へ折り返す（日本語は文字単位）。
+// あふれた場合は末尾を「…」で丸める。PNG 書き出しの額縁用。
+function wrapLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const ch of Array.from(text)) {
+    if (current && ctx.measureText(current + ch).width > maxWidth) {
+      lines.push(current);
+      current = ch;
+    } else {
+      current += ch;
+    }
+  }
+  if (current) lines.push(current);
+  if (lines.length <= maxLines) return lines;
+
+  const kept = lines.slice(0, maxLines);
+  let last = kept[maxLines - 1];
+  while (last && ctx.measureText(last + "…").width > maxWidth) {
+    last = last.slice(0, -1);
+  }
+  kept[maxLines - 1] = last + "…";
+  return kept;
+}
+
 export function QRBottomSheet({
   isOpen,
   onClose,
@@ -55,13 +85,56 @@ export function QRBottomSheet({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 高解像度の隠しキャンバスから PNG を書き出して保存する。
+  // 高解像度の隠しキャンバス（1024px の素の白黒QR）に額縁を合成して書き出す。
+  // 額縁＝ラベル1〜2行＋「nafuda.me」ブランド帯。QRモジュール自体は無改変なので
+  // スキャン成功率は落とさず、単体配布時に「どのなふだ/イベントか」と出所が分かる。
   // iOS Safari では download が効かず画像が開くだけのことがあるが、
   // その場合も長押しで写真に保存できるため許容する。
   const saveQrImage = () => {
-    const canvas = canvasContainerRef.current?.querySelector("canvas");
-    if (!canvas) return;
-    canvas.toBlob((blob) => {
+    const qr = canvasContainerRef.current?.querySelector("canvas");
+    if (!qr) return;
+
+    const QR = 1024;
+    const SIDE = 80;
+    const TOP_PAD = 80;
+    const LABEL_LINE_H = 60;
+    const GAP_LABEL_QR = 56;
+    const GAP_QR_BRAND = 56;
+    const BRAND_H = 48;
+    const BOTTOM_PAD = 72;
+    const LABEL_FONT = "bold 44px sans-serif";
+    const BRAND_FONT = "600 40px sans-serif";
+    const width = QR + SIDE * 2;
+
+    const out = document.createElement("canvas");
+    const ctx = out.getContext("2d");
+    if (!ctx) return;
+
+    ctx.font = LABEL_FONT;
+    const lines = wrapLabel(ctx, label, QR, 2);
+    const labelBlock = lines.length * LABEL_LINE_H;
+    const qrY = TOP_PAD + labelBlock + GAP_LABEL_QR;
+    out.width = width;
+    out.height = qrY + QR + GAP_QR_BRAND + BRAND_H + BOTTOM_PAD;
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, out.width, out.height);
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "#374151";
+    ctx.font = LABEL_FONT;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, width / 2, TOP_PAD + i * LABEL_LINE_H);
+    });
+
+    ctx.drawImage(qr, SIDE, qrY, QR, QR);
+
+    ctx.fillStyle = "#ec4899";
+    ctx.font = BRAND_FONT;
+    ctx.fillText("nafuda.me", width / 2, qrY + QR + GAP_QR_BRAND);
+
+    out.toBlob((blob) => {
       if (!blob) return;
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
