@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { auth } from "../server/auth";
+import { HeroVideo } from "../components/HeroVideo";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -78,14 +79,7 @@ function LandingPage() {
         {/* Screenshots */}
         <div className="flex flex-col gap-10 w-full mt-10 mb-2">
           <div className="flex flex-col items-center gap-3">
-            <img
-              src="/screenshot1.jpg"
-              alt="なふだの画面例"
-              width={526}
-              height={770}
-              fetchPriority="high"
-              className="w-full max-w-xs rounded-2xl shadow-lg"
-            />
+            <HeroVideo />
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-800">
                 自分だけのなふだを作ろう
@@ -101,6 +95,7 @@ function LandingPage() {
               href="https://nafuda.me/u/ffa2c0f0f4/p/5db65a7ecc006a102f7ba42790acff93"
               target="_blank"
               rel="noopener noreferrer"
+              className="relative block"
             >
               <img
                 src="/demo-qrl.png"
@@ -110,13 +105,16 @@ function LandingPage() {
                 loading="lazy"
                 className="w-48 h-48 rounded-2xl shadow-lg"
               />
+              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-pink-500 px-3 py-1 text-xs font-semibold text-white shadow-md">
+                👆 タップで開く
+              </span>
             </a>
             <div className="text-center">
-              <p className="text-sm font-semibold text-gray-800">
-                QRをスキャンして試してみる
+              <p className="text-sm font-semibold text-gray-800 mt-2">
+                上のなふだを、実際に開いてみる
               </p>
               <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                推測されにくいURLで、必要な人にだけ情報を届けられる。
+                スマホならQRをスキャン、この画面ならタップするだけ。推測されにくいURLで、必要な人にだけ情報を届けられる。
               </p>
             </div>
           </div>
