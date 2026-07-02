@@ -55,7 +55,7 @@ function LandingPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center leading-snug">
           その場で会った“仕事じゃない”人と、SNSでつながる。
         </h1>
-        <p className="text-sm text-gray-500 mb-10 text-center leading-relaxed">
+        <p className="text-sm text-gray-600 mb-10 text-center leading-relaxed">
           勉強会、オフ会、飲みの席。紙の名刺は出さないけど、また会いたい人がいる。
           QRを見せるだけで、SNSのつながりを、いつ・どこでという文脈ごと残せる。
         </p>
@@ -67,10 +67,10 @@ function LandingPage() {
           はじめる
         </Link>
 
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-gray-500 text-center">
           <Link
             to="/privacy"
-            className="underline underline-offset-2 hover:text-gray-600"
+            className="underline underline-offset-2 hover:text-gray-700"
           >
             プライバシーポリシー
           </Link>
@@ -84,7 +84,7 @@ function LandingPage() {
               <p className="text-sm font-semibold text-gray-800">
                 自分だけのなふだを作ろう
               </p>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                 スタイルを選んで個性を演出。推し活用・オフ会用など複数のなふだを使い分けられる。
               </p>
             </div>
@@ -113,14 +113,14 @@ function LandingPage() {
               <p className="text-sm font-semibold text-gray-800 mt-2">
                 上のなふだを、実際に開いてみる
               </p>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                 スマホならQRをスキャン、この画面ならタップするだけ。推測されにくいURLで、必要な人にだけ情報を届けられる。
               </p>
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-gray-400 uppercase tracking-widest mb-4 self-start mt-8">
+        <p className="text-sm font-bold text-gray-700 tracking-wider mb-4 self-start mt-8">
           できること
         </p>
         <div className="flex flex-col gap-4 w-full">
@@ -132,7 +132,7 @@ function LandingPage() {
               <span className="text-3xl mt-0.5">{f.icon}</span>
               <div>
                 <p className="font-semibold text-gray-800 text-sm">{f.title}</p>
-                <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
                   {f.description}
                 </p>
               </div>
