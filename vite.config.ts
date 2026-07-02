@@ -12,10 +12,13 @@ function nafudaPwaPlugin(): Plugin {
     name: 'nafuda-pwa',
     apply: 'build',
     writeBundle() {
+      // Pages のデプロイ対象は dist/client（wrangler.toml の pages_build_output_dir）。
+      // dist/ 直下に置くと本番に配信されず /sw.js が 404 になる。
       const swSrc = path.resolve('src/sw.js')
-      const swDest = path.resolve('dist/sw.js')
+      const swDest = path.resolve('dist/client/sw.js')
+      fs.mkdirSync(path.dirname(swDest), { recursive: true })
       fs.copyFileSync(swSrc, swDest)
-      console.log('[nafuda-pwa] sw.js copied to dist/')
+      console.log('[nafuda-pwa] sw.js copied to dist/client/')
     },
   }
 }

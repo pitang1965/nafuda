@@ -13,6 +13,12 @@
 /screenshot1.jpg
   Cache-Control: public, max-age=2592000
 
+/nafuda-hero.mp4
+  Cache-Control: public, max-age=2592000
+
+/nafuda-hero-poster.jpg
+  Cache-Control: public, max-age=2592000
+
 /demo-qrl.png
   Cache-Control: public, max-age=2592000
 
