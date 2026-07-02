@@ -8,6 +8,8 @@ interface QRBottomSheetProps {
   onClose: () => void;
   url: string;
   label: string;
+  // X 投稿用の定型文。渡された画面だけ「Xでシェア」ボタンを出す（＝配布導線のオプトイン）。
+  shareText?: string;
   exchangeMode?: {
     onExchanged: () => void;
     onNotExchanged: () => void;
@@ -50,6 +52,7 @@ export function QRBottomSheet({
   onClose,
   url,
   label,
+  shareText,
   exchangeMode,
 }: QRBottomSheetProps) {
   const [mounted] = useState(() => typeof window !== "undefined");
@@ -83,6 +86,16 @@ export function QRBottomSheet({
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // X の Web Intent を新規タブで開き、定型文＋URLを差し込んだ投稿前ダイアログを出す。
+  // 「コピー」の一歩先＝URLを貼った投稿を手助けするだけで、画像添付はしない。
+  const handleShareX = () => {
+    if (!shareText) return;
+    const intent = new URL("https://x.com/intent/post");
+    intent.searchParams.set("text", shareText);
+    intent.searchParams.set("url", url);
+    window.open(intent.toString(), "_blank", "noopener,noreferrer");
   };
 
   // 高解像度の隠しキャンバス（1024px の素の白黒QR）に額縁を合成して書き出す。
@@ -200,6 +213,17 @@ export function QRBottomSheet({
                   <span aria-hidden>⬇</span>
                   QR画像を保存
                 </button>
+                {/* X 共有はオプトイン（shareText を渡した画面のみ）。対面中心の
+                    打ち出しを崩さないよう、保存と同じ控えめなテキストリンク調で並べる。 */}
+                {shareText && (
+                  <button
+                    onClick={handleShareX}
+                    className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <span aria-hidden>𝕏</span>
+                    Xでシェア
+                  </button>
+                )}
                 {/* PNG 書き出し用の隠しキャンバス（高解像度）。表示は上の SVG。 */}
                 {mounted && url && (
                   <div
