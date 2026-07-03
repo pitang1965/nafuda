@@ -18,6 +18,9 @@ import { isValidConnectionContext } from "../lib/eventCheckinWindow";
 import { pushToRoom } from "../realtimePush";
 
 // 「なふだを交換する」用のつながりQRトークンを発行する（15分有効）
+// 1発行者あたりの有効な保留招待の上限（ensurePendingInvite の悪用ガード）
+const MAX_PENDING_INVITES_PER_ISSUER = 30;
+
 export const createConnectionQrToken = createServerFn({ method: "POST" })
   .inputValidator(z.object({ fromPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
@@ -225,6 +228,25 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
     if (!tokenRow) throw new Error("QRコードが無効または期限切れです");
 
     const issuerPersonaId = tokenRow.fromPersonaId;
+
+    // 悪用ガード: 無認証で呼べるため、同一発行者の有効な保留招待は上限で頭打ちにする。
+    // 招待はスキャナーごとに1行が正しい設計（apply 時に削除されるため統合はできない）ので、
+    // 重複排除ではなく総量制限で INSERT の積み増しを塞ぐ。通常利用（クライアントは
+    // localStorage で1回のみ呼ぶ）で48時間内に数十人が未登録のまま滞留することは考えにくい。
+    const existingInvites = await db
+      .select({ id: pendingInvites.id })
+      .from(pendingInvites)
+      .where(
+        and(
+          eq(pendingInvites.issuerPersonaId, issuerPersonaId),
+          gt(pendingInvites.expiresAt, now),
+        ),
+      )
+      .limit(MAX_PENDING_INVITES_PER_ISSUER);
+    if (existingInvites.length >= MAX_PENDING_INVITES_PER_ISSUER)
+      throw new Error(
+        "招待の発行が上限に達しました。時間をおいてもう一度お試しください",
+      );
 
     // 文脈スナップショット: 発行者のアクティブチェックイン（企画・即時とも eventId 付き）。
     // ただし有効な文脈に限る（企画=開催期間内／即時=直近セッションのみ。ADR-0020）。

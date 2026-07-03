@@ -6,6 +6,7 @@ import { db } from "../db/client";
 import { personas, galleryPhotos } from "../db/schema";
 import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
+import { decodeJpegDataUrl } from "../lib/image";
 
 // アバター以外の「対象物」写真の上限とキャプション長（ADR-0014）
 export const MAX_GALLERY_PHOTOS = 6;
@@ -54,12 +55,10 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
     }
     const nextOrder = existing.length > 0 ? existing[0].displayOrder + 1 : 0;
 
-    const [header, base64] = data.dataUrl.split(",");
-    const contentType = header.match(/data:([^;]+)/)?.[1] ?? "image/jpeg";
-    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const bytes = decodeJpegDataUrl(data.dataUrl);
 
     const key = `gallery/${data.personaId}/${crypto.randomUUID()}.jpg`;
-    await putToR2(key, bytes, contentType);
+    await putToR2(key, bytes, "image/jpeg");
 
     const imageUrl = r2PublicUrl(key);
     const caption = data.caption?.trim() ? data.caption.trim() : null;

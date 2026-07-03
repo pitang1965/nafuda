@@ -14,6 +14,23 @@ function escapeAttr(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
+// SSR 応答へのセキュリティヘッダ付与。Cloudflare Pages の public/_headers は
+// 静的アセットにしか適用されず、Functions（この SSR ハンドラ）の応答には効かない
+// ため、ここで付ける。HSTS はゾーン設定（Cloudflare ダッシュボード）側で有効化する。
+// Referrer-Policy: プロフィール URL はパスに shareToken を含むため、外部リンク遷移時の
+// Referer をオリジンのみに制限する（モダンブラウザ既定値だが明示する）。
+function withSecurityHeaders(res: Response): Response {
+  const headers = new Headers(res.headers);
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
+}
+
 async function fetchOgpData(shareToken: string) {
   const { db } = await import("./server/db/client");
   const { personas } = await import("./server/db/schema");
@@ -98,4 +115,7 @@ async function handleRequest(request: Request): Promise<Response> {
   return startFetch(request);
 }
 
-export default { fetch: handleRequest };
+export default {
+  fetch: async (request: Request) =>
+    withSecurityHeaders(await handleRequest(request)),
+};

@@ -6,6 +6,7 @@ import { db } from "../db/client";
 import { personas } from "../db/schema";
 import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
+import { decodeJpegDataUrl } from "../lib/image";
 
 export const uploadAvatar = createServerFn({ method: "POST" })
   .inputValidator(
@@ -34,14 +35,12 @@ export const uploadAvatar = createServerFn({ method: "POST" })
       .limit(1);
     if (!persona) throw new Error("Forbidden");
 
+    const bytes = decodeJpegDataUrl(data.dataUrl);
+
     await deleteFromR2(persona.avatarUrl);
 
-    const [header, base64] = data.dataUrl.split(",");
-    const contentType = header.match(/data:([^;]+)/)?.[1] ?? "image/jpeg";
-    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-
     const key = `avatars/${data.personaId}/${crypto.randomUUID()}.jpg`;
-    await putToR2(key, bytes, contentType);
+    await putToR2(key, bytes, "image/jpeg");
 
     const avatarUrl = r2PublicUrl(key);
     await db
