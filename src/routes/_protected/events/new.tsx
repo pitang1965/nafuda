@@ -11,20 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { PersonaSwitcher } from "../../../components/PersonaSwitcher";
 
-async function getGpsCoords(): Promise<{ x: number; y: number } | null> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ x: pos.coords.longitude, y: pos.coords.latitude }),
-      () => resolve(null),
-      { timeout: 5000, enableHighAccuracy: false },
-    );
-  });
-}
-
 function generateSlug(eventName: string, eventDate: string): string {
   const datePart = eventDate.replace(/-/g, "");
   const namePart = eventName
@@ -95,7 +81,6 @@ function NewEventPage() {
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const gps = await getGpsCoords();
       const slug = generateSlug(formData.eventName, formData.eventDate);
       const result = await createEventAndCheckin({
         data: {
@@ -110,7 +95,6 @@ function NewEventPage() {
           description: formData.description || null,
           personaId: selectedPersonaId,
           hostPersonaId: selectedPersonaId,
-          gpsCoordinates: gps ?? undefined,
         },
       });
       await router.navigate({

@@ -200,7 +200,7 @@ export const eventCheckins = pgTable("event_checkins", {
     .notNull()
     .references(() => personas.id),
   userId: text("user_id").notNull(), // Better Auth user.id（認証チェック用）
-  // GPS: point mode 'xy' → { x: longitude, y: latitude }。ユーザーが拒否した場合 null
+  // GPS: point mode 'xy' → { x: longitude, y: latitude }。即時イベント作成時のみ記録（拒否時 null）。通常イベントでは常に null
   gpsCoordinates: point("gps_coordinates", { mode: "xy" }),
   checkedInAt: timestamp("checked_in_at", { withTimezone: true })
     .defaultNow()

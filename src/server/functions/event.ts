@@ -127,7 +127,6 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
       description: z.string().max(1000).optional().nullable(),
       personaId: z.uuid(),
       hostPersonaId: z.uuid(),
-      gpsCoordinates: z.object({ x: z.number(), y: z.number() }).optional(),
     }),
   )
   .handler(async ({ data }) => {
@@ -225,7 +224,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         eventId: eventRow[0].id,
         personaId: data.personaId,
         userId: session.user.id,
-        gpsCoordinates: data.gpsCoordinates ?? null,
+        gpsCoordinates: null,
       })
       .returning();
 
