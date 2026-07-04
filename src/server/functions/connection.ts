@@ -692,6 +692,9 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
         connectedAt: connections.connectedAt,
         eventId: connections.eventId,
         isInstant: events.isInstant,
+        // 「会った場所」を地図で開く導線用。座標はコネクションにコピーせず即時イベント
+        // 本体からライブ JOIN で引く（単一ソース / ADR-0024）。即時イベント由来のみ非 null。
+        gpsCoordinates: events.gpsCoordinates,
         eventName: connections.eventName,
         venueName: connections.venueName,
         eventDate: connections.eventDate,

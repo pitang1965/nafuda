@@ -70,6 +70,24 @@ function LockIcon({ className }: { className?: string }) {
   );
 }
 
+function MapPinIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
 function ConnectionCard({
   conn,
   onDelete,
@@ -116,7 +134,7 @@ function ConnectionCard({
             <p className="font-medium text-gray-900 truncate">
               {conn.toDisplayName}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-500 mt-0.5">
               {conn.fromLabel || conn.fromDisplayName} として · {connectedDate}
             </p>
 
@@ -143,19 +161,33 @@ function ConnectionCard({
 
             {conn.privateMemo && (
               <p className="mt-1.5 text-xs text-gray-500 line-clamp-2 whitespace-pre-wrap">
-                <LockIcon className="inline-block w-3 h-3 mr-1 align-[-1px] text-gray-400" />
+                <LockIcon className="inline-block w-3 h-3 mr-1 align-[-1px] text-gray-500" />
                 {conn.privateMemo}
               </p>
             )}
           </div>
         </Link>
 
-        {/* 「…」メニュー */}
-        <div className="shrink-0 flex items-center pr-2">
+        {/* 右端の操作を縦積み（地図ピン＝上／メニュー＝下）。ピンは座標があるときだけ表示 */}
+        <div className="shrink-0 flex flex-col items-center justify-center pr-2">
+          {conn.gpsCoordinates && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${conn.gpsCoordinates.y},${conn.gpsCoordinates.x}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-pink-500 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="会った場所を地図で開く"
+              title="会った場所を地図で開く"
+            >
+              <MapPinIcon className="w-4 h-4" />
+            </a>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full text-gray-300 hover:bg-gray-100 hover:text-gray-500"
                 aria-label="メニュー"
               >
                 <svg
@@ -168,7 +200,7 @@ function ConnectionCard({
                   <circle cx="12" cy="12" r="2" />
                   <circle cx="12" cy="19" r="2" />
                 </svg>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setShowEdit(true)}>

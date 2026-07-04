@@ -22,6 +22,25 @@ function generateShareToken(): string {
     .join("");
 }
 
+// events の全カラムから gpsCoordinates を除いた明示カラム集合。座標は即時イベント
+// 作成者の位置であり、公開・準公開の返却で漏らさない（ADR-0024）。座標をコネクション
+// 地図として正当に見せる導線を用意するのと引き換えに、裏口となる全カラム返しを塞ぐ。
+const eventColumnsWithoutGps = {
+  id: events.id,
+  slug: events.slug,
+  shareToken: events.shareToken,
+  name: events.name,
+  venueName: events.venueName,
+  eventDate: events.eventDate,
+  eventEndDate: events.eventEndDate,
+  showTime: events.showTime,
+  description: events.description,
+  isInstant: events.isInstant,
+  hostUserId: events.hostUserId,
+  hostPersonaId: events.hostPersonaId,
+  createdAt: events.createdAt,
+} as const;
+
 // フォームの日付・時刻は JST のウォールクロック入力。サーバーの実行タイムゾーン
 // （Workers は UTC）に依存しないよう、明示的に +09:00 として解釈・保存する。
 // 表示側も Asia/Tokyo 固定で描画し、往復を一致させる。
@@ -57,7 +76,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
       throw new Error("Forbidden: persona does not belong to current user");
 
     const eventRow = await db
-      .select()
+      .select(eventColumnsWithoutGps)
       .from(events)
       .where(eq(events.shareToken, data.token))
       .limit(1);
@@ -259,43 +278,6 @@ export const checkoutFromEvent = createServerFn({ method: "POST" })
     return updated[0];
   });
 
-// Get active checkin for current user's persona
-export const getActiveCheckin = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ personaId: z.uuid() }))
-  .handler(async ({ data }) => {
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
-
-    const result = await db
-      .select({
-        checkinId: eventCheckins.id,
-        personaId: eventCheckins.personaId,
-        userId: eventCheckins.userId,
-        checkedInAt: eventCheckins.checkedInAt,
-        checkedOutAt: eventCheckins.checkedOutAt,
-        gpsCoordinates: eventCheckins.gpsCoordinates,
-        eventId: events.id,
-        eventName: events.name,
-        venueName: events.venueName,
-        eventSlug: events.slug,
-        eventToken: events.shareToken,
-        eventDate: events.eventDate,
-        showTime: events.showTime,
-      })
-      .from(eventCheckins)
-      .innerJoin(events, eq(eventCheckins.eventId, events.id))
-      .where(
-        and(
-          eq(eventCheckins.personaId, data.personaId),
-          isNull(eventCheckins.checkedOutAt),
-        ),
-      )
-      .limit(1);
-
-    return result[0] ?? null;
-  });
-
 // Get event participants by shareToken — public endpoint (no auth required)
 // ただし参加者の永続プロフィールURL（shareToken/urlId）はログインユーザーにのみ返す
 export const getEventParticipants = createServerFn({ method: "POST" })
@@ -306,7 +288,7 @@ export const getEventParticipants = createServerFn({ method: "POST" })
     const isAuthenticated = !!session?.user;
 
     const eventRow = await db
-      .select()
+      .select(eventColumnsWithoutGps)
       .from(events)
       .where(eq(events.shareToken, data.token))
       .limit(1);
