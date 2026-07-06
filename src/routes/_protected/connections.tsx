@@ -6,6 +6,7 @@ import {
   updateConnection,
 } from "../../server/functions/connection";
 import { UserAvatar } from "../../components/UserAvatar";
+import { MeetingSkyView } from "../../components/MeetingSkyView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_protected/connections")({
   loader: () => getMyConnections(),
@@ -36,15 +43,32 @@ function ConnectionsPage() {
       {connections.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="flex flex-col gap-3">
-          {connections.map((conn) => (
-            <ConnectionCard
-              key={conn.connectionId}
-              conn={conn}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        /* 同じデータの別ビュー。リスト＝実務（検索・メモ・削除）／夜空＝情緒（ADR-0025） */
+        <Tabs defaultValue="list" className="gap-3">
+          <TabsList aria-label="表示切替" className="self-center rounded-full">
+            <TabsTrigger value="list" className="rounded-full px-4">
+              リスト
+            </TabsTrigger>
+            <TabsTrigger value="sky" className="rounded-full px-4">
+              夜空
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list">
+            <div className="flex flex-col gap-3">
+              {connections.map((conn) => (
+                <ConnectionCard
+                  key={conn.connectionId}
+                  conn={conn}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          </TabsContent>
+          <TabsContent value="sky">
+            <MeetingSkyView connections={connections} />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
