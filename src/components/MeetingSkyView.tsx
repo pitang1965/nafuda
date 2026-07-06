@@ -29,6 +29,14 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* 期間・星数は画面上の付帯情報（chrome）。星と重ねないよう星野の外に置く。
+          書き出し画像には別途 saveSkyImage が下部の帯に描く。 */}
+      {sky.count > 0 && (
+        <p className="px-1 text-xs font-medium text-gray-400">
+          {sky.periodLabel}
+          <span className="ml-1.5">★ {sky.count}</span>
+        </p>
+      )}
       <div
         className="relative rounded-2xl overflow-hidden"
         style={{
@@ -106,10 +114,6 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
             </g>
           ))}
         </svg>
-
-        <div className="absolute top-3 left-4 text-white/70 text-xs tracking-wide pointer-events-none">
-          {sky.periodLabel} <span className="ml-1.5">★ {sky.count}</span>
-        </div>
 
         {selected && selectedStar && (
           <div className="absolute bottom-2 inset-x-2 flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-md p-3">
