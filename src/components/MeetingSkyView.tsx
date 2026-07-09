@@ -23,9 +23,6 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
   const selected = selectedId
     ? connections.find((c) => c.connectionId === selectedId)
     : undefined;
-  const selectedStar = selectedId
-    ? sky.stars.find((s) => s.connectionId === selectedId)
-    : undefined;
 
   return (
     <div className="flex flex-col gap-2">
@@ -115,7 +112,7 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
           ))}
         </svg>
 
-        {selected && selectedStar && (
+        {selected && (
           <div className="absolute bottom-2 inset-x-2 flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-md p-3">
             <Link
               to="/u/$urlId/p/$token"
