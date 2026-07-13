@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 
-// ヘッダー右上のバーガーメニュー。イベント・アカウント・プライバシーポリシーへの
+// ヘッダー右上のバーガーメニュー。アカウント・利用規約・プライバシーポリシーへの
 // 導線とログアウトを集約する。アカウント操作（退会・ログアウト）をホームから外し、
 // 退会リンクの常時表示によるネガティブな刷り込みを避けるのが狙い。
 export function AppMenu({ iconColor }: { iconColor?: string }) {
@@ -32,6 +32,9 @@ export function AppMenu({ iconColor }: { iconColor?: string }) {
       <DropdownMenuContent align="end">
         <DropdownMenuItem className="cursor-pointer" asChild>
           <Link to="/account">アカウント</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" asChild>
+          <Link to="/terms">利用規約</Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" asChild>
           <Link to="/privacy">プライバシーポリシー</Link>

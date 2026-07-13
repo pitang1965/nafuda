@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
@@ -27,6 +28,11 @@ import { Route as ProtectedEventsNewRouteImport } from './routes/_protected/even
 import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
 import { Route as ProtectedFavoritesAddTokenRouteImport } from './routes/_protected/favorites_.add.$token'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/account': typeof ProtectedAccountRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/favorites': typeof ProtectedFavoritesRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/account': typeof ProtectedAccountRoute
   '/connections': typeof ProtectedConnectionsRoute
   '/favorites': typeof ProtectedFavoritesRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/_protected/account': typeof ProtectedAccountRoute
   '/_protected/connections': typeof ProtectedConnectionsRoute
   '/_protected/favorites': typeof ProtectedFavoritesRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/privacy'
+    | '/terms'
     | '/account'
     | '/connections'
     | '/favorites'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/privacy'
+    | '/terms'
     | '/account'
     | '/connections'
     | '/favorites'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/login'
     | '/privacy'
+    | '/terms'
     | '/_protected/account'
     | '/_protected/connections'
     | '/_protected/favorites'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   ConnectTokenRoute: typeof ConnectTokenRoute
   ESlugRoute: typeof ESlugRoute
   ESlugEditRoute: typeof ESlugEditRoute
@@ -240,6 +253,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -395,6 +415,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   ConnectTokenRoute: ConnectTokenRoute,
   ESlugRoute: ESlugRoute,
   ESlugEditRoute: ESlugEditRoute,

@@ -39,7 +39,7 @@ function PrivacyPage() {
           <h1 className="text-xl font-bold text-gray-900 mt-4">
             プライバシーポリシー
           </h1>
-          <p className="text-xs text-gray-400 mt-1">最終更新: 2026年6月17日</p>
+          <p className="text-xs text-gray-400 mt-1">最終更新: 2026年7月13日</p>
         </div>
 
         <Section title="1. 運営者">
@@ -48,15 +48,21 @@ function PrivacyPage() {
             <br />
             お問い合わせ:{" "}
             <a
-              href="mailto:pitang1965@gmail.com"
+              href="mailto:info@nafuda.me"
               className="text-pink-500 underline underline-offset-2"
             >
-              pitang1965@gmail.com
+              info@nafuda.me
             </a>
           </p>
           <p>
-            本サービス「なふだ」（以下「本サービス」）は13歳以上の方を対象としています。
-            13歳未満の方はご利用いただけません。
+            本サービス「なふだ」（以下「本サービス」）の利用条件は
+            <Link
+              to="/terms"
+              className="text-pink-500 underline underline-offset-2"
+            >
+              利用規約
+            </Link>
+            に定めています。
           </p>
         </Section>
 
@@ -232,10 +238,10 @@ function PrivacyPage() {
             個人情報の取り扱いに関するご質問・ご要望は下記までお問い合わせください。
             <br />
             <a
-              href="mailto:pitang1965@gmail.com"
+              href="mailto:info@nafuda.me"
               className="text-pink-500 underline underline-offset-2"
             >
-              pitang1965@gmail.com
+              info@nafuda.me
             </a>
           </p>
         </Section>

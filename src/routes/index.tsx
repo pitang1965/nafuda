@@ -69,6 +69,13 @@ function LandingPage() {
 
         <p className="text-xs text-gray-500 text-center">
           <Link
+            to="/terms"
+            className="underline underline-offset-2 hover:text-gray-700"
+          >
+            利用規約
+          </Link>
+          ・
+          <Link
             to="/privacy"
             className="underline underline-offset-2 hover:text-gray-700"
           >

@@ -79,19 +79,30 @@ function LoginPage() {
         </Button>
       </div>
 
+      <p className="w-full max-w-xs text-xs text-gray-400 text-center leading-relaxed">
+        ログインすることで、
+        <Link
+          to="/terms"
+          className="underline underline-offset-2 hover:text-gray-600"
+        >
+          利用規約
+        </Link>
+        および
+        <Link
+          to="/privacy"
+          className="underline underline-offset-2 hover:text-gray-600"
+        >
+          プライバシーポリシー
+        </Link>
+        に同意したものとみなします。
+      </p>
+
       <Link
         to="/"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
       >
         <ChevronLeft className="size-4" />
         <span className="underline underline-offset-2">トップに戻る</span>
-      </Link>
-
-      <Link
-        to="/privacy"
-        className="text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600"
-      >
-        プライバシーポリシー
       </Link>
 
       <OAuthErrorMessage />
