@@ -10,7 +10,7 @@ QRコードを見せるだけでSNSつながりができる、イベント特化
 - **デプロイ:** Cloudflare Pages + Workers
 - **リアルタイム:** Cloudflare Durable Objects（コンパニオン Worker・WebSocket）
 - **DB:** Neon Postgres + Drizzle ORM
-- **認証:** Better Auth (Google / Facebook OAuth)
+- **認証:** Better Auth (Google / Facebook OAuth、LINE は genericOAuth プラグイン)
 - **スタイル:** Tailwind CSS + shadcn/ui
 - **アナリティクス:** PostHog（本番のみ・IP匿名化）
 
