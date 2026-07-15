@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { getMyFavorites, removeFavorite } from "../../server/functions/favorite";
+import { stripBioMarkers } from "../../lib/bio";
 import { UserAvatar } from "../../components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,7 +92,7 @@ function FavoriteCard({
             </p>
             {fav.bio && (
               <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 whitespace-pre-wrap">
-                {fav.bio}
+                {stripBioMarkers(fav.bio)}
               </p>
             )}
             <p className="text-xs text-gray-400 mt-1">{savedDate} に保存</p>

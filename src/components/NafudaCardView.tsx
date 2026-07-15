@@ -9,6 +9,7 @@ import { RainbowBorderOverlay } from "./RainbowBorderOverlay";
 import { PearlBorderOverlay } from "./PearlBorderOverlay";
 import { GalleryLightbox } from "./GalleryLightbox";
 import { CherryBlossomOverlay } from "./CherryBlossomOverlay";
+import { BioText } from "./BioText";
 import { getNafudaStyle } from "../lib/nafuda-styles";
 import { purposeTagHeading } from "../lib/purpose";
 import { useNafudaFont } from "../lib/use-nafuda-font";
@@ -93,12 +94,11 @@ export function NafudaCardView({
           {profile.displayName}
         </h1>
         {profile.bio && (
-          <p
-            className="text-sm text-center whitespace-pre-wrap max-w-sm"
-            style={{ color: subtextColor ?? "#4b5563" }}
-          >
-            {profile.bio}
-          </p>
+          <BioText
+            bio={profile.bio}
+            className="text-sm text-center max-w-sm"
+            color={subtextColor ?? "#4b5563"}
+          />
         )}
         {profile.oshiTags.length > 0 && (
           <div className="flex flex-col items-center gap-1">

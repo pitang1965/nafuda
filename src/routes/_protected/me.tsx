@@ -18,6 +18,7 @@ import { SnsLinkButton } from "../../components/SnsLinkButton";
 import { NafudaLinkChip } from "../../components/NafudaLinkChip";
 import { NafudaIcon } from "../../components/NafudaIcon";
 import { GalleryLightbox } from "../../components/GalleryLightbox";
+import { BioText } from "../../components/BioText";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
@@ -312,12 +313,11 @@ function MePage() {
             <div
               className={`w-full max-w-xs text-center ${isPrivate("bio") ? "opacity-50" : ""}`}
             >
-              <p
-                className="text-sm whitespace-pre-wrap"
-                style={{ color: subtextColor ?? "#4b5563" }}
-              >
-                {currentPersona.bio}
-              </p>
+              <BioText
+                bio={currentPersona.bio}
+                className="text-sm"
+                color={subtextColor ?? "#4b5563"}
+              />
               {isPrivate("bio") && (
                 <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
               )}

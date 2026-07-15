@@ -820,13 +820,16 @@ function EditForm({
                 {...register("bio")}
                 aria-invalid={!!errors.bio}
                 maxLength={200}
-                placeholder="推し活のきっかけや活動スタイルなど、自由に書いてください"
+                placeholder={"活動スタイルなど自由に。行頭に「- 」で箇条書きにできます\n- 車中泊\n- 聖地巡礼"}
                 className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {bio.length}/200
               </span>
             </div>
+            <p className="text-xs text-gray-400">
+              行頭に「- 」または「・」を書くと箇条書きになります。
+            </p>
             {errors.bio && (
               <p className="text-xs text-red-600">{errors.bio.message}</p>
             )}

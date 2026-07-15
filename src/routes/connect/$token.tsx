@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { capture } from "../../lib/analytics";
+import { BioText } from "../../components/BioText";
 import {
   getConnectPageData,
   createConnectionFromQr,
@@ -261,12 +262,11 @@ function ConnectPage() {
                 {profile.displayName}
               </h1>
               {profile.bio && (
-                <p
-                  className="mt-2 text-sm text-center whitespace-pre-wrap max-w-xs"
-                  style={{ color: subtextColor ?? "#6b7280" }}
-                >
-                  {profile.bio}
-                </p>
+                <BioText
+                  bio={profile.bio}
+                  className="mt-2 text-sm text-center max-w-xs"
+                  color={subtextColor ?? "#6b7280"}
+                />
               )}
             </div>
 
