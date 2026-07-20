@@ -391,6 +391,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "line_openchat",
         "github",
         "spotify",
+        "suno",
         "facebook",
         "minkara",
         "linkedin",
