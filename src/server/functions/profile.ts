@@ -35,15 +35,25 @@ function isValidHttpsUrl(url: string): boolean {
   return /^https:\/\//i.test(url);
 }
 
-// nafuda.me（およびサブドメイン）の URL は SNSリンクに登録させない。
-// SNSリンクは「外部サービス」へのリンクであり自社ドメインは対象外。プロフィールURL
-// （見せる/つながる）・イベントURL を含むあらゆる nafuda.me URL が対象（ADR-0015）。
+// nafuda.me（およびサブドメイン）のうち、秘密トークンを含む公開URLだけを SNSリンクから拒否する。
+// これらを貼ると他人の ShareToken 等を本人の同意なく公開してしまう露出経路になるため（ADR-0026 が
+// ADR-0015 の「あらゆる nafuda.me URL を拒否」を、トークン付きパスに限定して緩和）。
+// トップページ・紹介ページ・サブドメイン（例 asatomo.nafuda.me）は自己紹介の一種として許可する。
 // handler 内で throw して使う（Zod refine だと ZodError の message が JSON 化して
 // クライアントに汚く出るため、クリーンな文を投げられる handler に置く）。
-function isNafudaHost(url: string): boolean {
+const NAFUDA_TOKEN_PATHS = [
+  /^\/u\/[^/]+\/p\/[^/]+/, // 見せる（プロフィール）: /u/{urlId}/p/{token}
+  /^\/connect\/[^/]+/, // つながる: /connect/{token}
+  /^\/favorites\/add\/[^/]+/, // お気に入り追加: /favorites/add/{token}
+];
+
+function isNafudaTokenUrl(url: string): boolean {
   try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host === "nafuda.me" || host.endsWith(".nafuda.me");
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const isNafudaHost = host === "nafuda.me" || host.endsWith(".nafuda.me");
+    if (!isNafudaHost) return false;
+    return NAFUDA_TOKEN_PATHS.some((re) => re.test(parsed.pathname));
   } catch {
     return false;
   }
@@ -425,9 +435,9 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
       throw new Error("URL は https:// から始まるフルURLを入力してください。");
     }
 
-    if (isNafudaHost(data.url)) {
+    if (isNafudaTokenUrl(data.url)) {
       throw new Error(
-        "nafuda.me のリンクは SNSリンクに登録できません。自分の別のなふだは「なふだリンク」から追加してください。",
+        "なふだのプロフィール／つながるURLは SNSリンクに登録できません。自分の別のなふだは「なふだリンク」から追加してください。",
       );
     }
 
