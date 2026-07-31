@@ -31,6 +31,9 @@ export function AppMenu({ iconColor }: { iconColor?: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem className="cursor-pointer" asChild>
+          <Link to="/nafuda-map">なふだマップ</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" asChild>
           <Link to="/account">アカウント</Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" asChild>
@@ -40,10 +43,7 @@ export function AppMenu({ iconColor }: { iconColor?: string }) {
           <Link to="/privacy">プライバシーポリシー</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onSelect={handleLogout}
-        >
+        <DropdownMenuItem className="cursor-pointer" onSelect={handleLogout}>
           ログアウト
         </DropdownMenuItem>
       </DropdownMenuContent>

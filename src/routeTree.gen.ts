@@ -16,6 +16,7 @@ import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ConnectTokenRouteImport } from './routes/connect/$token'
+import { Route as ProtectedNafudaMapRouteImport } from './routes/_protected/nafuda-map'
 import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
 import { Route as ProtectedFavoritesRouteImport } from './routes/_protected/favorites'
 import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
@@ -61,6 +62,11 @@ const ConnectTokenRoute = ConnectTokenRouteImport.update({
   id: '/connect/$token',
   path: '/connect/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedNafudaMapRoute = ProtectedNafudaMapRouteImport.update({
+  id: '/nafuda-map',
+  path: '/nafuda-map',
+  getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedMeRoute = ProtectedMeRouteImport.update({
   id: '/me',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/connections': typeof ProtectedConnectionsRoute
   '/favorites': typeof ProtectedFavoritesRoute
   '/me': typeof ProtectedMeRoute
+  '/nafuda-map': typeof ProtectedNafudaMapRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
   '/events/new': typeof ProtectedEventsNewRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/connections': typeof ProtectedConnectionsRoute
   '/favorites': typeof ProtectedFavoritesRoute
   '/me': typeof ProtectedMeRoute
+  '/nafuda-map': typeof ProtectedNafudaMapRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
   '/events/new': typeof ProtectedEventsNewRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/_protected/connections': typeof ProtectedConnectionsRoute
   '/_protected/favorites': typeof ProtectedFavoritesRoute
   '/_protected/me': typeof ProtectedMeRoute
+  '/_protected/nafuda-map': typeof ProtectedNafudaMapRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/e/$slug': typeof ESlugRoute
   '/_protected/events/new': typeof ProtectedEventsNewRoute
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/connections'
     | '/favorites'
     | '/me'
+    | '/nafuda-map'
     | '/connect/$token'
     | '/e/$slug'
     | '/events/new'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/connections'
     | '/favorites'
     | '/me'
+    | '/nafuda-map'
     | '/connect/$token'
     | '/e/$slug'
     | '/events/new'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/_protected/connections'
     | '/_protected/favorites'
     | '/_protected/me'
+    | '/_protected/nafuda-map'
     | '/connect/$token'
     | '/e/$slug'
     | '/_protected/events/new'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/connect/$token'
       preLoaderRoute: typeof ConnectTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_protected/nafuda-map': {
+      id: '/_protected/nafuda-map'
+      path: '/nafuda-map'
+      fullPath: '/nafuda-map'
+      preLoaderRoute: typeof ProtectedNafudaMapRouteImport
+      parentRoute: typeof ProtectedRoute
     }
     '/_protected/me': {
       id: '/_protected/me'
@@ -387,6 +406,7 @@ interface ProtectedRouteChildren {
   ProtectedConnectionsRoute: typeof ProtectedConnectionsRoute
   ProtectedFavoritesRoute: typeof ProtectedFavoritesRoute
   ProtectedMeRoute: typeof ProtectedMeRoute
+  ProtectedNafudaMapRoute: typeof ProtectedNafudaMapRoute
   ProtectedEventsNewRoute: typeof ProtectedEventsNewRoute
   ProtectedProfileEditRoute: typeof ProtectedProfileEditRoute
   ProtectedProfileWizardRoute: typeof ProtectedProfileWizardRoute
@@ -399,6 +419,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedConnectionsRoute: ProtectedConnectionsRoute,
   ProtectedFavoritesRoute: ProtectedFavoritesRoute,
   ProtectedMeRoute: ProtectedMeRoute,
+  ProtectedNafudaMapRoute: ProtectedNafudaMapRoute,
   ProtectedEventsNewRoute: ProtectedEventsNewRoute,
   ProtectedProfileEditRoute: ProtectedProfileEditRoute,
   ProtectedProfileWizardRoute: ProtectedProfileWizardRoute,

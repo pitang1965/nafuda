@@ -179,6 +179,49 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
   },
 );
 
+// なふだマップ用データ（CONTEXT.md「なふだマップ」）: オーナーの全なふだ（ノード）と
+// なふだリンクの有向辺（personaId → targetPersonaId）を返す。到達可能性（露出）の計算は
+// クライアントで行う。読み取り専用の自己監査ビュー用で、ミューテーションは持たない。
+export const getNafudaMap = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const request = getRequest();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) throw new Error("Unauthorized");
+
+    // 全なふだをノードにする（孤立含む）。孤立＝露出も被露出もない安全なふだを
+    // 盤面に見せることが監査価値の核（「見せていない＝安全」を確認できる）。
+    const nodes = await db
+      .select({
+        id: personas.id,
+        displayName: personas.displayName,
+        label: personas.label,
+        avatarUrl: personas.avatarUrl,
+      })
+      .from(personas)
+      .where(eq(personas.userId, session.user.id))
+      .orderBy(personas.createdAt);
+
+    const nodeIds = new Set(nodes.map((n) => n.id));
+    const rawEdges =
+      nodeIds.size > 0
+        ? await db
+            .select({
+              from: nafudaLinks.personaId,
+              to: nafudaLinks.targetPersonaId,
+            })
+            .from(nafudaLinks)
+            .where(inArray(nafudaLinks.personaId, Array.from(nodeIds)))
+        : [];
+    // 念のため両端が自分のノード集合に含まれる辺だけに絞る（所有権は setNafudaLinks で
+    // 保証済みだが、マップの整合性を防御的に担保する）。
+    const edges = rawEdges.filter(
+      (e) => nodeIds.has(e.from) && nodeIds.has(e.to),
+    );
+
+    return { nodes, edges };
+  },
+);
+
 // Create persona (also auto-generates UrlId on first creation)
 export const createPersona = createServerFn({ method: "POST" })
   .inputValidator(
@@ -536,7 +579,9 @@ export const setNafudaLinks = createServerFn({ method: "POST" })
     }
 
     // 既存を全削除して順序どおりに入れ直す
-    await db.delete(nafudaLinks).where(eq(nafudaLinks.personaId, data.personaId));
+    await db
+      .delete(nafudaLinks)
+      .where(eq(nafudaLinks.personaId, data.personaId));
     if (targetIds.length > 0) {
       await db.insert(nafudaLinks).values(
         targetIds.map((targetPersonaId, i) => ({
