@@ -39,14 +39,15 @@ const CARD_PAD_BOTTOM = 220;
 // 長い文言は最小サイズで頭打ちにして最大2行へ折り返す。
 const CAPTION_TARGET_W = QR_PX;
 const CAPTION_MIN_PX = 92;
-const CAPTION_MAX_PX = 300;
+// 短い文言も QR 幅の近くまで自動で拡大する（上限は 1〜2 文字が巨大化しない程度）。
+const CAPTION_MAX_PX = 440;
 const CAPTION_LINE_RATIO = 1.2;
 const GAP_CAPTION_QR = 140;
 const GAP_QR_BRAND = 150;
-const BRAND_ROW_H = 150;
-const BRAND_FONT_PX = 118;
-const BRAND_ICON_PX = 150;
-const BRAND_ICON_GAP = 44;
+const BRAND_ROW_H = 172;
+const BRAND_FONT_PX = 140;
+const BRAND_ICON_PX = 172;
+const BRAND_ICON_GAP = 48;
 const CARD_RADIUS = 120;
 const MARGIN = 60; // 角丸の余白ぶんだけ透過を残す
 
