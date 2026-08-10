@@ -20,6 +20,7 @@ import { NafudaIcon } from "../../components/NafudaIcon";
 import { GalleryLightbox } from "../../components/GalleryLightbox";
 import { BioText } from "../../components/BioText";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
+import { PrintLockupSheet } from "../../components/PrintLockupSheet";
 import { ExchangeContextSheet } from "../../components/ExchangeContextSheet";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,13 @@ import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { RainbowBorderOverlay } from "../../components/RainbowBorderOverlay";
 import { PearlBorderOverlay } from "../../components/PearlBorderOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
+
+// 開発時のみ「なふだを見せる」QR・印刷用画像をデモアカウント（七瀬みんと）に
+// 差し替える。実データ（ログイン中の自分）を晒さずレイアウトとスキャンを確認する用。
+// 本番ビルドでは import.meta.env.DEV=false となり、この分岐と定数はツリーシェイクで消える。
+const DEV_DEMO_PROFILE_URL =
+  "https://nafuda.me/u/ffa2c0f0f4/p/5db65a7ecc006a102f7ba42790acff93";
+const DEV_DEMO_LABEL = "デモ：七瀬みんとのなふだ";
 
 export const Route = createFileRoute("/_protected/me")({
   loader: () => getOwnProfile(),
@@ -89,6 +97,7 @@ function MePage() {
       }
     : undefined;
   const [profileQrOpen, setProfileQrOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
   const [connectQrOpen, setConnectQrOpen] = useState(false);
   const [connectQrUrl, setConnectQrUrl] = useState<string | null>(null);
   const [connectQrToken, setConnectQrToken] = useState<string | null>(null);
@@ -489,10 +498,38 @@ function MePage() {
           isOpen={profileQrOpen}
           onClose={() => setProfileQrOpen(false)}
           url={
-            origin ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}` : ""
+            import.meta.env.DEV
+              ? DEV_DEMO_PROFILE_URL
+              : origin
+                ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}`
+                : ""
           }
-          label={`${currentPersona.displayName} のなふだ`}
+          label={
+            import.meta.env.DEV
+              ? DEV_DEMO_LABEL
+              : `${currentPersona.displayName} のなふだ`
+          }
           shareText="@nafuda_me #なふだ見せて #なふだ"
+          onPrint={() => {
+            setProfileQrOpen(false);
+            setPrintOpen(true);
+          }}
+        />
+      )}
+      {currentPersona && urlId && (
+        <PrintLockupSheet
+          isOpen={printOpen}
+          onClose={() => setPrintOpen(false)}
+          url={
+            import.meta.env.DEV
+              ? DEV_DEMO_PROFILE_URL
+              : origin
+                ? `${origin}/u/${urlId}/p/${currentPersona.shareToken}`
+                : ""
+          }
+          fileBaseName={
+            import.meta.env.DEV ? "七瀬みんと" : currentPersona.displayName
+          }
         />
       )}
       <ExchangeContextSheet

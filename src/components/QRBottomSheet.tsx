@@ -10,6 +10,8 @@ interface QRBottomSheetProps {
   label: string;
   // X 投稿用の定型文。渡された画面だけ「Xでシェア」ボタンを出す（＝配布導線のオプトイン）。
   shareText?: string;
+  // 渡された画面だけ「印刷用画像を作る」導線を出す（プロフィールQR専用のオプトイン）。
+  onPrint?: () => void;
   exchangeMode?: {
     onExchanged: () => void;
     onNotExchanged: () => void;
@@ -53,6 +55,7 @@ export function QRBottomSheet({
   url,
   label,
   shareText,
+  onPrint,
   exchangeMode,
 }: QRBottomSheetProps) {
   const [mounted] = useState(() => typeof window !== "undefined");
@@ -222,6 +225,17 @@ export function QRBottomSheet({
                   >
                     <span aria-hidden>𝕏</span>
                     Xでシェア
+                  </button>
+                )}
+                {/* 印刷用ロックアップ導線もオプトイン（onPrint を渡した画面のみ）。
+                    プロフィールQR専用＝つながりQR／イベントQRには出さない。 */}
+                {onPrint && (
+                  <button
+                    onClick={onPrint}
+                    className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <span aria-hidden>🖨</span>
+                    印刷用画像を作る
                   </button>
                 )}
                 {/* PNG 書き出し用の隠しキャンバス（高解像度）。表示は上の SVG。 */}
