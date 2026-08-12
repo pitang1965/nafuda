@@ -7,6 +7,13 @@ import ReactCrop, {
 import "react-image-crop/dist/ReactCrop.css";
 import { InitialsAvatar } from "./InitialsAvatar";
 import { uploadAvatar, deleteAvatar } from "../server/functions/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AvatarUploadProps {
   personaId: string;
@@ -147,13 +154,23 @@ export function AvatarUpload({
         onChange={onFileChange}
       />
 
-      {srcImg && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-5 w-full max-w-sm flex flex-col gap-4">
-            <p className="text-sm font-medium text-center">
+      <Dialog
+        open={!!srcImg}
+        onOpenChange={(o) => {
+          if (!o && !uploading) setSrcImg(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center text-sm font-medium">
               切り取り位置を調整
-            </p>
-            <div className="flex justify-center">
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              画像の切り取り範囲を調整して保存します
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center">
+            {srcImg && (
               <ReactCrop
                 crop={crop}
                 onChange={setCrop}
@@ -169,33 +186,33 @@ export function AvatarUpload({
                   alt=""
                 />
               </ReactCrop>
-            </div>
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 break-all">
-                {error}
-              </div>
             )}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setSrcImg(null)}
-                disabled={uploading}
-                className="flex-1 py-2.5 text-sm border rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                キャンセル
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={uploading}
-                className="flex-1 py-2.5 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {uploading ? "保存中..." : "保存"}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 break-all">
+              {error}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSrcImg(null)}
+              disabled={uploading}
+              className="flex-1 py-2.5 text-sm border rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={uploading}
+              className="flex-1 py-2.5 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              {uploading ? "保存中..." : "保存"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

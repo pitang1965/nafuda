@@ -330,53 +330,51 @@ function EditEventPage() {
         </div>
       </main>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-3">イベントの削除</h2>
-            <p className="text-sm text-gray-600 mb-4">
+      <AlertDialog
+        open={showDeleteModal}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowDeleteModal(false);
+            setDeleteAgreed(false);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>イベントの削除</AlertDialogTitle>
+            <AlertDialogDescription>
               イベントとすべての参加履歴を削除します。この操作は取り消せません。
-            </p>
-            <label
-              htmlFor="event-delete-agree"
-              className="flex items-start gap-2 mb-4 cursor-pointer"
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <label
+            htmlFor="event-delete-agree"
+            className="flex items-start gap-2 cursor-pointer"
+          >
+            <Checkbox
+              id="event-delete-agree"
+              checked={deleteAgreed}
+              onCheckedChange={(c) => setDeleteAgreed(c === true)}
+              className="mt-0.5"
+            />
+            <span className="text-sm">削除することに同意します</span>
+          </label>
+          {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1" disabled={isDeleting}>
+              キャンセル
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleDelete}
+              disabled={!deleteAgreed || isDeleting}
             >
-              <Checkbox
-                id="event-delete-agree"
-                checked={deleteAgreed}
-                onCheckedChange={(c) => setDeleteAgreed(c === true)}
-                className="mt-0.5"
-              />
-              <span className="text-sm">削除することに同意します</span>
-            </label>
-            {deleteError && (
-              <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteAgreed(false);
-                  setDeleteError(null);
-                }}
-                disabled={isDeleting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDelete}
-                disabled={!deleteAgreed || isDeleting}
-              >
-                {isDeleting ? "削除中..." : "削除する"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+              {isDeleting ? "削除中..." : "削除する"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <AlertDialogContent>

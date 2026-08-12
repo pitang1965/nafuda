@@ -5,6 +5,15 @@ import { stripBioMarkers } from "../../lib/bio";
 import { UserAvatar } from "../../components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -132,35 +141,35 @@ function FavoriteCard({
       </div>
 
       {/* 外す確認ダイアログ */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-2">お気に入りから外す</h2>
-            <p className="text-sm text-gray-600 mb-5">
+      <AlertDialog
+        open={showConfirm}
+        onOpenChange={(o) => {
+          if (!o) setShowConfirm(false);
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>お気に入りから外す</AlertDialogTitle>
+            <AlertDialogDescription>
               <span className="font-medium">{fav.displayName}</span>{" "}
               を一覧から外します。相手には通知されません。
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowConfirm(false)}
-                disabled={isRemoving}
-              >
-                キャンセル
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleRemove}
-                disabled={isRemoving}
-              >
-                {isRemoving ? "外しています..." : "外す"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1" disabled={isRemoving}>
+              キャンセル
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleRemove}
+              disabled={isRemoving}
+            >
+              {isRemoving ? "外しています..." : "外す"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

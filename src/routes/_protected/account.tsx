@@ -4,6 +4,15 @@ import { authClient } from "../../lib/auth-client";
 import { deleteAccount } from "../../server/functions/profile";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_protected/account")({
   staticData: { title: "アカウント", hideBottomNav: true },
@@ -63,58 +72,62 @@ function AccountPage() {
           </section>
         </div>
 
-        {showDeleteModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-              <h2 className="text-lg font-bold mb-3">退会の確認</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                退会すると、あなたが入力したデータや築いたつながりはすべて削除され、元に戻せません。印刷・共有済みのQRコードも使えなくなります。
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                ただし、あなたが作成したイベントは記録として残ります（あなた自身の情報は消えます）。
-              </p>
-              <label
-                htmlFor="delete-agree"
-                className="flex items-start gap-2 mb-4 cursor-pointer"
+        <AlertDialog
+          open={showDeleteModal}
+          onOpenChange={(o) => {
+            if (!o) {
+              setShowDeleteModal(false);
+              setDeleteAgreed(false);
+              setDeleteError(null);
+            }
+          }}
+        >
+          <AlertDialogContent className="sm:max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>退会の確認</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>
+                    退会すると、あなたが入力したデータや築いたつながりはすべて削除され、元に戻せません。印刷・共有済みのQRコードも使えなくなります。
+                  </p>
+                  <p>
+                    ただし、あなたが作成したイベントは記録として残ります（あなた自身の情報は消えます）。
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <label
+              htmlFor="delete-agree"
+              className="flex items-start gap-2 cursor-pointer"
+            >
+              <Checkbox
+                id="delete-agree"
+                checked={deleteAgreed}
+                onCheckedChange={(c) => setDeleteAgreed(c === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">
+                上記の内容をすべて削除することに同意します
+              </span>
+            </label>
+            {deleteError && (
+              <p className="text-sm text-red-500">{deleteError}</p>
+            )}
+            <AlertDialogFooter className="flex-row gap-2">
+              <AlertDialogCancel className="flex-1" disabled={isDeleting}>
+                キャンセル
+              </AlertDialogCancel>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDeleteAccount}
+                disabled={!deleteAgreed || isDeleting}
               >
-                <Checkbox
-                  id="delete-agree"
-                  checked={deleteAgreed}
-                  onCheckedChange={(c) => setDeleteAgreed(c === true)}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  上記の内容をすべて削除することに同意します
-                </span>
-              </label>
-              {deleteError && (
-                <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setDeleteAgreed(false);
-                    setDeleteError(null);
-                  }}
-                  disabled={isDeleting}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={handleDeleteAccount}
-                  disabled={!deleteAgreed || isDeleting}
-                >
-                  {isDeleting ? "処理中..." : "退会する"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+                {isDeleting ? "処理中..." : "退会する"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </>
   );
 }

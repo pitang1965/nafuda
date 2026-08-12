@@ -11,6 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -254,38 +271,42 @@ function ConnectionCard({
       )}
 
       {/* 削除確認ダイアログ */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-2">つながりを削除</h2>
-            <p className="text-sm text-gray-600 mb-1">
-              <span className="font-medium">{conn.toDisplayName}</span>{" "}
-              とのつながりを削除します。
-            </p>
-            <p className="text-xs text-gray-400 mb-5">
-              相手の記録は残ります。この操作は取り消せません。
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowConfirm(false)}
-                disabled={isDeleting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "削除中..." : "削除する"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog
+        open={showConfirm}
+        onOpenChange={(o) => {
+          if (!o) setShowConfirm(false);
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>つながりを削除</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p>
+                  <span className="font-medium">{conn.toDisplayName}</span>{" "}
+                  とのつながりを削除します。
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  相手の記録は残ります。この操作は取り消せません。
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1" disabled={isDeleting}>
+              キャンセル
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "削除中..." : "削除する"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -326,12 +347,19 @@ function EditDialog({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-        <h2 className="text-lg font-bold mb-1">つながりを編集</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          <span className="font-medium">{conn.toDisplayName}</span> さん
-        </p>
+    <Dialog
+      open
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>つながりを編集</DialogTitle>
+          <DialogDescription>
+            <span className="font-medium">{conn.toDisplayName}</span> さん
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="flex flex-col gap-4">
           {contextLocked ? (
@@ -413,7 +441,7 @@ function EditDialog({
           </div>
         </div>
 
-        <div className="flex gap-2 mt-5">
+        <DialogFooter className="flex-row gap-2">
           <Button
             variant="outline"
             className="flex-1"
@@ -425,9 +453,9 @@ function EditDialog({
           <Button className="flex-1" onClick={handleSave} disabled={isSaving}>
             {isSaving ? "保存中..." : "保存する"}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

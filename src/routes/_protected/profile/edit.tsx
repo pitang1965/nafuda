@@ -1334,46 +1334,48 @@ function EditForm({
         }}
       />
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-3">なふだの削除</h2>
-            <p className="text-sm text-gray-600 mb-3">
-              なふだ「{initialLabel || initialDisplayName}
-              」を削除します。以下のデータが完全に削除されます（復元できません）：
-            </p>
-            <ul className="text-sm text-gray-600 mb-4 list-disc pl-4 space-y-1">
-              <li>このなふだのつながり（相手側の記録も含む）</li>
-              <li>このなふだのチェックイン履歴</li>
-              <li>このなふだのSNSリンク・なふだリンク</li>
-            </ul>
-            {deleteError && (
-              <p className="text-sm text-red-500 mb-3">{deleteError}</p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteError(null);
-                }}
-                disabled={deleting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? "削除中..." : "削除する"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog
+        open={showDeleteModal}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowDeleteModal(false);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>なふだの削除</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p>
+                  なふだ「{initialLabel || initialDisplayName}
+                  」を削除します。以下のデータが完全に削除されます（復元できません）：
+                </p>
+                <ul className="mt-3 list-disc space-y-1 pl-4">
+                  <li>このなふだのつながり（相手側の記録も含む）</li>
+                  <li>このなふだのチェックイン履歴</li>
+                  <li>このなふだのSNSリンク・なふだリンク</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1" disabled={deleting}>
+              キャンセル
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "削除中..." : "削除する"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </FormProvider>
   );
 }
