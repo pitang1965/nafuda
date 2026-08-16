@@ -2,7 +2,25 @@
 
 QRコードを見せるだけでSNSつながりができる、イベント特化型デジタル名刺アプリ。
 
-アーキテクチャ的には、Cloudflare Pages 上の TanStack Start (React SSR) を基盤とし、リアルタイムな状態同期に Cloudflare Durable Objects を使用しています（Cloudflare Workers への移行は将来的に検討中。経緯は [ADR-0022](docs/adr/0022-realtime-via-durable-objects.md) を参照）。
+## 概要
+
+イベント会場で参加者同士が簡単にSNSでつながれるデジタル名刺アプリです。QRコードを見せるだけで相手の情報を取得でき、その場でSNS（Google、Facebook、LINE）でフォローできます。
+
+## 主な機能
+
+- **QRコード交換** — 自分のQRコードを表示し、相手にスキャンしてもらうだけでSNS接続が成立
+- **リアルタイム通知** — QR接続が成功した瞬間に「つながりました」と通知
+- **イベント参加者一覧** — 同じイベントに参加している人の情報をリアルタイムで表示
+- **複数のなふだ** — シーンに応じて使い分けられる複数のプロフィール（なふだ）を持てる
+- **ソーシャルログイン** — Google、Facebook、LINE のアカウントでログイン可能
+- **デジタル名刺** — プロフィール情報をSNSリンク付きで管理
+
+## こんな人に便利
+
+- イベント・カンファレンス・交流会の参加者
+- 名刺交換を効率化したい人
+- SNSでのつながりを増やしたい人
+- デジタルツールを活用した交流を好む人
 
 ## スクリーンショット
 
@@ -15,6 +33,8 @@ QRコードを見せるだけでSNSつながりができる、イベント特化
 | <img src="docs/images/screenshot-print-lockup.jpg" width="280" alt="印刷用画像を作るモーダル"> | <img src="docs/images/mockup-tshirt-goods.webp" width="280" alt="QR入りTシャツグッズのモックアップ"> |
 
 ## 技術スタック
+
+アーキテクチャ的には、Cloudflare Pages 上の TanStack Start (React SSR) を基盤とし、リアルタイムな状態同期に Cloudflare Durable Objects を使用しています（Cloudflare Workers への移行は将来的に検討中。経緯は [ADR-0022](docs/adr/0022-realtime-via-durable-objects.md) を参照）。
 
 - **フレームワーク:** TanStack Start v1 (React SSR)
 - **デプロイ:** Cloudflare Pages + Workers
