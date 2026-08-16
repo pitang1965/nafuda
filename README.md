@@ -4,6 +4,16 @@ QRコードを見せるだけでSNSつながりができる、イベント特化
 
 アーキテクチャ的には、Cloudflare Pages 上の TanStack Start (React SSR) を基盤とし、リアルタイムな状態同期に Cloudflare Durable Objects を使用しています（Cloudflare Workers への移行は将来的に検討中。経緯は [ADR-0022](docs/adr/0022-realtime-via-durable-objects.md) を参照）。
 
+## スクリーンショット
+
+| 自分のなふだ（編集画面） | 公開プロフィール（人から見た画面） |
+| --- | --- |
+| <img src="docs/images/screenshot-my-nafuda.png" width="280" alt="自分のなふだ（編集画面）"> | <img src="docs/images/screenshot-public-profile.png" width="280" alt="公開プロフィール（人から見た画面）"> |
+
+| 印刷用画像を作る | Tシャツグッズ（SUZURI） |
+| --- | --- |
+| <img src="docs/images/screenshot-print-lockup.jpg" width="280" alt="印刷用画像を作るモーダル"> | <img src="docs/images/mockup-tshirt-goods.webp" width="280" alt="QR入りTシャツグッズのモックアップ"> |
+
 ## 技術スタック
 
 - **フレームワーク:** TanStack Start v1 (React SSR)

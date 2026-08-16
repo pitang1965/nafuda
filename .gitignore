@@ -32,6 +32,7 @@ dev-dist/
 
 # Temp files
 test_write.txt
+tmp/
 
 # TanStack generated
 .tanstack/
