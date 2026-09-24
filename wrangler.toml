@@ -7,6 +7,13 @@ compatibility_flags = [ "nodejs_compat" ]
 binding = "AVATARS_BUCKET"
 bucket_name = "nafuda-avatars"
 
+# `npx wrangler d1 create nafuda-db-prod` で作成し、出力された database_id をここに入れる。
+[[d1_databases]]
+binding = "DB"
+database_name = "nafuda-db-prod"
+database_id = "TODO_REPLACE_AFTER_WRANGLER_D1_CREATE"
+migrations_dir = "drizzle"
+
 # 本番の realtime コンパニオン Worker への Service Binding。
 # REALTIME_SECRET / INTERNAL_PUSH_SECRET は本番 Pages の Production 環境に secret として設定する。
 [[services]]
@@ -26,6 +33,13 @@ VITE_REALTIME_URL = "wss://nafuda-realtime.pitang1965.workers.dev"
 [[env.preview.r2_buckets]]
 binding = "AVATARS_BUCKET"
 bucket_name = "nafuda-avatars-staging"
+
+# `npx wrangler d1 create nafuda-db-staging` で作成し、出力された database_id をここに入れる。
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "nafuda-db-staging"
+database_id = "775c12d1-6e8e-4e5f-9b97-a1dc8e8f746d"
+migrations_dir = "drizzle"
 
 # realtime コンパニオン Worker への Service Binding（staging 実験用）。
 # Preview 環境にのみ存在 → 本番（top-level）には無いため pushToPersona は no-op になる。

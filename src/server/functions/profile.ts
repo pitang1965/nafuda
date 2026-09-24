@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, inArray, or } from "drizzle-orm";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import {
   personas,
   urlIds,
@@ -60,6 +60,7 @@ function isNafudaTokenUrl(url: string): boolean {
 }
 
 async function generateUniqueUrlId(): Promise<string> {
+  const db = getDb();
   while (true) {
     const bytes = new Uint8Array(10);
     crypto.getRandomValues(bytes);
@@ -78,6 +79,7 @@ async function generateUniqueUrlId(): Promise<string> {
 // Get own full profile (authenticated — returns all fields)
 export const getOwnProfile = createServerFn({ method: "GET" }).handler(
   async () => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -184,6 +186,7 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
 // クライアントで行う。読み取り専用の自己監査ビュー用で、ミューテーションは持たない。
 export const getNafudaMap = createServerFn({ method: "GET" }).handler(
   async () => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -239,6 +242,7 @@ export const createPersona = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -306,6 +310,7 @@ export const updatePersona = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -341,6 +346,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const result = await db
       .select()
       .from(personas)
@@ -458,6 +464,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -516,6 +523,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
 export const deleteSnsLink = createServerFn({ method: "POST" })
   .inputValidator(z.object({ linkId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -544,6 +552,7 @@ export const setNafudaLinks = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -598,6 +607,7 @@ export const setNafudaLinks = createServerFn({ method: "POST" })
 // personas を消す前に呼ぶ（ADR-0014。アバターの既存孤児バグもここで塞ぐ）。
 async function cleanupPersonaR2Assets(personaIds: string[]) {
   if (personaIds.length === 0) return;
+  const db = getDb();
   const [avatars, photos] = await Promise.all([
     db
       .select({ avatarUrl: personas.avatarUrl })
@@ -617,6 +627,7 @@ async function cleanupPersonaR2Assets(personaIds: string[]) {
 
 export const deleteAccount = createServerFn({ method: "POST" }).handler(
   async () => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -673,6 +684,7 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
 export const deletePersona = createServerFn({ method: "POST" })
   .inputValidator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");

@@ -32,9 +32,10 @@ function withSecurityHeaders(res: Response): Response {
 }
 
 async function fetchOgpData(shareToken: string) {
-  const { db } = await import("./server/db/client");
+  const { getDb } = await import("./server/db/client");
   const { personas } = await import("./server/db/schema");
   const { eq } = await import("drizzle-orm");
+  const db = getDb();
   const rows = await db
     .select({
       displayName: personas.displayName,

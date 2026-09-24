@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import { personas, galleryPhotos } from "../db/schema";
 import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
@@ -17,6 +17,7 @@ const MAX_DATA_URL_LEN = 850_000;
 
 // 指定なふだが本人のものか検証する。所有していなければ null を返す
 async function assertOwnedPersona(personaId: string, userId: string) {
+  const db = getDb();
   const [persona] = await db
     .select({ id: personas.id })
     .from(personas)
@@ -37,6 +38,7 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -83,6 +85,7 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
 export const deleteGalleryPhoto = createServerFn({ method: "POST" })
   .inputValidator(z.object({ photoId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -111,6 +114,7 @@ export const updateGalleryCaption = createServerFn({ method: "POST" })
     z.object({ photoId: z.uuid(), caption: z.string().max(CAPTION_MAX) }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -143,6 +147,7 @@ export const reorderGalleryPhotos = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -163,12 +168,14 @@ export const reorderGalleryPhotos = createServerFn({ method: "POST" })
       throw new Error("並び順の指定が不正です");
     }
 
-    await Promise.all(
-      data.orderedIds.map((id, index) =>
-        db
-          .update(galleryPhotos)
-          .set({ displayOrder: index, updatedAt: new Date() })
-          .where(eq(galleryPhotos.id, id)),
-      ),
+    if (data.orderedIds.length === 0) return;
+    // D1はトランザクションを持たないため、原子性はdb.batch()で担保する。
+    const now = new Date();
+    const updates = data.orderedIds.map((id, index) =>
+      db
+        .update(galleryPhotos)
+        .set({ displayOrder: index, updatedAt: now })
+        .where(eq(galleryPhotos.id, id)),
     );
+    await db.batch(updates as unknown as Parameters<typeof db.batch>[0]);
   });

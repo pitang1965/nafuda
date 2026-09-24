@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import { personas } from "../db/schema";
 import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
@@ -19,6 +19,7 @@ export const uploadAvatar = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -54,6 +55,7 @@ export const uploadAvatar = createServerFn({ method: "POST" })
 export const deleteAvatar = createServerFn({ method: "POST" })
   .inputValidator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");

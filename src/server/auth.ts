@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { genericOAuth, line } from 'better-auth/plugins/generic-oauth'
-import { db } from './db/client'
+import { getDb } from './db/client'
 import * as schema from './db/schema'
 
 const requiredEnvVars = [
@@ -25,7 +25,9 @@ export const auth = betterAuth({
   // CRITICAL: prevents redirect_uri_mismatch in OAuth flows
   baseURL: process.env.BETTER_AUTH_URL!,
   secret: process.env.BETTER_AUTH_SECRET!,
-  database: drizzleAdapter(db, { provider: 'pg', schema }),
+  // D1はトランザクションをサポートしない(BEGIN不可、db.batch()のみ)。
+  // transaction: false でBetter Auth内部の実トランザクション使用を止める。
+  database: drizzleAdapter(getDb(), { provider: 'sqlite', schema, transaction: false }),
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,

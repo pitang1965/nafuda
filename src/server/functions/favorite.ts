@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import { favoritePersonas, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
 
@@ -12,6 +12,7 @@ import { auth } from "../auth";
 export const addFavorite = createServerFn({ method: "POST" })
   .inputValidator(z.object({ shareToken: z.string().min(1) }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -66,6 +67,7 @@ export const addFavorite = createServerFn({ method: "POST" })
 export const removeFavorite = createServerFn({ method: "POST" })
   .inputValidator(z.object({ targetPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -84,6 +86,7 @@ export const removeFavorite = createServerFn({ method: "POST" })
 // ライブ参照（スナップショットではない）。ラベルは他者には見えないので返さない。
 export const getMyFavorites = createServerFn({ method: "GET" }).handler(
   async () => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");

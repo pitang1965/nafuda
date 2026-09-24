@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, isNull, desc, gt, lt } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
-import { db } from "../db/client";
+import { alias } from "drizzle-orm/sqlite-core";
+import { getDb } from "../db/client";
 import {
   connections,
   connectionQrTokens,
@@ -24,6 +24,7 @@ const MAX_PENDING_INVITES_PER_ISSUER = 30;
 export const createConnectionQrToken = createServerFn({ method: "POST" })
   .inputValidator(z.object({ fromPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -68,6 +69,7 @@ export const createConnectionQrToken = createServerFn({ method: "POST" })
 export const deleteConnectionQrToken = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string().min(1) }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -97,6 +99,7 @@ export const deleteConnectionQrToken = createServerFn({ method: "POST" })
 // 組み立てる共有ヘルパー。つながりQR経由（getConnectPageData）と保留招待経由
 // （getPendingInviteData）で同一の画面を描けるよう返り値の形を揃える。
 async function buildIssuerView(issuerPersonaId: string) {
+  const db = getDb();
   const [personaRow] = await db
     .select({
       id: personas.id,
@@ -185,6 +188,7 @@ async function buildIssuerView(issuerPersonaId: string) {
 export const getConnectPageData = createServerFn({ method: "GET" })
   .inputValidator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const now = new Date();
     const tokenRows = await db
       .select({ fromPersonaId: connectionQrTokens.fromPersonaId })
@@ -210,6 +214,7 @@ export const getConnectPageData = createServerFn({ method: "GET" })
 export const ensurePendingInvite = createServerFn({ method: "POST" })
   .inputValidator(z.object({ connectionQrToken: z.string().min(1) }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const now = new Date();
 
     // 期限切れ招待を掃除（テーブルを肥大させない）
@@ -300,6 +305,7 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
 export const getPendingInviteData = createServerFn({ method: "GET" })
   .inputValidator(z.object({ inviteToken: z.string() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const now = new Date();
     const [inviteRow] = await db
       .select({ issuerPersonaId: pendingInvites.issuerPersonaId })
@@ -329,6 +335,7 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -421,6 +428,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -554,6 +562,7 @@ export const checkQrConnectionStatus = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -612,6 +621,7 @@ export const updateConnection = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -660,6 +670,7 @@ export const updateConnection = createServerFn({ method: "POST" })
 export const deleteConnection = createServerFn({ method: "POST" })
   .inputValidator(z.object({ connectionId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -677,6 +688,7 @@ export const deleteConnection = createServerFn({ method: "POST" })
 // 自分のつながり一覧（双方向モデル: 常に fromPersona が自分）
 export const getMyConnections = createServerFn({ method: "GET" }).handler(
   async () => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");

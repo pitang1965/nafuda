@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, isNull, ne, desc } from "drizzle-orm";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import { events, eventCheckins, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
 import { isWithinCheckinWindow } from "../lib/eventCheckinWindow";
@@ -62,6 +62,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -149,6 +150,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -207,12 +209,10 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
           .returning();
         eventRow = inserted;
       } catch (err: unknown) {
-        if (
-          err &&
-          typeof err === "object" &&
-          "code" in err &&
-          err.code === "23505"
-        ) {
+        // D1/SQLiteの一意制約違反はPostgresの"23505"のようなエラーコードを持たず、
+        // メッセージに"UNIQUE constraint failed"を含む形で投げられる。
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes("UNIQUE constraint failed")) {
           eventRow = await db
             .select()
             .from(events)
@@ -256,6 +256,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
 export const checkoutFromEvent = createServerFn({ method: "POST" })
   .inputValidator(z.object({ checkinId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -283,6 +284,7 @@ export const checkoutFromEvent = createServerFn({ method: "POST" })
 export const getEventParticipants = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     const isAuthenticated = !!session?.user;
@@ -334,6 +336,7 @@ export const getEventParticipants = createServerFn({ method: "POST" })
 export const getMyCheckinStatus = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string(), personaId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) return false;
@@ -362,6 +365,7 @@ export const getMyCheckinStatus = createServerFn({ method: "POST" })
 export const cancelCheckin = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string().min(1), personaId: z.uuid() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -411,6 +415,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -449,6 +454,7 @@ export const updateEvent = createServerFn({ method: "POST" })
 export const deleteEvent = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -469,6 +475,7 @@ export const deleteEvent = createServerFn({ method: "POST" })
 // Get events created by or participated in by the current user
 export const getMyEvents = createServerFn({ method: "GET" }).handler(
   async () => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
@@ -480,8 +487,10 @@ export const getMyEvents = createServerFn({ method: "GET" }).handler(
       .from(events)
       .where(eq(events.hostUserId, userId));
 
-    const participatedRows = await db
-      .selectDistinctOn([events.id], {
+    // D1/SQLiteにはPostgresのDISTINCT ONが無いため、checkedInAt降順で全件取得してから
+    // events.id単位で先頭(=最新のcheckedInAt)だけ残す形でイベントごとに1行へ絞り込む。
+    const participatedRowsRaw = await db
+      .select({
         id: events.id,
         slug: events.slug,
         shareToken: events.shareToken,
@@ -499,7 +508,15 @@ export const getMyEvents = createServerFn({ method: "GET" }).handler(
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
       .where(
         and(eq(eventCheckins.userId, userId), ne(events.hostUserId, userId)),
-      );
+      )
+      .orderBy(desc(eventCheckins.checkedInAt));
+
+    const seenEventIds = new Set<string>();
+    const participatedRows = participatedRowsRaw.filter((r) => {
+      if (seenEventIds.has(r.id)) return false;
+      seenEventIds.add(r.id);
+      return true;
+    });
 
     return { hostedEvents, participatedEvents: participatedRows };
   },
@@ -515,6 +532,7 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const db = getDb();
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");

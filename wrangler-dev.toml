@@ -7,6 +7,14 @@ compatibility_flags = [ "nodejs_compat" ]
 binding = "AVATARS_BUCKET"
 bucket_name = "nafuda-avatars"
 
+# `npx wrangler d1 create nafuda-db-dev` で作成し、出力された database_id をここに入れる。
+[[d1_databases]]
+binding = "DB"
+database_name = "nafuda-db-dev"
+database_id = "eaffc14a-eaad-4b14-bc7b-dfb43aad38c4"
+# drizzle-kitの出力先(./drizzle)を wrangler d1 migrations に見せる(既定は ./migrations)。
+migrations_dir = "drizzle"
+
 [vars]
 R2_PUBLIC_URL = "https://pub-005c2707053246c7961f7082094d34f8.r2.dev"
 

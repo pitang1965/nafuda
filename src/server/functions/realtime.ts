@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import { personas, events } from "../db/schema";
 import { auth } from "../auth";
 import { signTicket } from "../lib/ticket";
@@ -20,6 +20,7 @@ export const issueRealtimeTicket = createServerFn({ method: "POST" })
     const secret = process.env.REALTIME_SECRET;
     if (!secret) return { ticket: null as string | null }; // realtime 無効環境（本番）→ null
 
+    const db = getDb();
     const [personaRow] = await db
       .select({ userId: personas.userId })
       .from(personas)
@@ -41,6 +42,7 @@ export const issueEventRoomTicket = createServerFn({ method: "POST" })
     const secret = process.env.REALTIME_SECRET;
     if (!secret) return { ticket: null as string | null }; // realtime 無効環境（本番）→ null
 
+    const db = getDb();
     const [eventRow] = await db
       .select({ id: events.id })
       .from(events)

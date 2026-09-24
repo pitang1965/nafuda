@@ -1,18 +1,12 @@
-import { drizzle } from 'drizzle-orm/neon-http'
-import { neon, neonConfig } from '@neondatabase/serverless'
-import * as schema from './schema'
+import { env } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "./schema";
 
-const DATABASE_URL = process.env.DATABASE_URL
-if (!DATABASE_URL) {
-  console.error('[FATAL] Missing environment variable: DATABASE_URL')
-  throw new Error('Missing environment variable: DATABASE_URL')
+type CloudflareEnv = { DB: D1Database };
+
+// D1はPostgresの接続文字列と違い、Workersのbindingとしてのみアクセスできる
+// (process.envには載らない)。src/server/storage.tsのR2バインディングと同じパターンで、
+// envはモジュール読み込み時ではなくリクエスト処理中に呼ばれる関数の中でのみ参照する。
+export function getDb() {
+  return drizzle((env as unknown as CloudflareEnv).DB, { schema });
 }
-
-// idleなconnectionがreapされた直後、クエリpayloadが32-42KB帯だと
-// pipelineConnect="password"(デフォルト)の認証+クエリ合体リクエストが
-// 応答なしにハングするバグがある(neondatabase/serverless#209)。
-// アクセス頻度が低くconnectionが頻繁にreapされるなふだでは高頻度で踏むため無効化する。
-neonConfig.pipelineConnect = false
-
-const sql = neon(DATABASE_URL)
-export const db = drizzle(sql, { schema })
