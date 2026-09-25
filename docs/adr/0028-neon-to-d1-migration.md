@@ -74,4 +74,30 @@
 ### 2026-09-25: ローカルdevでの手動UAT(ユーザー実施)
 
 - Google/Facebook/LINEの3種類のSNSログイン、ログアウト、なふだ作成、SNSリンク編集、テーマ変更、なふだリンクを確認 → 全て正常動作
-- 未確認: イベントチェックイン関連(`event.ts`は`selectDistinctOn`のJS側重複排除への書き換え、Postgresエラーコード判定のD1エラーメッセージ判定への書き換え、GPS座標のPoint→JSON列変換など、今回の変更の中でもリスクが高い箇所)
+- 未確認: イベントチェックイン関連(`event.ts`は`selectDistinctOn`のJS側重複排除への書き換え、Postgresエラーコード判定のD1エラーメッセージ判定への書き換え、GPS座標のPoint→JSON列変換など、今回の変更の中でもリスクが高い箇所)。GPS・QRスキャンが絡むため実機検証が必要と判断し、staging(実URL)での確認に切り替えることにした
+
+### 2026-09-25: staging反映
+
+- `npx wrangler d1 create nafuda-db-staging` 実行(APACリージョンに作成)、`wrangler.toml`の`env.preview.d1_databases`に反映
+- `wrangler d1 migrations apply`が既定で`./migrations`を見るため、`migrations_dir = "drizzle"`を`wrangler.toml`(本番・preview)・`wrangler-dev.toml`の3箇所に追加
+- `npx wrangler d1 migrations apply nafuda-db-staging --remote --env preview` 実行、27コマンド成功
+- コミット(`fa49901`)・`staging`ブランチにpush → 自動デプロイ成功(`66bc9b41`, Active)
+- staging URL(`https://staging.nafuda-dxn.pages.dev`)でルート・ログインページ200 OK、D1経由の公開プロフィールルートも1.74秒で正常応答を確認
+- 次: イベントチェックイン・GPS・QRスキャン関連の実機UATをユーザーに依頼
+
+### 2026-09-25: staging実機UAT(ユーザー実施)
+
+- なふだのお気に入り登録、イベント作成→参加、参加の取りやめ、つながり(QR交換)、つながった場所の表示(GPS座標JSON列・MeetingSky)を確認 → 全て正常動作
+- これでPhase 1(dev)・Phase 2(staging)のリスクの高い箇所(Better Auth、`selectDistinctOn`書き換え、GPS座標のPoint→JSON変換、D1エラーメッセージ判定)を含めて一通りの動作確認が完了。Phase 3(本番カットオーバー)に進める状態
+
+### 2026-09-25: 本番データでのstagingリハーサル
+
+Phase 3の本番カットオーバー前に、実際のNeon本番データでの変換ロジックを検証するため、まずstagingへ投入するリハーサルを実施(ユーザー判断: 小細工無しで全テーブルそのまま。`session`/`account`の実OAuthトークンもstagingに乗ることを許容)。
+
+- `tmp/export-neon-to-d1.mjs`(使い捨て、`.env.production`のNeon接続情報を使用)でNeon本番の全15テーブルをSELECTし、型変換(boolean→0/1、Date→Unix epoch秒、jsonb/array→JSON文字列)しつつテーブルごとのINSERT文を生成
+- 1回目の投入で`user`テーブルが一意制約違反(email)で失敗。原因はPhase 2のstaging UATで同じ実アカウントで既にログイン済みだったため、staging側に重複するuser行が先に存在していたこと。`session`/`account`もFK制約違反で連鎖失敗
+- stagingの全15テーブルを一旦DELETEで空にしてから、FK順(user→personas→events→session→account→verification→url_ids→sns_links→nafuda_links→favorite_personas→gallery_photos→event_checkins→connection_qr_tokens→connections→pending_invites)で再投入
+- `COUNT(*)`で全テーブルの件数がNeon本番と完全一致することを確認(user 21, personas 23, events 19, session 85, account 22, verification 0, url_ids 20, sns_links 36, nafuda_links 2, favorite_personas 4, gallery_photos 11, event_checkins 21, connection_qr_tokens 8, connections 7, pending_invites 1)
+- 実データを含むエクスポート済みSQLファイルは投入後に削除済み(エクスポートスクリプト自体は`tmp/`に残し、本番カットオーバー時に再利用予定。その時点で改めて最新データをエクスポートし直す)
+- ユーザーがstagingにログインし、なふだの内容が本番と同一であること、SNSリンクの機能、なふだマップ、つながり、イベントの表示を確認 → 全て正常。型変換ロジック(uuid/timestamp/boolean/jsonb/array/point)が実データで妥当であることが検証できた
+- 残タスク: staging初期化の要否判断(未決定、緊急性なし)、Neon本番DBパスワードのローテーション(データ移行完了後に実施予定)

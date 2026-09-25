@@ -11,7 +11,7 @@ bucket_name = "nafuda-avatars"
 [[d1_databases]]
 binding = "DB"
 database_name = "nafuda-db-prod"
-database_id = "TODO_REPLACE_AFTER_WRANGLER_D1_CREATE"
+database_id = "f4e614e0-214d-476c-bf87-d7c959f2f9c4"
 migrations_dir = "drizzle"
 
 # 本番の realtime コンパニオン Worker への Service Binding。
