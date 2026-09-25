@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"ROOT: %{http_code} %{time_total}s\\\\n\" --max-time 15 \"http://localhost:5173/\")",
+      "Bash(curl -s -o /dev/null -w \"LOGIN: %{http_code} %{time_total}s\\\\n\" --max-time 15 \"http://localhost:5173/login\")",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code} TIME:%{time_total}s\\\\n\" --max-time 20 \"http://localhost:5173/u/test/p/0000000000000000000000000000dead\")"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-env-dump.sh",
+            "timeout": 10,
+            "statusMessage": "Checking for secret-file dumps..."
+          }
+        ]
+      }
+    ]
+  }
+}
