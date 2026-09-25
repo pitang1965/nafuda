@@ -39,7 +39,7 @@ QRコードを見せるだけでSNSつながりができる、イベント特化
 - **フレームワーク:** TanStack Start v1 (React SSR)
 - **デプロイ:** Cloudflare Pages + Workers
 - **リアルタイム:** Cloudflare Durable Objects（コンパニオン Worker・WebSocket）
-- **DB:** Neon Postgres + Drizzle ORM
+- **DB:** Cloudflare D1 (SQLite) + Drizzle ORM
 - **認証:** Better Auth (Google / Facebook OAuth、LINE は genericOAuth プラグイン)
 - **スタイル:** Tailwind CSS + shadcn/ui
 - **アナリティクス:** PostHog（本番のみ・IP匿名化）
@@ -56,11 +56,13 @@ pnpm install
 
 ### 2. 外部サービスの準備
 
-#### Neon (データベース)
+#### Cloudflare D1 (データベース)
 
-1. [Neon Console](https://console.neon.tech) でプロジェクトを作成
-   - リージョン: **AWS Asia Pacific 1 (Singapore)**
-2. 接続文字列を取得し `.env.local` の `DATABASE_URL` に記入する (pooler、`?sslmode=require` 付き)
+D1はCloudflareの`wrangler`バインディング経由でのみアクセスでき、Postgresのような接続文字列は不要です。
+
+1. `npx wrangler d1 create nafuda-db-dev` を実行し、出力された `database_id` を `wrangler-dev.toml` の `[[d1_databases]]` に記入する
+2. 同様に `nafuda-db-staging` / `nafuda-db-prod` を作成し、それぞれ `wrangler.toml` の `[[d1_databases]]`（本番）・`[[env.preview.d1_databases]]`（staging）に記入する
+3. dev/staging/prodは完全に独立したデータベースで、Neonのようなブランチ機能は無い。スキーマ変更は3環境それぞれに `wrangler d1 migrations apply` を個別実行する必要がある
 
 #### Google OAuth
 
@@ -118,8 +120,8 @@ better-auth ビルトインの social ではなく `genericOAuth` で実装し�
 `.env.local` をプロジェクトルートに作成:
 
 ```env
-# Neon Postgres
-DATABASE_URL=postgresql://...@...neon.tech/neondb?sslmode=require
+# Cloudflare D1 はwranglerのbinding経由でアクセスするため .env.local には接続情報不要
+# (dev用DBの指定は wrangler-dev.toml の [[d1_databases]] で行う)
 
 # Better Auth
 BETTER_AUTH_SECRET=<openssl rand -base64 32 で生成>
@@ -144,12 +146,12 @@ LINE_CLIENT_SECRET=<LINE Developers Consoleで取得>
 
 > `.env.local` はGit管理外です。シークレットをコミットしないでください。
 >
-> **どの変数を・どこに設定するかの正本は [`.env.example`](./.env.example) を参照。** ローカル開発のアプリ実行時の秘密は workerd が読む `.dev.vars` に、staging/本番の実行時の変数は Cloudflare Pages ダッシュボード（Preview/Production）に設定する。`.env.staging` / `.env.production` は drizzle マイグレーション用に `DATABASE_URL` のみを保持する。
+> **どの変数を・どこに設定するかの正本は [`.env.example`](./.env.example) を参照。** ローカル開発のアプリ実行時の秘密は workerd が読む `.dev.vars` に、staging/本番の実行時の変数は Cloudflare Pages ダッシュボード（Preview/Production）に設定する。DBはPostgres時代と異なりwranglerのbinding経由なので `.env.*` に接続情報は持たない。
 
 ### 4. データベースのセットアップ
 
 マイグレーションとは「どんなテーブルを作るか」をSQLファイルに書き出し、それをDBに適用する作業です。
-このプロジェクトでは Better Auth 用のテーブルとアプリ独自のテーブルを別々に生成してから、まとめて Neon に適用します。
+このプロジェクトでは Better Auth 用のテーブルとアプリ独自のテーブルを別々に生成してから、まとめてD1に適用します。
 
 ```bash
 # Better Auth が必要とするテーブル (user, session, account など) の
@@ -160,13 +162,14 @@ pnpm auth:generate
 # マイグレーションSQLファイルを drizzle/ フォルダに生成する
 pnpm db:generate
 
-# 上で生成したすべてのSQLファイルを Neon に実行し、実際にテーブルを作成する
-# (DATABASE_URL が正しく設定されている必要があります)
+# 上で生成したすべてのSQLファイルを、ローカルD1(dev)に実行して実際にテーブルを作成する
+# (wrangler-dev.toml に database_id が正しく設定されている必要があります)
 pnpm db:migrate
 ```
 
 > `auth:generate` と `db:generate` はローカルにファイルを生成するだけで、DBには何も変更しません。
-> `db:migrate` を実行して初めて Neon 上にテーブルが作成されます。
+> `db:migrate` を実行して初めてローカルD1上にテーブルが作成されます（`--local` = Miniflareのエミュレーション、実クラウドには触れません）。
+> staging/本番への適用は `pnpm db:migrate:staging` / `pnpm db:migrate:prod` を使い、意図しない誤爆を防ぐため個別実行が必要です。
 
 ---
 
@@ -176,7 +179,7 @@ pnpm db:migrate
 pnpm dev          # 開発サーバー起動 (localhost:3000)
 pnpm build        # 本番ビルド
 pnpm db:generate  # Drizzleマイグレーションファイルを生成
-pnpm db:migrate   # マイグレーションをNeonに適用
+pnpm db:migrate   # マイグレーションをローカルD1(dev)に適用
 pnpm db:studio    # Drizzle Studio (DBブラウザ) を起動
 
 pnpm realtime:deploy:staging  # realtime コンパニオンWorkerを staging へデプロイ
@@ -225,7 +228,7 @@ QR接続検知（「つながりました」通知）とイベント参加者一
   - `EventRoom`（room=`event:<id>`）— イベント参加者一覧の更新通知（presence）
   - 中継ロジックは共通基底 `BroadcastRoom`（標準 WebSocket API）に集約。
 - **認証** — 本体が HMAC 署名した短命チケットを発行し、Worker は署名を検証するだけ（DB・セッションを持たない）。サーバー→Worker の push は Service Binding（内部シークレット）経由。
-- **正本は Postgres** — Worker は状態を持たない中継で、クライアントは (再)接続のたびに正本を読み直して収束する（reconcile-on-connect）。`VITE_REALTIME_URL` 未設定の環境では realtime を使わず**従来のポーリングへ自動縮退**する。
+- **正本は D1** — Worker は状態を持たない中継で、クライアントは (再)接続のたびに正本を読み直して収束する（reconcile-on-connect）。`VITE_REALTIME_URL` 未設定の環境では realtime を使わず**従来のポーリングへ自動縮退**する。
 
 ### 環境変数・シークレット
 
