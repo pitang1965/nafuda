@@ -39,7 +39,7 @@ function PrivacyPage() {
           <h1 className="text-xl font-bold text-gray-900 mt-4">
             プライバシーポリシー
           </h1>
-          <p className="text-xs text-gray-400 mt-1">最終更新: 2026年7月13日</p>
+          <p className="text-xs text-gray-400 mt-1">最終更新: 2026年9月28日</p>
         </div>
 
         <Section title="1. 運営者">
@@ -92,6 +92,15 @@ function PrivacyPage() {
                 行動ログ（匿名）
               </span>
               ：ページ閲覧・ボタン操作などの操作履歴（IPアドレスは含みません）
+            </li>
+            <li>
+              <span className="font-medium text-gray-700">
+                エラー・不具合の記録
+              </span>
+              ：サービス側で不具合が発生した際の技術情報（発生した処理のスタックトレース、リクエストのURLパス、発生日時など。エラー監視ツールSentryを利用）。
+              <span className="font-medium text-gray-700">
+                氏名・メールアドレス等の個人情報や入力欄の内容は含みません
+              </span>
             </li>
           </ul>
           <p className="mt-3">
@@ -177,14 +186,30 @@ function PrivacyPage() {
               </p>
             </div>
             <div>
-              <p className="font-medium text-gray-700">Neon（米国）</p>
+              <p className="font-medium text-gray-700">Cloudflare（米国）</p>
               <p>
-                アカウント情報・プロフィール・コネクション履歴などを保管するデータベースサービスです。
+                サービスのホスティング・CDNに加え、アカウント情報・プロフィール・コネクション履歴などを保管するデータベース（D1、アジア太平洋リージョン）を担います。
               </p>
             </div>
             <div>
-              <p className="font-medium text-gray-700">Cloudflare（米国）</p>
-              <p>サービスのホスティング・CDNを担います。</p>
+              <p className="font-medium text-gray-700">Neon（米国）</p>
+              <p>
+                以前データベースとして使用していたサービスです。現在は移行時のロールバック用バックアップとして一時的にデータを保持しています（不要になり次第削除予定）。
+              </p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Sentry（ドイツ/EU）</p>
+              <p>
+                サービス側で不具合が発生した際のエラー監視を担います。スタックトレース・発生箇所・リクエストのURLパスなど技術情報のみを扱い、氏名・メールアドレス等の個人情報は送信しない設定です。詳細:{" "}
+                <a
+                  href="https://sentry.io/privacy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-500 underline underline-offset-2"
+                >
+                  sentry.io/privacy
+                </a>
+              </p>
             </div>
           </div>
         </Section>
@@ -200,7 +225,8 @@ function PrivacyPage() {
 
         <Section title="6. データの保管・セキュリティ">
           <p>
-            収集したデータは米国のNeonデータベースに保管されます。
+            収集したデータはCloudflare D1データベース（アジア太平洋リージョン）に保管されます。
+            以前使用していたNeonデータベース（米国）にも、移行時のロールバック用バックアップとして一時的にデータが残っています。
             通信はTLS（HTTPS）で暗号化し、セッショントークンは署名付きCookieで管理しています。
             ただし、インターネット上の通信において完全な安全性を保証することはできません。
           </p>
