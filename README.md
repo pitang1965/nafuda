@@ -109,6 +109,15 @@ better-auth ビルトインの social ではなく `genericOAuth` で実装し�
      - このフィルタは「残す＝実ユーザーの条件」を定義する向き。`= true` は逆効果（自分だけ残る）
    - 本番のみ有効（`*.pages.dev` では PostHog 自体が無効）
 
+#### Sentry (サーバーエラー監視)
+
+1. [sentry.io](https://sentry.io) でプロジェクトを作成（Platform は Cloudflare Workers）
+2. プロジェクトの DSN（`https://<key>@o<org>.ingest.<region>.sentry.io/<projectId>` の形式）を取得
+3. `wrangler.toml` の `[vars]` セクションの `SENTRY_DSN` に記入
+   - 本番のみ有効化。`wrangler-dev.toml` と `[env.preview.vars]`（staging）には置かない
+   - 未設定の環境では SDK（`src/server.tsx` の `withSentry`）と CSP の `report-uri` 両方が自動的に無効になる
+   - DSN は公開前提の識別子（秘密情報ではない）のためコミット可
+
 #### Cloudflare Pages (デプロイ時)
 
 1. Cloudflare Dashboard → Workers & Pages → プロジェクトを作成 → GitHub リポジトリと連携
@@ -211,6 +220,7 @@ GitHub の `master` ブランチへのプッシュで Cloudflare Pages が自動
 | 変数 | 管理場所 |
 |---|---|
 | `VITE_POSTHOG_KEY` | `wrangler.toml` の `[vars]`（クライアント公開鍵のためコミット可） |
+| `SENTRY_DSN` | `wrangler.toml` の `[vars]`（本番のみ。DSN は公開前提のためコミット可） |
 | `VITE_REALTIME_URL` / Service Binding `REALTIME` | `wrangler.toml`（下記「リアルタイム通信」参照） |
 | `REALTIME_SECRET` / `INTERNAL_PUSH_SECRET` | Cloudflare Dashboard（Pages）＋ コンパニオンWorker（secret） |
 | その他のシークレット | Cloudflare Dashboard → Environment Variables |

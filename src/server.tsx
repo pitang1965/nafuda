@@ -2,7 +2,11 @@ import {
   createStartHandler,
   defaultStreamHandler,
 } from "@tanstack/react-start/server";
+import { withSentry } from "@sentry/cloudflare";
 import { buildOgpDescription } from "./lib/ogp";
+import { runWithNonce } from "./lib/csp-nonce";
+
+type CloudflareEnv = { SENTRY_DSN?: string };
 
 const startFetch = createStartHandler(defaultStreamHandler);
 
@@ -14,16 +18,64 @@ function escapeAttr(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
+function generateNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...bytes));
+}
+
+// SentryのDSNから、CSP違反レポート専用の受け口URL（Security Header Reports）を導出する。
+// 例: https://<key>@o<org>.ingest.<region>.sentry.io/<projectId>
+//   → https://o<org>.ingest.<region>.sentry.io/api/<projectId>/security/?sentry_key=<key>
+function sentrySecurityReportUri(dsn: string): string | undefined {
+  try {
+    const url = new URL(dsn);
+    const projectId = url.pathname.replace(/^\//, "");
+    if (!url.username || !projectId) return undefined;
+    return `https://${url.host}/api/${projectId}/security/?sentry_key=${url.username}`;
+  } catch {
+    return undefined;
+  }
+}
+
+// CSP は Report-Only で先行導入し、違反レポートで許可漏れがないことを確認してから
+// Content-Security-Policy（enforce）へ切り替える。report-uri は SENTRY_DSN から導出した
+// Sentry の Security Header Reports 受け口（未設定＝ローカル開発では report-uri 自体を付けない）。
+// script-src はリクエストごとの nonce のみ許可（'unsafe-inline' は付けない）。
+// style-src は motion / radix-ui 等が要素に直接 style 属性を書き込むため
+// 'unsafe-inline' を残す（style 属性には nonce が効かないため）。
+// R2 の 2 バケット（本番/staging）と realtime WS（本番/staging）を両方許可しているのは
+// このビルド成果物が両環境で使い回されるため。
+function buildCsp(nonce: string): string {
+  const directives = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}'`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://pub-005c2707053246c7961f7082094d34f8.r2.dev https://pub-4b271ae313654596b3a0f88236892b5b.r2.dev",
+    "connect-src 'self' https://us.i.posthog.com wss://nafuda-realtime.pitang1965.workers.dev wss://nafuda-realtime-staging.pitang1965.workers.dev",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+  ];
+  const dsn = process.env.SENTRY_DSN;
+  const reportUri = dsn && sentrySecurityReportUri(dsn);
+  if (reportUri) directives.push(`report-uri ${reportUri}`);
+  return directives.join("; ");
+}
+
 // SSR 応答へのセキュリティヘッダ付与。Cloudflare Pages の public/_headers は
 // 静的アセットにしか適用されず、Functions（この SSR ハンドラ）の応答には効かない
 // ため、ここで付ける。HSTS はゾーン設定（Cloudflare ダッシュボード）側で有効化する。
 // Referrer-Policy: プロフィール URL はパスに shareToken を含むため、外部リンク遷移時の
 // Referer をオリジンのみに制限する（モダンブラウザ既定値だが明示する）。
-function withSecurityHeaders(res: Response): Response {
+function withSecurityHeaders(res: Response, nonce: string): Response {
   const headers = new Headers(res.headers);
   headers.set("X-Frame-Options", "DENY");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Content-Security-Policy-Report-Only", buildCsp(nonce));
   return new Response(res.body, {
     status: res.status,
     statusText: res.statusText,
@@ -116,7 +168,21 @@ async function handleRequest(request: Request): Promise<Response> {
   return startFetch(request);
 }
 
-export default {
-  fetch: async (request: Request) =>
-    withSecurityHeaders(await handleRequest(request)),
-};
+// Sentry（エラー監視）でラップする。nafuda は Cloudflare Pages（advanced mode）で
+// デプロイしており、wrangler.toml に `main` が無く sentryCloudflareVitePlugin の
+// 自動検出（wrangler設定からworker entryを特定する方式）が効かない
+// （この default export は vite build 後さらに worker-entry.js から import される）。
+// そのためプラグイン任せにせず、ここで withSentry() を直接呼ぶ。
+// SENTRY_DSN は wrangler.toml の [vars]（本番）にのみ設定し、wrangler-dev.toml と
+// [env.preview.vars]（staging）には設定しない。未設定の環境では dsn: undefined で
+// SDK が自動的に無効化される（LINE/Facebook 等を資格情報の有無で有効化する既存方針と同じ）。
+export default withSentry<CloudflareEnv>(
+  (env) => ({ dsn: env.SENTRY_DSN }),
+  {
+    fetch: async (request: Request) => {
+      const nonce = generateNonce();
+      const response = await runWithNonce(nonce, () => handleRequest(request));
+      return withSecurityHeaders(response, nonce);
+    },
+  },
+);

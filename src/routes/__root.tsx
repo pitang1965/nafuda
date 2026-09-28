@@ -3,6 +3,7 @@ import {
   Outlet,
   HeadContent,
   Scripts,
+  useRouter,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
@@ -26,6 +27,10 @@ function useInternalUserTag() {
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
+  // CSP script-src はリクエストごとの nonce のみ許可（router.tsx参照）。
+  // このインラインスクリプトにも同じ nonce を付けないとブロックされる。
+  const nonce = useRouter().options.ssr?.nonce;
+
   useEffect(() => {
     initAnalytics();
   }, []);
@@ -48,6 +53,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         {/* beforeinstallprompt はReactハイドレーション前に発火するため、ここで早期キャプチャ */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaPrompt=e;});`,
           }}

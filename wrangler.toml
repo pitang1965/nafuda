@@ -27,6 +27,10 @@ VITE_POSTHOG_INTERNAL_USER_IDS = "F8He2jW3ycsnDrMyOPQNYstETjkokZX6"
 R2_PUBLIC_URL = "https://pub-005c2707053246c7961f7082094d34f8.r2.dev"
 # 本番 WebSocket 接続先（ビルド時変数）。
 VITE_REALTIME_URL = "wss://nafuda-realtime.pitang1965.workers.dev"
+# Sentry（エラー監視）。DSN は秘密情報ではない（公開前提の識別子）ためそのままコミットする。
+# 本番のみ有効化。wrangler-dev.toml と [env.preview.vars] には置かない
+# （未設定＝dsn: undefined で SDK・CSPのreport-uriとも自動的に無効化される）。
+SENTRY_DSN = "https://0105605f87e7f1085458281d1929dbb7@o4507994894434304.ingest.de.sentry.io/4512164428578896"
 
 [env.preview]
 
