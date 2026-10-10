@@ -13,7 +13,10 @@ export async function initAnalytics() {
   if (!import.meta.env.PROD || !key || isPreview) return;
   const { default: posthog } = await import("posthog-js");
   posthog.init(key, {
-    api_host: "https://us.i.posthog.com",
+    // 広告ブロッカーに直接ブロックされないよう、自ドメイン経由のリバースプロキシを使う
+    // (server.tsx の /relay/* ルート参照)。
+    api_host: `${window.location.origin}/relay`,
+    ui_host: "https://us.posthog.com",
     persistence: "localStorage+cookie",
     ip: false,
     capture_pageview: true,

@@ -17,7 +17,13 @@ export default {
       // Only proxy clearly static files to ASSETS — never HTML pages.
       // Cloudflare Pages ASSETS serves index.html as SPA fallback for unknown
       // paths, so forwarding HTML requests would bypass SSR entirely.
-      if (pathname.startsWith('/assets/') || STATIC_EXTENSIONS.test(pathname)) {
+      // /relay/* is the PostHog reverse proxy (see server.tsx) — always route
+      // it to SSR even if the path happens to end in a static-looking extension
+      // (e.g. a future PostHog asset like /relay/static/recorder.js).
+      if (
+        !pathname.startsWith('/relay/') &&
+        (pathname.startsWith('/assets/') || STATIC_EXTENSIONS.test(pathname))
+      ) {
         const response = await env.ASSETS.fetch(request);
         if (response.status !== 404) return response;
         // Missing asset: return a plain 404 instead of the SSR 404 page.

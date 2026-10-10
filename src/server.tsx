@@ -52,7 +52,7 @@ function buildCsp(nonce: string): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://pub-005c2707053246c7961f7082094d34f8.r2.dev https://pub-4b271ae313654596b3a0f88236892b5b.r2.dev",
-    "connect-src 'self' https://us.i.posthog.com wss://nafuda-realtime.pitang1965.workers.dev wss://nafuda-realtime-staging.pitang1965.workers.dev",
+    "connect-src 'self' wss://nafuda-realtime.pitang1965.workers.dev wss://nafuda-realtime-staging.pitang1965.workers.dev",
     "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
@@ -83,6 +83,42 @@ function withSecurityHeaders(res: Response, nonce: string): Response {
   });
 }
 
+// PostHog リバースプロキシ。ブラウザが us.i.posthog.com に直接繋ぐと広告ブロッカーに
+// 計測をブロックされるため、自ドメイン経由でリレーする（PostHog公式推奨の構成）。
+// 同一オリジンのリクエストになるため、better-auth のセッション Cookie が意図せず
+// PostHog 側へ転送されないよう明示的に除去する。
+const POSTHOG_API_HOST = "us.i.posthog.com";
+const POSTHOG_ASSET_HOST = "us-assets.i.posthog.com";
+
+async function proxyToPostHog(request: Request, url: URL): Promise<Response> {
+  const relayPath = url.pathname.slice("/relay".length) || "/";
+  const isAsset = relayPath.startsWith("/static/") || relayPath.startsWith("/array/");
+  const targetHost = isAsset ? POSTHOG_ASSET_HOST : POSTHOG_API_HOST;
+
+  const originHeaders = new Headers(request.headers);
+  originHeaders.delete("cookie");
+  originHeaders.delete("authorization");
+  originHeaders.delete("host");
+  originHeaders.set(
+    "X-Forwarded-For",
+    request.headers.get("CF-Connecting-IP") ?? "",
+  );
+
+  const originRequest = new Request(
+    `https://${targetHost}${relayPath}${url.search}`,
+    {
+      method: request.method,
+      headers: originHeaders,
+      body:
+        request.method === "GET" || request.method === "HEAD"
+          ? undefined
+          : await request.arrayBuffer(),
+    },
+  );
+
+  return fetch(originRequest);
+}
+
 async function fetchOgpData(shareToken: string) {
   const { getDb } = await import("./server/db/client");
   const { personas } = await import("./server/db/schema");
@@ -106,6 +142,10 @@ async function handleRequest(request: Request): Promise<Response> {
 
   if (url.hostname === "nafuda-dxn.pages.dev") {
     return Response.redirect(`https://nafuda.me${pathname}${url.search}`, 301);
+  }
+
+  if (pathname.startsWith("/relay/")) {
+    return proxyToPostHog(request, url);
   }
 
   // Route /api/auth/* directly to better-auth before TanStack Start's router.
