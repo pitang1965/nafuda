@@ -22,7 +22,7 @@ import { pushToRoom } from "../realtimePush";
 const MAX_PENDING_INVITES_PER_ISSUER = 30;
 
 export const createConnectionQrToken = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ fromPersonaId: z.uuid() }))
+  .validator(z.object({ fromPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -67,7 +67,7 @@ export const createConnectionQrToken = createServerFn({ method: "POST" })
 
 // 「交換しない」でつながりQRトークンを即時削除する
 export const deleteConnectionQrToken = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ token: z.string().min(1) }))
+  .validator(z.object({ token: z.string().min(1) }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -186,7 +186,7 @@ async function buildIssuerView(issuerPersonaId: string) {
 
 // つながりQRをスキャンしたページのローダー用: トークンを検証してプロフィールを返す
 export const getConnectPageData = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ token: z.string() }))
+  .validator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const now = new Date();
@@ -212,7 +212,7 @@ export const getConnectPageData = createServerFn({ method: "GET" })
 // 文脈は発行者の現在のアクティブチェックインからスナップショットする（ADR-0012）。
 // 認証不要（スキャン者はまだアカウントを持たない）。有効な15分QRトークンが必須。
 export const ensurePendingInvite = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ connectionQrToken: z.string().min(1) }))
+  .validator(z.object({ connectionQrToken: z.string().min(1) }))
   .handler(async ({ data }) => {
     const db = getDb();
     const now = new Date();
@@ -303,7 +303,7 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
 
 // QR期限切れ後の復旧用ローダー: inviteToken を検証して発行者プロフィールを返す
 export const getPendingInviteData = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ inviteToken: z.string() }))
+  .validator(z.object({ inviteToken: z.string() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const now = new Date();
@@ -328,7 +328,7 @@ export const getPendingInviteData = createServerFn({ method: "GET" })
 // 保留招待経由でコネクションを双方向即時生成する。文脈は招待作成時のスナップショットを使い、
 // 取り直さない（時間差で成立しても「実際に会った場所」を保持する）。
 export const applyPendingInvite = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       inviteToken: z.string().min(1),
       fromPersonaId: z.uuid(), // スキャンした側（後から登録した人）のペルソナ
@@ -421,7 +421,7 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
 
 // つながりQR経由でコネクションを双方向即時生成する
 export const createConnectionFromQr = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       connectionQrToken: z.string().min(1),
       fromPersonaId: z.uuid(), // スキャンした側のペルソナ
@@ -554,7 +554,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
 
 // QRを見せた側がリアルタイムで接続成立を確認するためのポーリング用
 export const checkQrConnectionStatus = createServerFn({ method: "GET" })
-  .inputValidator(
+  .validator(
     z.object({
       token: z.string(),
       fromPersonaId: z.uuid(),
@@ -612,7 +612,7 @@ export const checkQrConnectionStatus = createServerFn({ method: "GET" })
 
 // つながりの文脈・プライベートメモを編集する（自分の行のみ）
 export const updateConnection = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       connectionId: z.uuid(),
       eventName: z.string().max(100).optional(),
@@ -668,7 +668,7 @@ export const updateConnection = createServerFn({ method: "POST" })
 
 // つながりを削除する（自分の行のみ・非対称）
 export const deleteConnection = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ connectionId: z.uuid() }))
+  .validator(z.object({ connectionId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();

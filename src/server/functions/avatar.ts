@@ -9,7 +9,7 @@ import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 import { decodeJpegDataUrl } from "../lib/image";
 
 export const uploadAvatar = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       personaId: z.uuid(),
       dataUrl: z
@@ -53,7 +53,7 @@ export const uploadAvatar = createServerFn({ method: "POST" })
   });
 
 export const deleteAvatar = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ personaId: z.uuid() }))
+  .validator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();

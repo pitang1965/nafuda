@@ -10,7 +10,7 @@ import { auth } from "../auth";
 // 相手の shareToken で対象なふだを解決し、自分のなふだは保存させない。
 // unique(userId, targetPersonaId) で二重保存を冪等に処理する（既存なら "already" を返す）。
 export const addFavorite = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ shareToken: z.string().min(1) }))
+  .validator(z.object({ shareToken: z.string().min(1) }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -65,7 +65,7 @@ export const addFavorite = createServerFn({ method: "POST" })
 
 // お気に入りから外す（自分の行のみ）。一覧・保存直後の確認画面の双方から呼ぶ。
 export const removeFavorite = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ targetPersonaId: z.uuid() }))
+  .validator(z.object({ targetPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();

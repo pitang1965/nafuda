@@ -9,34 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ESlugRouteImport } from './routes/e/$slug'
-import { Route as ConnectTokenRouteImport } from './routes/connect/$token'
-import { Route as ProtectedNafudaMapRouteImport } from './routes/_protected/nafuda-map'
-import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
-import { Route as ProtectedFavoritesRouteImport } from './routes/_protected/favorites'
-import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
+import { Route as ProtectedRouteImport } from './routes/_protected'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ProtectedAccountRouteImport } from './routes/_protected/account'
+import { Route as ProtectedConnectionsRouteImport } from './routes/_protected/connections'
+import { Route as ProtectedFavoritesRouteImport } from './routes/_protected/favorites'
+import { Route as ProtectedMeRouteImport } from './routes/_protected/me'
+import { Route as ProtectedNafudaMapRouteImport } from './routes/_protected/nafuda-map'
+import { Route as ConnectTokenRouteImport } from './routes/connect/$token'
+import { Route as ESlugRouteImport } from './routes/e/$slug'
 import { Route as ProtectedEventsIndexRouteImport } from './routes/_protected/events/index'
-import { Route as ESlugEditRouteImport } from './routes/e/$slug_.edit'
-import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
-import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
 import { Route as ProtectedEventsNewRouteImport } from './routes/_protected/events/new'
-import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
+import { Route as ProtectedProfileEditRouteImport } from './routes/_protected/profile/edit'
+import { Route as ProtectedProfileWizardRouteImport } from './routes/_protected/profile/wizard'
+import { Route as ESlugEditRouteImport } from './routes/e/$slug_.edit'
 import { Route as ProtectedFavoritesAddTokenRouteImport } from './routes/_protected/favorites_.add.$token'
+import { Route as UUrlIdPTokenRouteImport } from './routes/u/$urlId.p.$token'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
+const ProtectedRoute = ProtectedRouteImport.update({
+  id: '/_protected',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -44,38 +43,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProtectedRoute = ProtectedRouteImport.update({
-  id: '/_protected',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ESlugRoute = ESlugRouteImport.update({
-  id: '/e/$slug',
-  path: '/e/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConnectTokenRoute = ConnectTokenRouteImport.update({
-  id: '/connect/$token',
-  path: '/connect/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedNafudaMapRoute = ProtectedNafudaMapRouteImport.update({
-  id: '/nafuda-map',
-  path: '/nafuda-map',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedMeRoute = ProtectedMeRouteImport.update({
-  id: '/me',
-  path: '/me',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedFavoritesRoute = ProtectedFavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
+const ProtectedAccountRoute = ProtectedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedConnectionsRoute = ProtectedConnectionsRouteImport.update({
@@ -83,29 +63,34 @@ const ProtectedConnectionsRoute = ProtectedConnectionsRouteImport.update({
   path: '/connections',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const ProtectedAccountRoute = ProtectedAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+const ProtectedFavoritesRoute = ProtectedFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedMeRoute = ProtectedMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedNafudaMapRoute = ProtectedNafudaMapRouteImport.update({
+  id: '/nafuda-map',
+  path: '/nafuda-map',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ConnectTokenRoute = ConnectTokenRouteImport.update({
+  id: '/connect/$token',
+  path: '/connect/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ESlugRoute = ESlugRouteImport.update({
+  id: '/e/$slug',
+  path: '/e/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedEventsIndexRoute = ProtectedEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ESlugEditRoute = ESlugEditRouteImport.update({
-  id: '/e/$slug_/edit',
-  path: '/e/$slug/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedProfileWizardRoute = ProtectedProfileWizardRouteImport.update({
-  id: '/profile/wizard',
-  path: '/profile/wizard',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedProfileEditRoute = ProtectedProfileEditRouteImport.update({
-  id: '/profile/edit',
-  path: '/profile/edit',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedEventsNewRoute = ProtectedEventsNewRouteImport.update({
@@ -113,9 +98,19 @@ const ProtectedEventsNewRoute = ProtectedEventsNewRouteImport.update({
   path: '/events/new',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
-  id: '/u/$urlId/p/$token',
-  path: '/u/$urlId/p/$token',
+const ProtectedProfileEditRoute = ProtectedProfileEditRouteImport.update({
+  id: '/profile/edit',
+  path: '/profile/edit',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedProfileWizardRoute = ProtectedProfileWizardRouteImport.update({
+  id: '/profile/wizard',
+  path: '/profile/wizard',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ESlugEditRoute = ESlugEditRouteImport.update({
+  id: '/e/$slug_/edit',
+  path: '/e/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedFavoritesAddTokenRoute =
@@ -124,6 +119,11 @@ const ProtectedFavoritesAddTokenRoute =
     path: '/favorites/add/$token',
     getParentRoute: () => ProtectedRoute,
   } as any)
+const UUrlIdPTokenRoute = UUrlIdPTokenRouteImport.update({
+  id: '/u/$urlId/p/$token',
+  path: '/u/$urlId/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -265,25 +265,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -293,46 +279,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/e/$slug': {
-      id: '/e/$slug'
-      path: '/e/$slug'
-      fullPath: '/e/$slug'
-      preLoaderRoute: typeof ESlugRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/connect/$token': {
-      id: '/connect/$token'
-      path: '/connect/$token'
-      fullPath: '/connect/$token'
-      preLoaderRoute: typeof ConnectTokenRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected/nafuda-map': {
-      id: '/_protected/nafuda-map'
-      path: '/nafuda-map'
-      fullPath: '/nafuda-map'
-      preLoaderRoute: typeof ProtectedNafudaMapRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/me': {
-      id: '/_protected/me'
-      path: '/me'
-      fullPath: '/me'
-      preLoaderRoute: typeof ProtectedMeRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/favorites': {
-      id: '/_protected/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof ProtectedFavoritesRouteImport
+    '/_protected/account': {
+      id: '/_protected/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof ProtectedAccountRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/connections': {
@@ -342,39 +314,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedConnectionsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/account': {
-      id: '/_protected/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof ProtectedAccountRouteImport
+    '/_protected/favorites': {
+      id: '/_protected/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof ProtectedFavoritesRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/me': {
+      id: '/_protected/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof ProtectedMeRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/nafuda-map': {
+      id: '/_protected/nafuda-map'
+      path: '/nafuda-map'
+      fullPath: '/nafuda-map'
+      preLoaderRoute: typeof ProtectedNafudaMapRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/connect/$token': {
+      id: '/connect/$token'
+      path: '/connect/$token'
+      fullPath: '/connect/$token'
+      preLoaderRoute: typeof ConnectTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/e/$slug': {
+      id: '/e/$slug'
+      path: '/e/$slug'
+      fullPath: '/e/$slug'
+      preLoaderRoute: typeof ESlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_protected/events/': {
       id: '/_protected/events/'
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof ProtectedEventsIndexRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/e/$slug_/edit': {
-      id: '/e/$slug_/edit'
-      path: '/e/$slug/edit'
-      fullPath: '/e/$slug/edit'
-      preLoaderRoute: typeof ESlugEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_protected/profile/wizard': {
-      id: '/_protected/profile/wizard'
-      path: '/profile/wizard'
-      fullPath: '/profile/wizard'
-      preLoaderRoute: typeof ProtectedProfileWizardRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/profile/edit': {
-      id: '/_protected/profile/edit'
-      path: '/profile/edit'
-      fullPath: '/profile/edit'
-      preLoaderRoute: typeof ProtectedProfileEditRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/events/new': {
@@ -384,11 +363,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedEventsNewRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/u/$urlId/p/$token': {
-      id: '/u/$urlId/p/$token'
-      path: '/u/$urlId/p/$token'
-      fullPath: '/u/$urlId/p/$token'
-      preLoaderRoute: typeof UUrlIdPTokenRouteImport
+    '/_protected/profile/edit': {
+      id: '/_protected/profile/edit'
+      path: '/profile/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProtectedProfileEditRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/profile/wizard': {
+      id: '/_protected/profile/wizard'
+      path: '/profile/wizard'
+      fullPath: '/profile/wizard'
+      preLoaderRoute: typeof ProtectedProfileWizardRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/e/$slug_/edit': {
+      id: '/e/$slug_/edit'
+      path: '/e/$slug/edit'
+      fullPath: '/e/$slug/edit'
+      preLoaderRoute: typeof ESlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected/favorites_/add/$token': {
@@ -397,6 +390,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/favorites/add/$token'
       preLoaderRoute: typeof ProtectedFavoritesAddTokenRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/u/$urlId/p/$token': {
+      id: '/u/$urlId/p/$token'
+      path: '/u/$urlId/p/$token'
+      fullPath: '/u/$urlId/p/$token'
+      preLoaderRoute: typeof UUrlIdPTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }

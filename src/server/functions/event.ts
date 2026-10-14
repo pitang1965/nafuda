@@ -55,7 +55,7 @@ function buildEventDate(
 
 // Check in to an existing event by shareToken
 export const checkinToEvent = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       token: z.string(),
       personaId: z.uuid(),
@@ -127,7 +127,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
 
 // Create event and check in (used from the event creation form)
 export const createEventAndCheckin = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       slug: z
         .string()
@@ -254,7 +254,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
 
 // Checkout from event (set checkedOutAt = now)
 export const checkoutFromEvent = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ checkinId: z.uuid() }))
+  .validator(z.object({ checkinId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -282,7 +282,7 @@ export const checkoutFromEvent = createServerFn({ method: "POST" })
 // Get event participants by shareToken — public endpoint (no auth required)
 // ただし参加者の永続プロフィールURL（shareToken/urlId）はログインユーザーにのみ返す
 export const getEventParticipants = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ token: z.string() }))
+  .validator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -334,7 +334,7 @@ export const getEventParticipants = createServerFn({ method: "POST" })
 
 // Check if the current user's persona has any checkin for this event
 export const getMyCheckinStatus = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ token: z.string(), personaId: z.uuid() }))
+  .validator(z.object({ token: z.string(), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -363,7 +363,7 @@ export const getMyCheckinStatus = createServerFn({ method: "POST" })
 
 // Cancel participation (delete all checkin records for this event + persona)
 export const cancelCheckin = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ token: z.string().min(1), personaId: z.uuid() }))
+  .validator(z.object({ token: z.string().min(1), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -401,7 +401,7 @@ export const cancelCheckin = createServerFn({ method: "POST" })
 
 // Update event fields (host only, slug and shareToken are immutable)
 export const updateEvent = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       token: z.string(),
       name: z.string().min(1).max(100),
@@ -452,7 +452,7 @@ export const updateEvent = createServerFn({ method: "POST" })
 
 // Delete event (host only) — CASCADE deletes event_checkins automatically
 export const deleteEvent = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ token: z.string() }))
+  .validator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -524,7 +524,7 @@ export const getMyEvents = createServerFn({ method: "GET" }).handler(
 
 // 「なふだを交換する」フロー中に即時イベントを作成してチェックインする
 export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       eventName: z.string().min(1).max(100),
       personaId: z.uuid(),

@@ -227,7 +227,7 @@ export const getNafudaMap = createServerFn({ method: "GET" }).handler(
 
 // Create persona (also auto-generates UrlId on first creation)
 export const createPersona = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       displayName: z
         .string()
@@ -295,7 +295,7 @@ export const createPersona = createServerFn({ method: "POST" })
 
 // Update persona fields (display name, avatar, field visibility)
 export const updatePersona = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       personaId: z.uuid(),
       displayName: z.string().min(1).max(50).optional(),
@@ -340,7 +340,7 @@ export const updatePersona = createServerFn({ method: "POST" })
 
 // Get public profile by shareToken — CRITICAL: filter non-public fields SERVER-SIDE
 export const getPublicProfile = createServerFn({ method: "GET" })
-  .inputValidator(
+  .validator(
     z.object({
       shareToken: z.string(),
     }),
@@ -437,7 +437,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
   });
 
 export const upsertSnsLink = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       personaId: z.uuid(),
       linkId: z.uuid().optional(),
@@ -521,7 +521,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
   });
 
 export const deleteSnsLink = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ linkId: z.uuid() }))
+  .validator(z.object({ linkId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -545,7 +545,7 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
 // なふだリンクをまとめて設定する（ADR-0015）。リンク先は targetPersonaIds の順に並ぶ。
 // 自分のペルソナのみ・自己参照不可・重複不可をサーバー側で強制し、既存行を置き換える。
 export const setNafudaLinks = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       personaId: z.uuid(),
       targetPersonaIds: z.array(z.uuid()).max(50),
@@ -682,7 +682,7 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
 // なふだ（ペルソナ）を1枚だけ削除する。退会(ADR-0005)とは別概念で、
 // アカウント・UrlId・他のなふだは残る。最後の1枚は削除不可（ADR-0011）。
 export const deletePersona = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ personaId: z.uuid() }))
+  .validator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();

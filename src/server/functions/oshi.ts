@@ -11,7 +11,7 @@ import { auth } from '../auth'
 // Only the anonymous tag text + count is returned (no persona/identity linkage),
 // so this is not personal data even for personas that mark oshi_tags private.
 export const getOshiSuggestions = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ query: z.string().min(1).max(50) }))
+  .validator(z.object({ query: z.string().min(1).max(50) }))
   .handler(async ({ data }) => {
     const db = getDb()
     // oshi_tags はD1ではJSON文字列で保持しているため、Postgresの UNNEST() の代わりに
@@ -32,7 +32,7 @@ export const getOshiSuggestions = createServerFn({ method: 'GET' })
 // relevance を上げる(薄い分はクライアント側でキュレーション seed が埋める=ハイブリッド)。
 // 匿名のタグ文字列+件数のみ返す(getOshiSuggestions と同じく個人データではない)。
 export const getPopularOshiTags = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ purpose: z.string().max(20).nullable().optional() }))
+  .validator(z.object({ purpose: z.string().max(20).nullable().optional() }))
   .handler(async ({ data }) => {
     const db = getDb()
     const purpose = data.purpose ?? null
@@ -49,7 +49,7 @@ export const getPopularOshiTags = createServerFn({ method: 'GET' })
 
 // Update oshi tags for a persona
 export const updateOshiTags = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({
+  .validator(z.object({
     personaId: z.uuid(),
     tags: z.array(z.string().min(1).max(50)).max(20, '推しタグは20個まで'),
   }))
@@ -66,7 +66,7 @@ export const updateOshiTags = createServerFn({ method: 'POST' })
 
 // Update dojin_reject flag for a persona
 export const updateDojinReject = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({
+  .validator(z.object({
     personaId: z.uuid(),
     dojinReject: z.boolean(),
   }))

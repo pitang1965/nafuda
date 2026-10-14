@@ -11,7 +11,7 @@ import { signTicket } from "../lib/ticket";
 // セッションを持つ本体がペルソナ所有権を確認した上で、persona room の短命署名チケットを発行する。
 // コンパニオン Worker はこのチケットの署名だけで接続権を確定する（DB に触れない）。
 export const issueRealtimeTicket = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ personaId: z.uuid() }))
+  .validator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
@@ -37,7 +37,7 @@ export const issueRealtimeTicket = createServerFn({ method: "POST" })
 // イベントページは shareToken を知っていれば誰でも閲覧できる（ログイン不要）ので、
 // 認証は要求せず「有効な shareToken を持つこと」を接続権とする（capability ベース）。
 export const issueEventRoomTicket = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ token: z.string().min(1) }))
+  .validator(z.object({ token: z.string().min(1) }))
   .handler(async ({ data }) => {
     const secret = process.env.REALTIME_SECRET;
     if (!secret) return { ticket: null as string | null }; // realtime 無効環境（本番）→ null

@@ -27,7 +27,7 @@ async function assertOwnedPersona(personaId: string, userId: string) {
 }
 
 export const uploadGalleryPhoto = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       personaId: z.uuid(),
       dataUrl: z
@@ -83,7 +83,7 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
   });
 
 export const deleteGalleryPhoto = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ photoId: z.uuid() }))
+  .validator(z.object({ photoId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
     const request = getRequest();
@@ -110,7 +110,7 @@ export const deleteGalleryPhoto = createServerFn({ method: "POST" })
   });
 
 export const updateGalleryCaption = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({ photoId: z.uuid(), caption: z.string().max(CAPTION_MAX) }),
   )
   .handler(async ({ data }) => {
@@ -140,7 +140,7 @@ export const updateGalleryCaption = createServerFn({ method: "POST" })
   });
 
 export const reorderGalleryPhotos = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       personaId: z.uuid(),
       orderedIds: z.array(z.uuid()).max(MAX_GALLERY_PHOTOS),
