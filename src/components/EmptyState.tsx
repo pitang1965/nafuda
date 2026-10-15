@@ -1,6 +1,7 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useT } from "../lib/i18n/context";
 
 interface EmptyStateProps {
   /** 大きめのアイコン（絵文字 or SVG要素）。例: "⏰" や <NafudaIcon /> */
@@ -23,6 +24,7 @@ export function EmptyState({
   showBack,
 }: EmptyStateProps) {
   const router = useRouter();
+  const t = useT();
   // 同一オリジンからの遷移時のみ「戻る」を出す（外部からの直リンクでは出さない）。
   // setState を持たない lazy initializer で判定（ハイドレーション後も安定）。
   const [canGoBack] = useState(() => {
@@ -56,7 +58,7 @@ export function EmptyState({
               className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ChevronLeft className="size-4" />
-              戻る
+              {t("common.back")}
             </button>
           )}
         </div>

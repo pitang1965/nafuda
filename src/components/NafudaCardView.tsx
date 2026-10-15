@@ -14,6 +14,7 @@ import { getNafudaStyle } from "../lib/nafuda-styles";
 import { purposeTagHeading } from "../lib/purpose";
 import { useNafudaFont } from "../lib/use-nafuda-font";
 import { cn } from "../lib/utils";
+import { useLocale, useT } from "../lib/i18n/context";
 
 // 「人から見た画面」の表示専用カード。公開プロフィール (/u/.../p/) と編集プレビューの
 // 両方で使い、見た目のドリフトを防ぐ。公開範囲フィルタ済みのデータを受け取る前提で、
@@ -51,6 +52,9 @@ export function NafudaCardView({
   const textColor = style?.textColor;
   const subtextColor = style?.subtextColor;
   useNafudaFont(style);
+  const t = useT();
+  const { locale } = useLocale();
+  const tagHeading = purposeTagHeading(profile.purpose, locale);
 
   const linkColorOverride = style
     ? {
@@ -102,12 +106,12 @@ export function NafudaCardView({
         )}
         {profile.oshiTags.length > 0 && (
           <div className="flex flex-col items-center gap-1">
-            {purposeTagHeading(profile.purpose) && (
+            {tagHeading && (
               <span
                 className="text-xs font-medium"
                 style={{ color: subtextColor ?? "#6b7280" }}
               >
-                {purposeTagHeading(profile.purpose)}
+                {tagHeading}
               </span>
             )}
             <div className="flex flex-wrap gap-1 justify-center">
@@ -154,7 +158,7 @@ export function NafudaCardView({
               className="text-xs font-medium inline-flex items-center gap-1"
               style={{ color: subtextColor ?? "#6b7280" }}
             >
-              <NafudaIcon /> 他のなふだ
+              <NafudaIcon /> {t("publicProfile.otherNafuda")}
             </span>
             <div className="flex flex-wrap gap-2 justify-center">
               {profile.nafudaLinks.map((link, i) => (
@@ -178,14 +182,14 @@ export function NafudaCardView({
             className="mt-4 text-xs underline underline-offset-2 transition-colors"
             style={{ color: subtextColor ?? "#9ca3af" }}
           >
-            なふだとは？
+            {t("publicProfile.whatIsNafuda")}
           </Link>
         ) : aboutLink === "static" ? (
           <span
             className="mt-4 text-xs underline underline-offset-2"
             style={{ color: subtextColor ?? "#9ca3af" }}
           >
-            なふだとは？
+            {t("publicProfile.whatIsNafuda")}
           </span>
         ) : null}
       </div>

@@ -6,6 +6,7 @@ import { getDb } from "../db/client";
 import { personas, events } from "../db/schema";
 import { auth } from "../auth";
 import { signTicket } from "../lib/ticket";
+import { serverT } from "../../lib/i18n/serverT";
 
 // クライアントが realtime コンパニオン Worker へ WebSocket 接続する直前に呼ぶ。
 // セッションを持つ本体がペルソナ所有権を確認した上で、persona room の短命署名チケットを発行する。
@@ -27,7 +28,7 @@ export const issueRealtimeTicket = createServerFn({ method: "POST" })
       .where(eq(personas.id, data.personaId))
       .limit(1);
     if (personaRow?.userId !== session.user.id)
-      throw new Error("権限がありません");
+      throw new Error(serverT("errors.noPermission"));
 
     const ticket = await signTicket(`persona:${data.personaId}`, secret);
     return { ticket };

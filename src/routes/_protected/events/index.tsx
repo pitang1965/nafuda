@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getMyEvents } from "../../../server/functions/event";
+import { useT, useLocale } from "../../../lib/i18n/context";
+import type { Locale } from "../../../lib/i18n/types";
+import { formatJstDate, formatJstDateTime } from "../../../lib/i18n/formatDate";
 
 export const Route = createFileRoute("/_protected/events/")({
   loader: async () => {
     return await getMyEvents();
   },
-  staticData: { title: "イベント" },
+  staticData: { title: "nav.events" },
   component: MyEventsPage,
 });
 
@@ -13,24 +16,10 @@ function formatEventDate(
   date: Date | string,
   showTime: boolean,
   isInstant: boolean,
+  locale: Locale,
 ) {
-  const d = new Date(date);
-  if (showTime || isInstant) {
-    return d.toLocaleString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-  return d.toLocaleDateString("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  if (showTime || isInstant) return formatJstDateTime(date, locale);
+  return formatJstDate(date, locale);
 }
 
 interface EventCardProps {
@@ -50,7 +39,8 @@ function EventCard({
   isInstant,
   shareToken,
 }: EventCardProps) {
-  const dateStr = formatEventDate(eventDate, showTime, isInstant);
+  const { locale } = useLocale();
+  const dateStr = formatEventDate(eventDate, showTime, isInstant, locale);
 
   if (isInstant) {
     return (
@@ -77,6 +67,7 @@ function EventCard({
 }
 
 function MyEventsPage() {
+  const t = useT();
   const { hostedEvents, participatedEvents } = Route.useLoaderData();
 
   // 即時イベントは交換の裏方データ（コネクションの正本＋GPS保管庫）であり、
@@ -89,16 +80,16 @@ function MyEventsPage() {
         to="/events/new"
         className="self-start px-4 py-2 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
       >
-        イベントを作成
+        {t("myEvents.createEvent")}
       </Link>
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            作成したイベント
+            {t("myEvents.hostedHeading")}
           </h2>
           {plannedEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              まだイベントを作成していません
+              {t("myEvents.hostedEmpty")}
             </p>
           ) : (
             plannedEvents.map((event) => (
@@ -117,11 +108,11 @@ function MyEventsPage() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            参加したイベント
+            {t("myEvents.participatedHeading")}
           </h2>
           {participatedEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              まだイベントに参加していません
+              {t("myEvents.participatedEmpty")}
             </p>
           ) : (
             participatedEvents.map((event) => (

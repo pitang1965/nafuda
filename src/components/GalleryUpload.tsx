@@ -6,6 +6,7 @@ import {
   reorderGalleryPhotos,
   MAX_GALLERY_PHOTOS,
 } from "../server/functions/gallery";
+import { useT } from "../lib/i18n/context";
 
 interface GalleryPhoto {
   id: string;
@@ -28,6 +29,7 @@ export function GalleryUpload({
   initialPhotos,
   onChange,
 }: GalleryUploadProps) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<GalleryPhoto[]>(() =>
     [...initialPhotos].sort((a, b) => a.displayOrder - b.displayOrder),
@@ -56,7 +58,7 @@ export function GalleryUpload({
       apply([...photos, row]);
     } catch (err) {
       console.error("gallery upload failed", err);
-      setError("写真の保存に失敗しました。もう一度お試しください。");
+      setError(t("galleryUpload.saveFailedError"));
     } finally {
       setBusy(false);
     }
@@ -70,7 +72,7 @@ export function GalleryUpload({
       apply(photos.filter((p) => p.id !== photoId));
     } catch (err) {
       console.error("gallery delete failed", err);
-      setError("写真の削除に失敗しました。もう一度お試しください。");
+      setError(t("galleryUpload.deleteFailedError"));
     } finally {
       setBusy(false);
     }
@@ -87,7 +89,7 @@ export function GalleryUpload({
       });
     } catch (err) {
       console.error("gallery caption update failed", err);
-      setError("キャプションの保存に失敗しました。");
+      setError(t("galleryUpload.captionSaveFailedError"));
     }
   }
 
@@ -103,7 +105,7 @@ export function GalleryUpload({
       });
     } catch (err) {
       console.error("gallery reorder failed", err);
-      setError("並び替えの保存に失敗しました。");
+      setError(t("galleryUpload.reorderSaveFailedError"));
     }
   }
 
@@ -123,7 +125,7 @@ export function GalleryUpload({
                 onClick={() => handleDelete(photo.id)}
                 disabled={busy}
                 className="absolute top-1 right-1 w-5 h-5 bg-black/55 text-white rounded-full flex items-center justify-center text-xs leading-none hover:bg-red-500 transition-colors disabled:opacity-50"
-                aria-label="写真を削除"
+                aria-label={t("galleryUpload.deletePhotoAriaLabel")}
               >
                 ×
               </button>
@@ -133,7 +135,7 @@ export function GalleryUpload({
                   onClick={() => move(index, -1)}
                   disabled={busy || index === 0}
                   className="w-5 h-5 bg-black/55 text-white rounded flex items-center justify-center text-xs leading-none disabled:opacity-30"
-                  aria-label="左へ移動"
+                  aria-label={t("galleryUpload.moveLeftAriaLabel")}
                 >
                   ‹
                 </button>
@@ -142,7 +144,7 @@ export function GalleryUpload({
                   onClick={() => move(index, 1)}
                   disabled={busy || index === photos.length - 1}
                   className="w-5 h-5 bg-black/55 text-white rounded flex items-center justify-center text-xs leading-none disabled:opacity-30"
-                  aria-label="右へ移動"
+                  aria-label={t("galleryUpload.moveRightAriaLabel")}
                 >
                   ›
                 </button>
@@ -152,7 +154,7 @@ export function GalleryUpload({
               type="text"
               value={photo.caption ?? ""}
               maxLength={CAPTION_MAX}
-              placeholder="キャプション"
+              placeholder={t("galleryUpload.captionPlaceholder")}
               onChange={(e) => handleCaptionChange(photo.id, e.target.value)}
               onBlur={(e) =>
                 persistCaption(photo.id, e.target.value.trim() || null)
@@ -168,7 +170,7 @@ export function GalleryUpload({
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
             className="aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 flex items-center justify-center text-gray-400 transition-colors disabled:opacity-50"
-            aria-label="写真を追加"
+            aria-label={t("galleryUpload.addPhotoAriaLabel")}
           >
             {busy ? (
               <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -180,8 +182,7 @@ export function GalleryUpload({
       </div>
 
       <p className="text-xs text-gray-500">
-        最大{MAX_GALLERY_PHOTOS}
-        枚。推し・作品・愛車など見せたいものを。タップで全体表示されます。
+        {t("galleryUpload.hint", { max: MAX_GALLERY_PHOTOS })}
       </p>
 
       {error && <p className="text-xs text-red-700 break-all">{error}</p>}

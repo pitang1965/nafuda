@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "./ui/button";
 import { NafudaCardView, type NafudaCardProfile } from "./NafudaCardView";
-import { NAFUDA_STYLES, getNafudaStyle } from "../lib/nafuda-styles";
+import { NAFUDA_STYLES, getNafudaStyle, styleName } from "../lib/nafuda-styles";
+import { useT, useLocale } from "../lib/i18n/context";
 
 // 編集中（未保存）のなふだを「人から見た画面」として全画面プレビューする。
 // 下部にスタイル切替を載せ、カード全体を見ながら色/フォント/縁取りを試せる。
@@ -19,6 +20,8 @@ export function NafudaPreviewDialog({
   selectedStyleId: string | null;
   onSelectStyle: (id: string | null) => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   // PC では Esc で閉じられるようにする（閲覧系QRと同方針）。
   useEffect(() => {
     if (!isOpen) return;
@@ -38,9 +41,9 @@ export function NafudaPreviewDialog({
       <div className="mx-auto w-full sm:max-w-sm flex-1 flex flex-col bg-white min-h-0">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
           <div>
-            <p className="text-sm font-bold">プレビュー</p>
+            <p className="text-sm font-bold">{t("previewDialog.title")}</p>
             <p className="text-xs text-gray-500">
-              人から見た画面（非公開項目は除外）
+              {t("previewDialog.subtitle")}
             </p>
           </div>
           <Button
@@ -48,7 +51,7 @@ export function NafudaPreviewDialog({
             variant="ghost"
             size="icon-sm"
             onClick={onClose}
-            aria-label="プレビューを閉じる"
+            aria-label={t("previewDialog.closeAriaLabel")}
           >
             <X className="size-5" />
           </Button>
@@ -69,20 +72,20 @@ export function NafudaPreviewDialog({
 
         <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           <p className="text-xs text-gray-500 mb-1.5 px-1">
-            なふだスタイル（タップで切替）
+            {t("previewDialog.styleSectionLabel")}
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             <StyleSwatch
               selected={!selectedStyleId}
               onClick={() => onSelectStyle(null)}
-              label="なし"
+              label={t("edit.styleNone")}
             />
             {NAFUDA_STYLES.map((s) => (
               <StyleSwatch
                 key={s.id}
                 selected={selectedStyleId === s.id}
                 onClick={() => onSelectStyle(s.id)}
-                label={s.name}
+                label={styleName(s, locale)}
                 background={s.background}
                 pro={!s.isFree}
               />

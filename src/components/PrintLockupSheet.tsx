@@ -6,6 +6,7 @@ import {
   NAFUDA_BODY_RECT,
   NAFUDA_SLOT_RECT,
 } from "../brand/nafuda-mark.js";
+import { useT, useLocale } from "../lib/i18n/context";
 
 interface PrintLockupSheetProps {
   isOpen: boolean;
@@ -17,13 +18,23 @@ interface PrintLockupSheetProps {
 }
 
 // 文言プリセット。なふだ流の言い回しを主役に据え、"Scan me!" は一案として残す
-// （ADR-0027：文言を選択制にしてパクリ懸念を構造的に回避する）。
-const CAPTION_PRESETS = [
+// （ADR-0027：文言を選択制にしてパクリ懸念を構造的に回避する）。英語ロケールでは
+// 直訳ではなく英語話者向けの言い回しに差し替える（ユーザーが印刷物に焼き込む文言のため）。
+const CAPTION_PRESETS_JA = [
   "なふだです",
   "スキャンしちゃう？",
   "つながろう",
   "話しかけてね",
   "はじめまして",
+  "SCAN ME",
+];
+
+const CAPTION_PRESETS_EN = [
+  "This is me",
+  "Scan away?",
+  "Let's connect",
+  "Come say hi",
+  "Nice to meet you",
   "SCAN ME",
 ];
 
@@ -215,8 +226,11 @@ export function PrintLockupSheet({
   url,
   fileBaseName,
 }: PrintLockupSheetProps) {
+  const t = useT();
+  const { locale } = useLocale();
+  const presets = locale === "en" ? CAPTION_PRESETS_EN : CAPTION_PRESETS_JA;
   const [mounted] = useState(() => typeof window !== "undefined");
-  const [caption, setCaption] = useState(CAPTION_PRESETS[0]);
+  const [caption, setCaption] = useState(presets[0]);
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
 
@@ -282,11 +296,13 @@ export function PrintLockupSheet({
         <Sheet.Content>
           <div className="flex flex-col items-center gap-4 p-6 pb-10">
             <div className="text-center">
-              <p className="text-base font-bold text-gray-800">印刷用画像を作る</p>
+              <p className="text-base font-bold text-gray-800">
+                {t("printLockup.title")}
+              </p>
               <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                Tシャツやグッズ用の透過PNGを書き出します。
+                {t("printLockup.description")}
                 <br />
-                SUZURI などにアップして配置してください。
+                {t("printLockup.description2")}
               </p>
             </div>
 
@@ -308,9 +324,11 @@ export function PrintLockupSheet({
 
             {/* 文言プリセット */}
             <div className="w-full flex flex-col gap-2">
-              <p className="text-xs text-gray-400">文言を選ぶ</p>
+              <p className="text-xs text-gray-400">
+                {t("printLockup.chooseCaption")}
+              </p>
               <div className="flex flex-wrap gap-2">
-                {CAPTION_PRESETS.map((preset) => {
+                {presets.map((preset) => {
                   const active = caption === preset;
                   return (
                     <button
@@ -333,7 +351,7 @@ export function PrintLockupSheet({
                 value={caption}
                 maxLength={CAPTION_MAX}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="自由に入力（空にすると文言なし）"
+                placeholder={t("printLockup.captionPlaceholder")}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-pink-400"
               />
             </div>
@@ -342,7 +360,7 @@ export function PrintLockupSheet({
               onClick={handleDownload}
               className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
             >
-              画像を書き出す
+              {t("printLockup.exportButton")}
             </button>
 
             {/* 高解像度・level H の隠しQRキャンバス（ロックアップ合成用）。 */}

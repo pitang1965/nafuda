@@ -7,6 +7,7 @@ import {
 } from "../server/functions/oshi";
 import { purposePopularTagSeeds, purposeEditTagLabel } from "@/lib/purpose";
 import { OshiTagPickerDialog } from "./OshiTagPickerDialog";
+import { useT, useLocale } from "../lib/i18n/context";
 
 interface OshiTagInputProps {
   name?: string; // RHF field name, defaults to 'oshiTags'
@@ -20,6 +21,8 @@ export function OshiTagInput({
   purpose,
   onPendingChange,
 }: OshiTagInputProps) {
+  const t = useT();
+  const { locale } = useLocale();
   const { setValue, watch } = useFormContext();
   const rawTags: string[] = watch(name) ?? [];
 
@@ -135,7 +138,7 @@ export function OshiTagInput({
         // blur 時に入力欄の残り文字列を自動でタグ化して取りこぼしを防ぐ。
         // 保存バー・「次へ」タップは先に input を blur させるため、確定後に save が読む。
         addTagsOnBlur
-        placeholder="推し・趣味・ジャンルを入力して Enter"
+        placeholder={t("oshiTagInput.placeholder")}
         maxTags={20}
         className="w-full"
         styleClasses={{
@@ -171,7 +174,7 @@ export function OshiTagInput({
               onClick={() => setPickerOpen(true)}
               className="inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium text-pink-600 hover:bg-pink-50"
             >
-              もっと見る
+              {t("oshiTagInput.seeMore")}
             </button>
           )}
         </div>
@@ -180,7 +183,7 @@ export function OshiTagInput({
       <OshiTagPickerDialog
         isOpen={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        heading={purposeEditTagLabel(purpose)}
+        heading={purposeEditTagLabel(purpose, locale)}
         tags={allPopular}
         selected={selected}
         onToggle={toggleTag}

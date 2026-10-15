@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useT } from "../lib/i18n/context";
 
 interface AvatarUploadProps {
   personaId: string;
@@ -28,6 +29,7 @@ export function AvatarUpload({
   currentAvatarUrl,
   onAvatarChange,
 }: AvatarUploadProps) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [srcImg, setSrcImg] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function AvatarUpload({
       setSrcImg(null);
     } catch (err) {
       console.error("avatar upload failed", err);
-      setError("画像の保存に失敗しました。もう一度お試しください。");
+      setError(t("avatarUpload.saveFailedError"));
     } finally {
       setUploading(false);
     }
@@ -80,7 +82,7 @@ export function AvatarUpload({
       onAvatarChange(null);
     } catch (err) {
       console.error("avatar delete failed", err);
-      setError("画像の削除に失敗しました。もう一度お試しください。");
+      setError(t("avatarUpload.deleteFailedError"));
     } finally {
       setUploading(false);
     }
@@ -94,7 +96,7 @@ export function AvatarUpload({
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors focus:outline-none"
-          aria-label="アバター画像を変更"
+          aria-label={t("avatarUpload.changeAriaLabel")}
         >
           {currentAvatarUrl ? (
             <img
@@ -133,7 +135,7 @@ export function AvatarUpload({
             type="button"
             onClick={handleDelete}
             className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 text-white rounded-full flex items-center justify-center text-xs leading-none hover:bg-red-500 transition-colors focus:outline-none"
-            aria-label="アバターを削除"
+            aria-label={t("avatarUpload.deleteAriaLabel")}
           >
             ×
           </button>
@@ -163,10 +165,10 @@ export function AvatarUpload({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-center text-sm font-medium">
-              切り取り位置を調整
+              {t("avatarUpload.cropTitle")}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              画像の切り取り範囲を調整して保存します
+              {t("avatarUpload.cropDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center">
@@ -200,7 +202,7 @@ export function AvatarUpload({
               disabled={uploading}
               className="flex-1 py-2.5 text-sm border rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
-              キャンセル
+              {t("avatarUpload.cancel")}
             </button>
             <button
               type="button"
@@ -208,7 +210,7 @@ export function AvatarUpload({
               disabled={uploading}
               className="flex-1 py-2.5 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
-              {uploading ? "保存中..." : "保存"}
+              {uploading ? t("avatarUpload.saving") : t("avatarUpload.save")}
             </button>
           </div>
         </DialogContent>

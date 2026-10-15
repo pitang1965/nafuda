@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../lib/i18n/context";
 
 interface GalleryItem {
   imageUrl: string;
@@ -12,6 +13,7 @@ interface GalleryLightboxProps {
 }
 
 export function GalleryLightbox({ photos, accentColor }: GalleryLightboxProps) {
+  const t = useT();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const touchStartX = useRef<number | null>(null);
 
@@ -61,7 +63,7 @@ export function GalleryLightbox({ photos, accentColor }: GalleryLightboxProps) {
                 ? { boxShadow: `0 0 0 1px ${accentColor}30` }
                 : undefined
             }
-            aria-label={photo.caption ?? "写真を拡大表示"}
+            aria-label={photo.caption ?? t("galleryLightbox.expandAriaLabel")}
           >
             <img
               src={photo.imageUrl}
@@ -89,7 +91,7 @@ export function GalleryLightbox({ photos, accentColor }: GalleryLightboxProps) {
             type="button"
             onClick={() => setOpenIndex(null)}
             className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center text-xl leading-none"
-            aria-label="閉じる"
+            aria-label={t("galleryLightbox.close")}
           >
             ×
           </button>
@@ -102,7 +104,7 @@ export function GalleryLightbox({ photos, accentColor }: GalleryLightboxProps) {
                 show(-1);
               }}
               className="absolute left-2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-2xl leading-none"
-              aria-label="前の写真"
+              aria-label={t("galleryLightbox.previousPhoto")}
             >
               ‹
             </button>
@@ -115,7 +117,7 @@ export function GalleryLightbox({ photos, accentColor }: GalleryLightboxProps) {
                 show(1);
               }}
               className="absolute right-2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-2xl leading-none"
-              aria-label="次の写真"
+              aria-label={t("galleryLightbox.nextPhoto")}
             >
               ›
             </button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { issueRealtimeTicket } from "../server/functions/realtime";
 import { checkQrConnectionStatus } from "../server/functions/connection";
+import { useT } from "../lib/i18n/context";
 
 // realtime コンパニオン Worker の URL（ビルド時フラグ）。
 // 未設定（本番）なら このフックは完全に不活性になり、me.tsx 側の既存3秒ポーリングが使われる。
@@ -34,6 +35,7 @@ export function useQrConnectionRealtime({
   since,
   onConnected,
 }: Params) {
+  const t = useT();
   const onConnectedRef = useRef(onConnected);
   useEffect(() => {
     onConnectedRef.current = onConnected;
@@ -140,7 +142,9 @@ export function useQrConnectionRealtime({
           if (ev.data === "pong") return;
           const msg = JSON.parse(ev.data as string);
           if (msg?.type === "connection") {
-            onConnectedRef.current(msg.displayName ?? "相手");
+            onConnectedRef.current(
+              msg.displayName ?? t("realtimeConnection.fallbackName"),
+            );
             cleanup();
           }
         } catch {
@@ -174,5 +178,5 @@ export function useQrConnectionRealtime({
 
     connect();
     return cleanup;
-  }, [enabled, personaId, token, since]);
+  }, [enabled, personaId, token, since, t]);
 }

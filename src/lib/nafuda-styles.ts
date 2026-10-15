@@ -147,6 +147,22 @@ export const NAFUDA_STYLES: NafudaStyleDef[] = [
   },
 ];
 
+// スタイル名の英語版。デコレーション選択肢の名称のみ（色・演出ロジックは不変）。
+const STYLE_NAME_EN: Record<NafudaStyleId, string> = {
+  purple: "Purple",
+  sakura: "Sakura",
+  moon: "Moon",
+  ocean: "Ocean",
+  sunset: "Sunset",
+  stardust: "Stardust",
+  rainbow: "Rainbow",
+  pearl: "Pearl",
+};
+
+export function styleName(style: NafudaStyleDef, locale: "en" | "ja"): string {
+  return locale === "en" ? STYLE_NAME_EN[style.id] : style.name;
+}
+
 export function getNafudaStyle(
   styleId: string | null | undefined,
 ): NafudaStyleDef | null {

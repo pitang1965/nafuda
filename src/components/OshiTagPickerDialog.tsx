@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { useT } from "../lib/i18n/context";
 
 // 人気タグを多数並べてタップで選択するモーダル。
 // 入力欄下のインラインチップ（上位12個）の「もっと見る」から開く。
@@ -28,6 +29,7 @@ export function OshiTagPickerDialog({
   selected: Set<string>;
   onToggle: (tag: string) => void;
 }) {
+  const t = useT();
   return (
     <Dialog
       open={isOpen}
@@ -38,10 +40,10 @@ export function OshiTagPickerDialog({
       <DialogContent className="flex max-h-[80vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-sm">
         <DialogHeader className="shrink-0 border-b border-gray-200 px-4 py-3 text-left">
           <DialogTitle className="text-sm font-bold">
-            {heading}から選ぶ
+            {t("oshiTagPickerDialog.heading", { heading })}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            タップで追加／もう一度タップで解除
+            {t("oshiTagPickerDialog.hint")}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,7 +78,7 @@ export function OshiTagPickerDialog({
         <DialogFooter className="shrink-0 border-t border-gray-200 p-3">
           <DialogClose asChild>
             <Button type="button" className="w-full">
-              完了
+              {t("oshiTagPickerDialog.done")}
             </Button>
           </DialogClose>
         </DialogFooter>

@@ -5,6 +5,7 @@ import {
 import { withSentry } from "@sentry/cloudflare";
 import { buildOgpDescription } from "./lib/ogp";
 import { runWithNonce } from "./lib/csp-nonce";
+import { resolveLocale } from "./lib/i18n/detect";
 
 type CloudflareEnv = { SENTRY_DSN?: string };
 
@@ -174,10 +175,22 @@ async function handleRequest(request: Request): Promise<Response> {
     ]);
 
     if (profile) {
-      const title = `${profile.displayName}のなふだ`;
-      const description = buildOgpDescription(profile.displayName, profile.bio);
+      const locale = resolveLocale(
+        request.headers.get("cookie"),
+        request.headers.get("accept-language"),
+      );
+      const title =
+        locale === "en"
+          ? `${profile.displayName}'s Nafuda`
+          : `${profile.displayName}のなふだ`;
+      const description = buildOgpDescription(
+        profile.displayName,
+        profile.bio,
+        locale,
+      );
       const image = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
       const ogUrl = `${BASE_URL}${pathname}`;
+      const siteName = locale === "en" ? "Nafuda" : "なふだ";
 
       const tags = [
         `<meta name="description" content="${escapeAttr(description)}" />`,
@@ -186,7 +199,7 @@ async function handleRequest(request: Request): Promise<Response> {
         `<meta property="og:description" content="${escapeAttr(description)}" />`,
         `<meta property="og:image" content="${escapeAttr(image)}" />`,
         `<meta property="og:url" content="${escapeAttr(ogUrl)}" />`,
-        `<meta property="og:site_name" content="なふだ" />`,
+        `<meta property="og:site_name" content="${escapeAttr(siteName)}" />`,
         `<meta name="twitter:card" content="summary" />`,
         `<meta name="twitter:title" content="${escapeAttr(title)}" />`,
         `<meta name="twitter:description" content="${escapeAttr(description)}" />`,

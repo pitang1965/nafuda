@@ -13,6 +13,7 @@ import {
   events,
   pendingInvites,
 } from "../db/schema";
+import { serverT } from "../../lib/i18n/serverT";
 import { auth } from "../auth";
 import { isValidConnectionContext } from "../lib/eventCheckinWindow";
 import { pushToRoom } from "../realtimePush";
@@ -39,7 +40,7 @@ export const createConnectionQrToken = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!personaRows[0]) throw new Error("ペルソナが見つかりません");
+    if (!personaRows[0]) throw new Error(serverT("errors.personaNotFound"));
 
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
@@ -88,7 +89,7 @@ export const deleteConnectionQrToken = createServerFn({ method: "POST" })
       .where(eq(personas.id, tokenRow.fromPersonaId))
       .limit(1);
     if (personaRow?.userId !== session.user.id)
-      throw new Error("権限がありません");
+      throw new Error(serverT("errors.noPermission"));
 
     await db
       .delete(connectionQrTokens)
@@ -230,7 +231,7 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!tokenRow) throw new Error("QRコードが無効または期限切れです");
+    if (!tokenRow) throw new Error(serverT("errors.qrInvalidOrExpired"));
 
     const issuerPersonaId = tokenRow.fromPersonaId;
 
@@ -249,9 +250,7 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
       )
       .limit(MAX_PENDING_INVITES_PER_ISSUER);
     if (existingInvites.length >= MAX_PENDING_INVITES_PER_ISSUER)
-      throw new Error(
-        "招待の発行が上限に達しました。時間をおいてもう一度お試しください",
-      );
+      throw new Error(serverT("errors.inviteRateLimited"));
 
     // 文脈スナップショット: 発行者のアクティブチェックイン（企画・即時とも eventId 付き）。
     // ただし有効な文脈に限る（企画=開催期間内／即時=直近セッションのみ。ADR-0020）。
@@ -350,7 +349,7 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!scannerPersonaRow) throw new Error("自分のペルソナが見つかりません");
+    if (!scannerPersonaRow) throw new Error(serverT("errors.ownPersonaNotFound"));
 
     const now = new Date();
     const [inviteRow] = await db
@@ -369,20 +368,20 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!inviteRow) throw new Error("招待が無効または期限切れです");
+    if (!inviteRow) throw new Error(serverT("errors.inviteInvalidOrExpired"));
 
     const issuerPersonaId = inviteRow.issuerPersonaId;
     if (issuerPersonaId === scannerPersonaRow.id)
-      throw new Error("自分自身にはつながれません");
+      throw new Error(serverT("errors.cannotConnectToSelf"));
 
     const [issuerPersonaRow] = await db
       .select({ userId: personas.userId })
       .from(personas)
       .where(eq(personas.id, issuerPersonaId))
       .limit(1);
-    if (!issuerPersonaRow) throw new Error("相手のなふだが見つかりません");
+    if (!issuerPersonaRow) throw new Error(serverT("errors.otherNafudaNotFound"));
     if (issuerPersonaRow.userId === session.user.id)
-      throw new Error("自分自身にはつながれません");
+      throw new Error(serverT("errors.cannotConnectToSelf"));
 
     // 文脈は招待のスナップショットを双方の行へ（ADR-0012: 成立時点のコピー、編集は各自独立）
     const ctx = {
@@ -443,7 +442,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!scannerPersonaRow) throw new Error("自分のペルソナが見つかりません");
+    if (!scannerPersonaRow) throw new Error(serverT("errors.ownPersonaNotFound"));
 
     const now = new Date();
     const [tokenRow] = await db
@@ -456,11 +455,11 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!tokenRow) throw new Error("QRコードが無効または期限切れです");
+    if (!tokenRow) throw new Error(serverT("errors.qrInvalidOrExpired"));
 
     const issuerPersonaId = tokenRow.fromPersonaId;
     if (issuerPersonaId === scannerPersonaRow.id)
-      throw new Error("自分自身にはつながれません");
+      throw new Error(serverT("errors.cannotConnectToSelf"));
 
     const [issuerPersonaRow] = await db
       .select({ userId: personas.userId })
@@ -468,7 +467,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       .where(eq(personas.id, issuerPersonaId))
       .limit(1);
     if (issuerPersonaRow?.userId === session.user.id)
-      throw new Error("自分自身にはつながれません");
+      throw new Error(serverT("errors.cannotConnectToSelf"));
 
     // 発行者A（QRを見せて /me で待っている側）へ realtime 通知するため、
     // スキャンした側（B）の表示名を取得しておく。
@@ -545,7 +544,8 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     // reconcile-on-connect / 縮退ポーリングで必ず収束する。
     await pushToRoom(`persona:${issuerPersonaId}`, {
       type: "connection",
-      displayName: scannerPersona?.displayName ?? "相手",
+      displayName:
+        scannerPersona?.displayName ?? serverT("realtimeConnection.fallbackName"),
       since: now.toISOString(),
     });
 
@@ -573,7 +573,7 @@ export const checkQrConnectionStatus = createServerFn({ method: "GET" })
       .where(eq(personas.id, data.fromPersonaId))
       .limit(1);
     if (personaRow?.userId !== session.user.id)
-      throw new Error("権限がありません");
+      throw new Error(serverT("errors.noPermission"));
 
     const [tokenRow] = await db
       .select({ id: connectionQrTokens.fromPersonaId })
@@ -606,7 +606,8 @@ export const checkQrConnectionStatus = createServerFn({ method: "GET" })
 
     return {
       status: "connected" as const,
-      displayName: toPersona?.displayName ?? "相手",
+      displayName:
+        toPersona?.displayName ?? serverT("realtimeConnection.fallbackName"),
     };
   });
 
@@ -637,7 +638,7 @@ export const updateConnection = createServerFn({ method: "POST" })
         ),
       )
       .limit(1);
-    if (!row) throw new Error("つながりが見つかりません");
+    if (!row) throw new Error(serverT("errors.connectionNotFound"));
 
     // 企画イベント由来の文脈のみ事実として固定（編集不可）。即時イベントは各自が編集可能（ADR-0012）。
     const contextLocked = row.eventId !== null && row.isInstant === false;
@@ -645,7 +646,7 @@ export const updateConnection = createServerFn({ method: "POST" })
       contextLocked &&
       (data.eventName !== undefined || data.venueName !== undefined)
     )
-      throw new Error("企画イベント由来の文脈は編集できません");
+      throw new Error(serverT("errors.eventContextLocked"));
 
     const updates: {
       eventName?: string | null;

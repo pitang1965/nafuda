@@ -7,6 +7,7 @@ import { personas, galleryPhotos } from "../db/schema";
 import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 import { decodeJpegDataUrl } from "../lib/image";
+import { serverT } from "../../lib/i18n/serverT";
 
 // アバター以外の「対象物」写真の上限とキャプション長（ADR-0014）
 export const MAX_GALLERY_PHOTOS = 6;
@@ -33,7 +34,9 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
       dataUrl: z
         .string()
         .max(MAX_DATA_URL_LEN)
-        .refine((v) => v.startsWith("data:image/"), "画像データが不正です"),
+        .refine((v) => v.startsWith("data:image/"), {
+          error: () => serverT("errors.imageDataInvalid"),
+        }),
       caption: z.string().max(CAPTION_MAX).optional(),
     }),
   )
@@ -53,7 +56,9 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
       .where(eq(galleryPhotos.personaId, data.personaId))
       .orderBy(desc(galleryPhotos.displayOrder));
     if (existing.length >= MAX_GALLERY_PHOTOS) {
-      throw new Error(`写真は最大${MAX_GALLERY_PHOTOS}枚までです`);
+      throw new Error(
+        serverT("errors.galleryPhotoLimit", { max: MAX_GALLERY_PHOTOS }),
+      );
     }
     const nextOrder = existing.length > 0 ? existing[0].displayOrder + 1 : 0;
 
@@ -165,7 +170,7 @@ export const reorderGalleryPhotos = createServerFn({ method: "POST" })
       data.orderedIds.length !== rows.length ||
       !data.orderedIds.every((id) => owned.has(id))
     ) {
-      throw new Error("並び順の指定が不正です");
+      throw new Error(serverT("errors.invalidOrderSpecified"));
     }
 
     if (data.orderedIds.length === 0) return;

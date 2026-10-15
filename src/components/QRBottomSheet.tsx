@@ -2,6 +2,7 @@ import { Sheet } from "react-modal-sheet";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { useAnimate } from "motion/react";
+import { useT } from "../lib/i18n/context";
 
 interface QRBottomSheetProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ export function QRBottomSheet({
   onPrint,
   exchangeMode,
 }: QRBottomSheetProps) {
+  const t = useT();
   const [mounted] = useState(() => typeof window !== "undefined");
   const [copied, setCopied] = useState(false);
   const [scope, animate] = useAnimate();
@@ -206,7 +208,7 @@ export function QRBottomSheet({
                     className="text-xs font-medium transition-colors"
                     style={{ color: copied ? "#16a34a" : "#9ca3af" }}
                   >
-                    {copied ? "コピーしました" : "タップしてコピー"}
+                    {copied ? t("qr.copied") : t("qr.tapToCopy")}
                   </span>
                 </button>
                 <button
@@ -214,7 +216,7 @@ export function QRBottomSheet({
                   className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <span aria-hidden>⬇</span>
-                  QR画像を保存
+                  {t("qr.saveImage")}
                 </button>
                 {/* X 共有はオプトイン（shareText を渡した画面のみ）。対面中心の
                     打ち出しを崩さないよう、保存と同じ控えめなテキストリンク調で並べる。 */}
@@ -224,7 +226,7 @@ export function QRBottomSheet({
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <span aria-hidden>𝕏</span>
-                    Xでシェア
+                    {t("qr.shareOnX")}
                   </button>
                 )}
                 {/* 印刷用ロックアップ導線もオプトイン（onPrint を渡した画面のみ）。
@@ -235,7 +237,7 @@ export function QRBottomSheet({
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <span aria-hidden>🖨</span>
-                    印刷用画像を作る
+                    {t("qr.createPrintImage")}
                   </button>
                 )}
                 {/* PNG 書き出し用の隠しキャンバス（高解像度）。表示は上の SVG。 */}
@@ -269,17 +271,18 @@ export function QRBottomSheet({
                 <div className="w-full flex flex-col items-center gap-3 pt-2">
                   <p className="text-2xl">🎉</p>
                   <p className="text-base font-bold text-gray-800">
-                    つながりました！
+                    {t("qr.connectedTitle")}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {exchangeMode.connectionNotification.displayName}{" "}
-                    さんとつながりました
+                    {t("qr.connectedWith", {
+                      name: exchangeMode.connectionNotification.displayName,
+                    })}
                   </p>
                   <button
                     onClick={exchangeMode.onExchanged}
                     className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
                   >
-                    閉じる
+                    {t("qr.close")}
                   </button>
                 </div>
               ) : (
@@ -288,13 +291,13 @@ export function QRBottomSheet({
                     onClick={exchangeMode.onExchanged}
                     className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors"
                   >
-                    交換予定
+                    {t("qr.exchangeLater")}
                   </button>
                   <button
                     onClick={exchangeMode.onNotExchanged}
                     className="w-full px-4 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors"
                   >
-                    交換しない
+                    {t("qr.doNotExchange")}
                   </button>
                 </div>
               ))}

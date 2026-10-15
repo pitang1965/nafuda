@@ -12,6 +12,8 @@ import { buildOgpDescription } from "../../lib/ogp";
 import { PwaInstallBanner } from "../../components/PwaInstallBanner";
 import { EmptyState } from "../../components/EmptyState";
 import { NafudaIcon } from "../../components/NafudaIcon";
+import { useT } from "../../lib/i18n/context";
+import { LanguageToggle } from "../../components/LanguageToggle";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
@@ -39,15 +41,32 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     }));
     return { ...profile, avatarUrl, galleryPhotos, nafudaLinks };
   },
-  head: ({ loaderData: profile, params }) => {
-    if (!profile) return { meta: [{ title: "なふだが見つかりません" }] };
-    const title = `${profile.displayName}のなふだ`;
-    const description = buildOgpDescription(profile.displayName, profile.bio);
+  head: ({ loaderData: profile, params, match }) => {
+    const locale = match.context.locale;
+    if (!profile) {
+      return {
+        meta: [
+          {
+            title: locale === "en" ? "Nafuda not found" : "なふだが見つかりません",
+          },
+        ],
+      };
+    }
+    const title =
+      locale === "en"
+        ? `${profile.displayName}'s Nafuda`
+        : `${profile.displayName}のなふだ`;
+    const description = buildOgpDescription(
+      profile.displayName,
+      profile.bio,
+      locale,
+    );
     const rawImage = profile.avatarUrl ?? `${BASE_URL}/icons/icon-512.png`;
     const image = rawImage.startsWith("/")
       ? `${BASE_URL}${rawImage}`
       : rawImage;
     const url = `${BASE_URL}/u/${params.urlId}/p/${params.token}`;
+    const siteName = locale === "en" ? "Nafuda" : "なふだ";
     return {
       meta: [
         { title },
@@ -57,7 +76,7 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
         { property: "og:description", content: description },
         { property: "og:image", content: image },
         { property: "og:url", content: url },
-        { property: "og:site_name", content: "なふだ" },
+        { property: "og:site_name", content: siteName },
         { name: "twitter:card", content: "summary" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
@@ -72,6 +91,7 @@ function PublicProfilePage() {
   const profile = Route.useLoaderData();
   const params = Route.useParams();
   const router = useRouter();
+  const t = useT();
   // アプリ内遷移（公開→公開の「他のなふだ」、イベントページ等）では履歴があり戻れる。
   // QR からのコールドロードでは履歴が無く戻り先も無いので出さない（ADR-0019）。
   const canGoBack = useCanGoBack();
@@ -82,9 +102,9 @@ function PublicProfilePage() {
     return (
       <EmptyState
         icon={<NafudaIcon />}
-        title="なふだが見つかりません"
-        description="削除されたか、URLが間違っている可能性があります。"
-        cta={{ label: "トップへ戻る", to: "/" }}
+        title={t("publicProfile.notFoundTitle")}
+        description={t("publicProfile.notFoundDescription")}
+        cta={{ label: t("common.backToTop"), to: "/" }}
         showBack
       />
     );
@@ -93,26 +113,29 @@ function PublicProfilePage() {
     <div className={style ? "min-h-screen bg-gray-900" : "min-h-screen"}>
       <PwaInstallBanner sticky />
       <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col pb-16">
-        {canGoBack && (
-          <div
-            className="p-4 flex items-center"
-            style={
-              style
-                ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
-                : { borderBottom: "1px solid #e5e7eb" }
-            }
-          >
+        <div
+          className="p-4 flex items-center justify-between"
+          style={
+            style
+              ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
+              : { borderBottom: "1px solid #e5e7eb" }
+          }
+        >
+          {canGoBack ? (
             <button
               onClick={() => router.history.back()}
               className="flex items-center gap-1 transition-colors"
               style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
-              aria-label="戻る"
+              aria-label={t("common.back")}
             >
               <ChevronLeft className="size-5" />
-              <span className="text-sm">戻る</span>
+              <span className="text-sm">{t("common.back")}</span>
             </button>
-          </div>
-        )}
+          ) : (
+            <span />
+          )}
+          <LanguageToggle />
+        </div>
 
         {/* なふだ領域（公開ページと編集プレビューで共通の表示部品） */}
         <main className="flex-1 flex flex-col">
@@ -130,7 +153,7 @@ function PublicProfilePage() {
             className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-pink-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-pink-600"
           >
             <span aria-hidden="true">⭐</span>
-            このなふだをお気に入りに保存
+            {t("publicProfile.saveToFavorites")}
           </Link>
         </div>
       </div>

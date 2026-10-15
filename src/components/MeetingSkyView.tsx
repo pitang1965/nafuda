@@ -9,6 +9,11 @@ import {
 } from "../lib/meeting-sky";
 import { UserAvatar } from "./UserAvatar";
 import { Button } from "@/components/ui/button";
+import { useT, useLocale } from "../lib/i18n/context";
+import { formatJstDate } from "../lib/i18n/formatDate";
+import type { Locale } from "../lib/i18n/types";
+import { dictionaries } from "../lib/i18n/dictionaries";
+import { translate } from "../lib/i18n/translate";
 
 type Connection = Awaited<ReturnType<typeof getMyConnections>>[number];
 
@@ -17,6 +22,8 @@ const SKY_GRADIENT = ["#0b1026", "#1a1f3d", "#2b2350"] as const;
 // 出会いの夜空 (MeetingSky)。オーナーだけが見る作品ビュー（ADR-0025）。
 // つながり一覧と同じデータの別の見え方で、実務はリスト・情緒は夜空が担う。
 export function MeetingSkyView({ connections }: { connections: Connection[] }) {
+  const t = useT();
+  const { locale } = useLocale();
   const sky = useMemo(() => layoutSky(connections), [connections]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -48,7 +55,7 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
           viewBox={`0 0 ${SKY_W} ${SKY_H}`}
           className="w-full h-auto block"
           role="img"
-          aria-label="出会いの夜空"
+          aria-label={t("meetingSky.ariaLabel")}
         >
           {sky.dust.map((d, i) => (
             <circle
@@ -134,11 +141,7 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
                   {selected.toDisplayName}
                 </p>
                 <p className="text-xs text-white/60 truncate">
-                  {new Date(selected.connectedAt).toLocaleDateString("ja-JP", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  {formatJstDate(selected.connectedAt, locale)}
                   {selected.eventName && ` · ${selected.eventName}`}
                 </p>
               </div>
@@ -148,7 +151,7 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
               size="icon-sm"
               onClick={() => setSelectedId(null)}
               className="shrink-0 rounded-full text-white/50 hover:text-white hover:bg-white/10"
-              aria-label="閉じる"
+              aria-label={t("meetingSky.close")}
             >
               ✕
             </Button>
@@ -159,11 +162,11 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
       {sky.count > 0 && (
         <div className="flex justify-center">
           <button
-            onClick={() => saveSkyImage(sky)}
+            onClick={() => saveSkyImage(sky, locale)}
             className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors py-1"
           >
             <span aria-hidden>⬇</span>
-            画像として保存
+            {t("meetingSky.saveImage")}
           </button>
         </div>
       )}
@@ -175,7 +178,7 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
 // 地名など出所が推定できる情報は一切描かない（書き出し境界 / ADR-0025）。
 // iOS Safari では download が効かないことがあるが、長押し保存で代替できるため許容
 // （QRBottomSheet の額縁書き出しと同じ判断）。
-function saveSkyImage(sky: SkyLayout) {
+function saveSkyImage(sky: SkyLayout, locale: Locale) {
   const SCALE = 1.2;
   const W = SKY_W * SCALE;
   const SKY_PX = SKY_H * SCALE;
@@ -227,7 +230,11 @@ function saveSkyImage(sky: SkyLayout) {
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.font = "500 30px sans-serif";
-  ctx.fillText(`${sky.periodLabel} の夜空 ★ ${sky.count}`, W / 2, SKY_PX + 52);
+  const skyLabel = translate(dictionaries[locale], "meetingSky.skyLabel", {
+    period: sky.periodLabel,
+    count: sky.count,
+  });
+  ctx.fillText(skyLabel, W / 2, SKY_PX + 52);
   ctx.fillStyle = "rgba(255,255,255,0.45)";
   ctx.font = "600 22px sans-serif";
   ctx.fillText("nafuda.me", W / 2, SKY_PX + 94);

@@ -7,6 +7,14 @@
 // 値は「開いた集合」で、特化用途（例: car）は後からこのレジストリに追加していく。
 // 見せ方の分岐はすべてこのレジストリ参照で行い、null・未知値は default にフォールバックする。
 
+import type { Locale } from "./i18n/types";
+import {
+  purposeTextOverlay,
+  EN_LEGACY_TAG_LABEL,
+  EN_LEGACY_TAG_HINT,
+  EN_DEFAULT_LABEL_PLACEHOLDER,
+} from "./i18n/purposeText";
+
 export const PURPOSE_IDS = ["social", "oshi", "car", "other"] as const;
 export type PurposeId = (typeof PURPOSE_IDS)[number];
 
@@ -150,9 +158,27 @@ export function getPurposeConfig(
   return isPurposeId(purpose) ? PURPOSE_CONFIGS[purpose] : null;
 }
 
+export function purposeLabel(purpose: PurposeId, locale: Locale = "ja"): string {
+  const overlay = purposeTextOverlay(locale);
+  return overlay ? overlay[purpose].label : PURPOSE_CONFIGS[purpose].label;
+}
+
+export function purposeDescription(
+  purpose: PurposeId,
+  locale: Locale = "ja",
+): string {
+  const overlay = purposeTextOverlay(locale);
+  return overlay
+    ? overlay[purpose].description
+    : PURPOSE_CONFIGS[purpose].description;
+}
+
 export function purposeTagHeading(
   purpose: string | null | undefined,
+  locale: Locale = "ja",
 ): string | null {
+  const overlay = purposeTextOverlay(locale);
+  if (overlay) return isPurposeId(purpose) ? overlay[purpose].tagHeading : null;
   return getPurposeConfig(purpose)?.tagHeading ?? null;
 }
 
@@ -165,7 +191,14 @@ export function purposePopularTagSeeds(
 
 export function purposeLabelPlaceholder(
   purpose: string | null | undefined,
+  locale: Locale = "ja",
 ): string {
+  const overlay = purposeTextOverlay(locale);
+  if (overlay) {
+    return isPurposeId(purpose)
+      ? overlay[purpose].labelPlaceholder
+      : EN_DEFAULT_LABEL_PLACEHOLDER;
+  }
   return getPurposeConfig(purpose)?.labelPlaceholder ?? DEFAULT_LABEL_PLACEHOLDER;
 }
 
@@ -176,12 +209,24 @@ const LEGACY_TAG_HINT = "推しの名前・グループ名・ジャンルなど"
 /** 編集/ウィザードのタグ入力欄の見出し（null/未知 → 従来表示） */
 export function purposeEditTagLabel(
   purpose: string | null | undefined,
+  locale: Locale = "ja",
 ): string {
+  const overlay = purposeTextOverlay(locale);
+  if (overlay) {
+    return isPurposeId(purpose) ? overlay[purpose].editTagLabel : EN_LEGACY_TAG_LABEL;
+  }
   return getPurposeConfig(purpose)?.editTagLabel ?? LEGACY_TAG_LABEL;
 }
 
 /** タグ入力欄の補足説明文（null/未知 → 従来表示） */
-export function purposeEditTagHint(purpose: string | null | undefined): string {
+export function purposeEditTagHint(
+  purpose: string | null | undefined,
+  locale: Locale = "ja",
+): string {
+  const overlay = purposeTextOverlay(locale);
+  if (overlay) {
+    return isPurposeId(purpose) ? overlay[purpose].editTagHint : EN_LEGACY_TAG_HINT;
+  }
   return getPurposeConfig(purpose)?.editTagHint ?? LEGACY_TAG_HINT;
 }
 

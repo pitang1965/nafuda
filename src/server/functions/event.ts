@@ -7,6 +7,7 @@ import { events, eventCheckins, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
 import { isWithinCheckinWindow } from "../lib/eventCheckinWindow";
 import { pushToRoom } from "../realtimePush";
+import { serverT } from "../../lib/i18n/serverT";
 
 // 参加者一覧（presence）の更新を、そのイベントの EventRoom 閲覧者全員へ通知する。
 // 正本は Postgres。クライアントは通知を受けてローダーを再取得し収束する（realtime 無効環境では no-op）。
@@ -85,7 +86,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
 
     // 受付窓ゲート（ADR-0020）: 開催期間±猶予の外からのチェックインは受け付けない。
     if (!isWithinCheckinWindow(eventRow[0])) {
-      throw new Error("チェックインの受付期間外です");
+      throw new Error(serverT("errors.checkinWindowClosed"));
     }
 
     // Remove other personas of same user from this event (1ユーザー = 1エントリ)
@@ -133,10 +134,9 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         .string()
         .min(1)
         .max(100)
-        .regex(
-          /^[a-zA-Z0-9-]+$/,
-          "スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます",
-        ),
+        .regex(/^[a-zA-Z0-9-]+$/, {
+          error: () => serverT("errors.slugInvalidChars"),
+        }),
       eventName: z.string().min(1).max(100),
       venueName: z.string().min(1).max(100),
       eventDate: z.string(),

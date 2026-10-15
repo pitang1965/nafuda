@@ -19,11 +19,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT, useLocale } from "../../lib/i18n/context";
+import { formatJstDate } from "../../lib/i18n/formatDate";
 
 // お気に入り（ADR-0021）: 他者の公開なふだを保存した私的リスト。相手に不可視・ライブ参照。
 export const Route = createFileRoute("/_protected/favorites")({
   loader: () => getMyFavorites(),
-  staticData: { title: "お気に入り" },
+  staticData: { title: "nav.favorites" },
   component: FavoritesPage,
 });
 
@@ -64,14 +66,12 @@ function FavoriteCard({
   fav: Favorite;
   onRemove: (targetPersonaId: string) => Promise<void>;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const [showConfirm, setShowConfirm] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  const savedDate = new Date(fav.createdAt).toLocaleDateString("ja-JP", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const savedDate = formatJstDate(fav.createdAt, locale);
 
   const handleRemove = async () => {
     setIsRemoving(true);
@@ -104,7 +104,9 @@ function FavoriteCard({
                 {stripBioMarkers(fav.bio)}
               </p>
             )}
-            <p className="text-xs text-gray-400 mt-1">{savedDate} に保存</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {t("favorites.savedOn", { date: savedDate })}
+            </p>
           </div>
         </Link>
 
@@ -114,7 +116,7 @@ function FavoriteCard({
             <DropdownMenuTrigger asChild>
               <button
                 className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="メニュー"
+                aria-label={t("favorites.menuAriaLabel")}
               >
                 <svg
                   width="16"
@@ -133,7 +135,7 @@ function FavoriteCard({
                 className="text-red-500 focus:text-red-500 focus:bg-red-50"
                 onSelect={() => setShowConfirm(true)}
               >
-                お気に入りから外す
+                {t("favorites.removeMenuItem")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -149,15 +151,14 @@ function FavoriteCard({
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>お気に入りから外す</AlertDialogTitle>
+            <AlertDialogTitle>{t("favorites.removeDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              <span className="font-medium">{fav.displayName}</span>{" "}
-              を一覧から外します。相手には通知されません。
+              {t("favorites.removeDialogBody", { name: fav.displayName })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row gap-2">
             <AlertDialogCancel className="flex-1" disabled={isRemoving}>
-              キャンセル
+              {t("common.cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"
@@ -165,7 +166,7 @@ function FavoriteCard({
               onClick={handleRemove}
               disabled={isRemoving}
             >
-              {isRemoving ? "外しています..." : "外す"}
+              {isRemoving ? t("favorites.removing") : t("favorites.removeConfirm")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -175,14 +176,15 @@ function FavoriteCard({
 }
 
 function EmptyState() {
+  const t = useT();
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
       <div className="text-4xl">⭐</div>
       <p className="text-sm text-gray-500 text-center">
-        まだお気に入りがありません
+        {t("favorites.emptyTitle")}
       </p>
       <p className="text-xs text-gray-400 text-center">
-        相手のなふだを開いて「お気に入りに保存」すると、ここに最新の状態でいつでも見に行けます
+        {t("favorites.emptyHint")}
       </p>
     </div>
   );

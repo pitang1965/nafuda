@@ -30,6 +30,7 @@ import { HolographicOverlay } from "../../components/HolographicOverlay";
 import { RainbowBorderOverlay } from "../../components/RainbowBorderOverlay";
 import { PearlBorderOverlay } from "../../components/PearlBorderOverlay";
 import { CherryBlossomOverlay } from "../../components/CherryBlossomOverlay";
+import { useT } from "../../lib/i18n/context";
 
 // 開発時のみ「なふだを見せる」QR・印刷用画像をデモアカウント（七瀬みんと）に
 // 差し替える。実データ（ログイン中の自分）を晒さずレイアウトとスキャンを確認する用。
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/_protected/me")({
   // 遷移のたびに最新を取得する。キャッシュした古いデータを描画すると、
   // なふだ削除直後に「消えたはずのなふだが一瞬見える」ちらつきが起きるため。
   staleTime: 0,
-  staticData: { title: "なふだ" },
+  staticData: { title: "nav.myNafuda" },
   component: MePage,
 });
 
@@ -67,6 +68,7 @@ function readLastPersonaId(): string | null {
 }
 
 function MePage() {
+  const t = useT();
   const { urlId, personas, initialPersonaId } = Route.useLoaderData();
   const navigate = useNavigate();
   const [currentPersonaId, setCurrentPersonaId] = useState(() => {
@@ -258,7 +260,7 @@ function MePage() {
           search={{ personaId: activePersonaId }}
           className="text-sm text-gray-500 underline hover:text-gray-700"
         >
-          編集
+          {t("me.edit")}
         </Link>
       </div>
 
@@ -314,7 +316,7 @@ function MePage() {
               className="text-xs underline"
               style={{ color: subtextColor ?? "#9ca3af" }}
             >
-              ラベルを設定する →
+              {t("me.setLabel")}
             </Link>
           )}
 
@@ -328,7 +330,9 @@ function MePage() {
                 color={subtextColor ?? "#4b5563"}
               />
               {isPrivate("bio") && (
-                <p className="text-xs text-gray-400 mt-1">🔒 非公開</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  🔒 {t("me.private")}
+                </p>
               )}
             </div>
           )}
@@ -354,7 +358,7 @@ function MePage() {
               </div>
               {isPrivate("oshi_tags") && (
                 <p className="text-xs text-gray-400 text-center mt-1">
-                  🔒 非公開
+                  🔒 {t("me.private")}
                 </p>
               )}
             </div>
@@ -371,7 +375,7 @@ function MePage() {
                 />
                 {isPrivate("gallery") && (
                   <p className="text-xs text-gray-400 text-center mt-1">
-                    🔒 非公開
+                    🔒 {t("me.private")}
                   </p>
                 )}
               </div>
@@ -403,7 +407,9 @@ function MePage() {
                 />
               ))}
               {isPrivate("sns_links") && (
-                <p className="text-xs text-gray-400 text-center">🔒 非公開</p>
+                <p className="text-xs text-gray-400 text-center">
+                  🔒 {t("me.private")}
+                </p>
               )}
             </div>
           )}
@@ -416,7 +422,7 @@ function MePage() {
                   className="text-xs font-medium inline-flex items-center gap-1"
                   style={{ color: subtextColor ?? "#6b7280" }}
                 >
-                  <NafudaIcon /> 他のなふだ
+                  <NafudaIcon /> {t("publicProfile.otherNafuda")}
                 </span>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {currentPersona.nafudaLinks.map((link) => (
@@ -452,13 +458,13 @@ function MePage() {
                 className="w-full rounded-xl hover:opacity-90"
                 style={ctaOverride}
               >
-                なふだを見せる
+                {t("me.showNafuda")}
               </Button>
               <p
                 className="text-xs text-center"
                 style={{ color: subtextColor ?? "#9ca3af" }}
               >
-                プロフィールを見せるだけ。つながりません。
+                {t("me.showNafudaHint")}
               </p>
             </div>
             <div className="flex flex-col gap-1">
@@ -469,13 +475,13 @@ function MePage() {
                 className="w-full rounded-xl hover:opacity-90"
                 style={ctaOverride}
               >
-                {connectQrLoading ? "QRを生成中..." : "なふだを交換する"}
+                {connectQrLoading ? t("me.generatingQr") : t("me.exchangeNafuda")}
               </Button>
               <p
                 className="text-xs text-center"
                 style={{ color: subtextColor ?? "#9ca3af" }}
               >
-                その場でお互いにつながります。
+                {t("me.exchangeNafudaHint")}
               </p>
             </div>
             {currentPersona && (
@@ -485,7 +491,7 @@ function MePage() {
                 className="text-xs text-center underline underline-offset-2 transition-colors"
                 style={{ color: subtextColor ?? "#9ca3af" }}
               >
-                👁 人から見た画面で確認
+                👁 {t("me.viewAsOthers")}
               </Link>
             )}
           </div>
@@ -507,9 +513,9 @@ function MePage() {
           label={
             import.meta.env.DEV
               ? DEV_DEMO_LABEL
-              : `${currentPersona.displayName} のなふだ`
+              : t("me.qrShareLabel", { name: currentPersona.displayName })
           }
-          shareText="@nafuda_me #なふだ見せて #なふだ"
+          shareText={t("me.qrShareText")}
           onPrint={() => {
             setProfileQrOpen(false);
             setPrintOpen(true);
@@ -543,7 +549,7 @@ function MePage() {
           isOpen={connectQrOpen}
           onClose={() => {}}
           url={connectQrUrl}
-          label="相手にスキャンしてもらう（15分有効）"
+          label={t("me.exchangeQrLabel")}
           exchangeMode={{
             onExchanged: handleExchanged,
             onNotExchanged: handleNotExchanged,
@@ -556,19 +562,22 @@ function MePage() {
 }
 
 function RedirectToWizard() {
+  const t = useT();
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-pink-500 mb-2">なふだ</h1>
-        <p className="text-sm text-gray-400">ようこそ！</p>
+        <h1 className="text-4xl font-bold text-pink-500 mb-2">
+          {t("common.brandName")}
+        </h1>
+        <p className="text-sm text-gray-400">{t("me.emptyWelcome")}</p>
       </div>
       <p className="text-sm text-gray-500 text-center max-w-xs leading-relaxed">
-        なふだはQRコードと紐づいたあなたのデジタル名刺です。
+        {t("me.emptyDescription")}
         <br />
-        まず1枚作りましょう。
+        {t("me.emptyDescription2")}
       </p>
       <Button asChild size="lg">
-        <Link to="/profile/wizard">なふだを作る</Link>
+        <Link to="/profile/wizard">{t("me.emptyCta")}</Link>
       </Button>
     </div>
   );

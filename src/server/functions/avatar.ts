@@ -7,6 +7,7 @@ import { personas } from "../db/schema";
 import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 import { decodeJpegDataUrl } from "../lib/image";
+import { serverT } from "../../lib/i18n/serverT";
 
 export const uploadAvatar = createServerFn({ method: "POST" })
   .validator(
@@ -15,7 +16,9 @@ export const uploadAvatar = createServerFn({ method: "POST" })
       dataUrl: z
         .string()
         .max(300_000)
-        .refine((v) => v.startsWith("data:image/"), "画像データが不正です"),
+        .refine((v) => v.startsWith("data:image/"), {
+          error: () => serverT("errors.imageDataInvalid"),
+        }),
     }),
   )
   .handler(async ({ data }) => {

@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,6 +27,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useT, useLocale } from "../../lib/i18n/context";
+import { LanguageToggle } from "../../components/LanguageToggle";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -48,25 +50,33 @@ export const Route = createFileRoute("/e/$slug_/edit")({
   component: EditEventPage,
 });
 
-const schema = z
-  .object({
-    name: z.string().min(1, "イベント名を入力してください").max(100),
-    venueName: z.string().min(1, "会場名を入力してください").max(100),
-    eventDate: z.string().min(1, "日付を選択してください"),
-    eventTime: z.string().optional(),
-    eventEndDate: z.string().optional(),
-    eventEndTime: z.string().optional(),
-    showTime: z.boolean(),
-    description: z.string().max(1000).optional(),
-  })
-  .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
-    message: "終了日は開始日以降にしてください",
-    path: ["eventEndDate"],
-  });
+// バリデーションメッセージは t() を使うため、スキーマはコンポーネント内で生成する。
+function createEditEventSchema(t: (key: string) => string) {
+  return z
+    .object({
+      name: z.string().min(1, t("eventForm.errorEventNameRequired")).max(100),
+      venueName: z
+        .string()
+        .min(1, t("eventForm.errorVenueNameRequired"))
+        .max(100),
+      eventDate: z.string().min(1, t("eventForm.errorDateRequired")),
+      eventTime: z.string().optional(),
+      eventEndDate: z.string().optional(),
+      eventEndTime: z.string().optional(),
+      showTime: z.boolean(),
+      description: z.string().max(1000).optional(),
+    })
+    .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
+      message: t("eventForm.errorEndDateBeforeStart"),
+      path: ["eventEndDate"],
+    });
+}
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof createEditEventSchema>>;
 
 function EditEventPage() {
+  const t = useT();
+  const { locale } = useLocale();
   const { event } = Route.useLoaderData();
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -100,6 +110,10 @@ function EditEventPage() {
   const eventEndDateStr = event.eventEndDate ? toJstDate(event.eventEndDate) : "";
   const eventEndTimeStr =
     event.eventEndDate && event.showTime ? toJstTime(event.eventEndDate) : "";
+
+  // 言語切替への追従はせず、マウント時点のロケールでメッセージを固定する（意図的。wizard.tsxと同じ）。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const schema = useMemo(() => createEditEventSchema(t), []);
 
   const {
     register,
@@ -147,7 +161,9 @@ function EditEventPage() {
         params: { slug: event.shareToken },
       });
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "更新に失敗しました");
+      setSubmitError(
+        err instanceof Error ? err.message : t("eventEdit.updateFailedGeneric"),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -160,7 +176,9 @@ function EditEventPage() {
       await deleteEvent({ data: { token: event.shareToken } });
       await router.navigate({ to: "/events", replace: true });
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "削除に失敗しました");
+      setDeleteError(
+        err instanceof Error ? err.message : t("eventEdit.deleteFailedGeneric"),
+      );
       setIsDeleting(false);
     }
   };
@@ -172,11 +190,12 @@ function EditEventPage() {
           variant="ghost"
           size="icon-sm"
           onClick={handleBack}
-          aria-label="戻る"
+          aria-label={t("common.back")}
         >
           <ChevronLeft className="size-5" />
         </Button>
-        <h1 className="text-lg font-bold">イベントを編集</h1>
+        <h1 className="text-lg font-bold flex-1">{t("eventEdit.title")}</h1>
+        <LanguageToggle />
       </div>
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
@@ -184,7 +203,7 @@ function EditEventPage() {
           <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="name">
-                イベント名
+                {t("eventForm.eventNameLabel")}
               </label>
               <Input id="name" type="text" {...register("name")} />
               {errors.name && (
@@ -194,7 +213,7 @@ function EditEventPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="venueName">
-                会場名
+                {t("eventForm.venueNameLabel")}
               </label>
               <Input id="venueName" type="text" {...register("venueName")} />
               {errors.venueName && (
@@ -207,9 +226,14 @@ function EditEventPage() {
             <div className="flex gap-3">
               <div className="flex flex-col gap-1 flex-1">
                 <label className="text-sm font-medium" htmlFor="eventDate">
-                  開始日
+                  {t("eventForm.startDateLabel")}
                 </label>
-                <Input id="eventDate" type="date" {...register("eventDate")} />
+                <Input
+                  id="eventDate"
+                  type="date"
+                  lang={locale}
+                  {...register("eventDate")}
+                />
                 {errors.eventDate && (
                   <p className="text-xs text-red-500">
                     {errors.eventDate.message}
@@ -218,14 +242,15 @@ function EditEventPage() {
               </div>
               <div className="flex flex-col gap-1 flex-1">
                 <label className="text-sm font-medium" htmlFor="eventEndDate">
-                  終了日{" "}
+                  {t("eventForm.endDateLabel")}{" "}
                   <span className="text-xs text-gray-400 font-normal">
-                    （任意）
+                    {t("wizard.optional")}
                   </span>
                 </label>
                 <Input
                   id="eventEndDate"
                   type="date"
+                  lang={locale}
                   {...register("eventEndDate")}
                 />
                 {errors.eventEndDate && (
@@ -243,31 +268,33 @@ function EditEventPage() {
                   setValue("showTime", v, { shouldDirty: true })
                 }
               />
-              <span className="text-sm">時刻を追加</span>
+              <span className="text-sm">{t("eventForm.addTime")}</span>
             </label>
 
             {showTime && (
               <div className="flex gap-3">
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-sm font-medium" htmlFor="eventTime">
-                    開始時刻
+                    {t("eventForm.startTimeLabel")}
                   </label>
                   <Input
                     id="eventTime"
                     type="time"
+                    lang={locale}
                     {...register("eventTime")}
                   />
                 </div>
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-sm font-medium" htmlFor="eventEndTime">
-                    終了時刻{" "}
+                    {t("eventForm.endTimeLabel")}{" "}
                     <span className="text-xs text-gray-400 font-normal">
-                      （任意）
+                      {t("wizard.optional")}
                     </span>
                   </label>
                   <Input
                     id="eventEndTime"
                     type="time"
+                    lang={locale}
                     {...register("eventEndTime")}
                   />
                 </div>
@@ -276,9 +303,9 @@ function EditEventPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="description">
-                説明{" "}
+                {t("eventForm.descriptionLabel")}{" "}
                 <span className="text-xs text-gray-400 font-normal">
-                  （任意）
+                  {t("wizard.optional")}
                 </span>
               </label>
               <div className="relative">
@@ -287,7 +314,7 @@ function EditEventPage() {
                   {...register("description")}
                   aria-invalid={!!errors.description}
                   maxLength={1000}
-                  placeholder="イベントの詳細・注意事項など"
+                  placeholder={t("eventForm.descriptionPlaceholder")}
                   className="pb-6"
                 />
                 <span className="absolute bottom-2 right-3 text-xs text-gray-400">
@@ -303,7 +330,7 @@ function EditEventPage() {
           </div>
 
           <p className="text-xs text-muted-foreground px-1">
-            URLは変更されません。既存のQRコードは引き続き有効です。
+            {t("eventEdit.urlUnchangedHint")}
           </p>
 
           {submitError && (
@@ -316,7 +343,7 @@ function EditEventPage() {
             size="lg"
             className="w-full rounded-xl"
           >
-            {isSubmitting ? "保存中..." : "保存する"}
+            {isSubmitting ? t("edit.saving") : t("edit.save")}
           </Button>
         </form>
 
@@ -325,7 +352,7 @@ function EditEventPage() {
             onClick={() => setShowDeleteModal(true)}
             className="text-xs text-gray-400 underline hover:text-red-500"
           >
-            このイベントを削除する
+            {t("eventEdit.deleteThisEvent")}
           </button>
         </div>
       </main>
@@ -342,9 +369,9 @@ function EditEventPage() {
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>イベントの削除</AlertDialogTitle>
+            <AlertDialogTitle>{t("eventEdit.deleteDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              イベントとすべての参加履歴を削除します。この操作は取り消せません。
+              {t("eventEdit.deleteDialogBody")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <label
@@ -357,12 +384,12 @@ function EditEventPage() {
               onCheckedChange={(c) => setDeleteAgreed(c === true)}
               className="mt-0.5"
             />
-            <span className="text-sm">削除することに同意します</span>
+            <span className="text-sm">{t("eventEdit.deleteAgree")}</span>
           </label>
           {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
           <AlertDialogFooter className="flex-row gap-2">
             <AlertDialogCancel className="flex-1" disabled={isDeleting}>
-              キャンセル
+              {t("common.cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"
@@ -370,7 +397,7 @@ function EditEventPage() {
               onClick={handleDelete}
               disabled={!deleteAgreed || isDeleting}
             >
-              {isDeleting ? "削除中..." : "削除する"}
+              {isDeleting ? t("edit.deleting") : t("edit.delete")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -379,18 +406,18 @@ function EditEventPage() {
       <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>変更内容が保存されていません</AlertDialogTitle>
+            <AlertDialogTitle>{t("edit.unsavedChangesTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              このまま戻ると、保存されていない変更内容は破棄されます。
+              {t("edit.unsavedChangesDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>編集を続ける</AlertDialogCancel>
+            <AlertDialogCancel>{t("edit.continueEditing")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               onClick={() => router.history.back()}
             >
-              破棄して戻る
+              {t("edit.discardAndLeave")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

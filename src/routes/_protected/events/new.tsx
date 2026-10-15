@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { PersonaSwitcher } from "../../../components/PersonaSwitcher";
+import { useT, useLocale } from "../../../lib/i18n/context";
 
 function generateSlug(eventName: string, eventDate: string): string {
   const datePart = eventDate.replace(/-/g, "");
@@ -22,23 +23,32 @@ function generateSlug(eventName: string, eventDate: string): string {
   return `${namePart}-${datePart}`;
 }
 
-const schema = z
-  .object({
-    eventName: z.string().min(1, "イベント名を入力してください").max(100),
-    venueName: z.string().min(1, "会場名を入力してください").max(100),
-    eventDate: z.string().min(1, "日付を選択してください"),
-    eventTime: z.string().optional(),
-    eventEndDate: z.string().optional(),
-    eventEndTime: z.string().optional(),
-    showTime: z.boolean(),
-    description: z.string().max(1000).optional(),
-  })
-  .refine(
-    (d) => !d.eventEndDate || d.eventEndDate >= d.eventDate,
-    { message: "終了日は開始日以降にしてください", path: ["eventEndDate"] },
-  );
+// バリデーションメッセージは t() を使うため、スキーマはコンポーネント内で生成する。
+function createEventSchema(t: (key: string) => string) {
+  return z
+    .object({
+      eventName: z
+        .string()
+        .min(1, t("eventForm.errorEventNameRequired"))
+        .max(100),
+      venueName: z
+        .string()
+        .min(1, t("eventForm.errorVenueNameRequired"))
+        .max(100),
+      eventDate: z.string().min(1, t("eventForm.errorDateRequired")),
+      eventTime: z.string().optional(),
+      eventEndDate: z.string().optional(),
+      eventEndTime: z.string().optional(),
+      showTime: z.boolean(),
+      description: z.string().max(1000).optional(),
+    })
+    .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
+      message: t("eventForm.errorEndDateBeforeStart"),
+      path: ["eventEndDate"],
+    });
+}
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof createEventSchema>>;
 
 export const Route = createFileRoute("/_protected/events/new")({
   loader: async () => {
@@ -47,16 +57,22 @@ export const Route = createFileRoute("/_protected/events/new")({
       profile?.personas?.find((p) => p.isDefault) ?? profile?.personas?.[0];
     return { personaId: defaultPersona?.id ?? null, personas: profile?.personas ?? [] };
   },
-  staticData: { title: "イベントを作成" },
+  staticData: { title: "events.createTitle" },
   component: NewEventPage,
 });
 
 function NewEventPage() {
+  const t = useT();
+  const { locale } = useLocale();
   const { personaId: defaultPersonaId, personas } = Route.useLoaderData();
   const [selectedPersonaId, setSelectedPersonaId] = useState(defaultPersonaId);
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 言語切替への追従はせず、マウント時点のロケールでメッセージを固定する（意図的。wizard.tsxと同じ）。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const schema = useMemo(() => createEventSchema(t), []);
 
   const {
     register,
@@ -75,7 +91,7 @@ function NewEventPage() {
 
   const onSubmit = async (formData: FormValues) => {
     if (!selectedPersonaId) {
-      setSubmitError("なふだが見つかりません。なふだを作成してください。");
+      setSubmitError(t("eventForm.noPersonaError"));
       return;
     }
     setSubmitError(null);
@@ -103,7 +119,7 @@ function NewEventPage() {
       });
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "イベントの作成に失敗しました",
+        err instanceof Error ? err.message : t("eventForm.createFailedGeneric"),
       );
     } finally {
       setIsSubmitting(false);
@@ -114,7 +130,7 @@ function NewEventPage() {
     <div className="flex-1 p-6 flex flex-col gap-6">
         {personas.length > 1 && selectedPersonaId && (
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span>参加なふだ：</span>
+            <span>{t("eventForm.participatingPersonaLabel")}</span>
             <PersonaSwitcher
               personas={personas}
               currentPersonaId={selectedPersonaId}
@@ -127,12 +143,12 @@ function NewEventPage() {
           <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="eventName">
-                イベント名
+                {t("eventForm.eventNameLabel")}
               </label>
               <Input
                 id="eventName"
                 type="text"
-                placeholder="例: コミックマーケット105"
+                placeholder={t("eventForm.eventNamePlaceholder")}
                 {...register("eventName")}
               />
               {errors.eventName && (
@@ -144,12 +160,12 @@ function NewEventPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="venueName">
-                会場名
+                {t("eventForm.venueNameLabel")}
               </label>
               <Input
                 id="venueName"
                 type="text"
-                placeholder="例: 東京ビッグサイト"
+                placeholder={t("eventForm.venueNamePlaceholder")}
                 {...register("venueName")}
               />
               {errors.venueName && (
@@ -162,9 +178,14 @@ function NewEventPage() {
             <div className="flex gap-3">
               <div className="flex flex-col gap-1 flex-1">
                 <label className="text-sm font-medium" htmlFor="eventDate">
-                  開始日
+                  {t("eventForm.startDateLabel")}
                 </label>
-                <Input id="eventDate" type="date" {...register("eventDate")} />
+                <Input
+                  id="eventDate"
+                  type="date"
+                  lang={locale}
+                  {...register("eventDate")}
+                />
                 {errors.eventDate && (
                   <p className="text-xs text-red-500">
                     {errors.eventDate.message}
@@ -173,14 +194,15 @@ function NewEventPage() {
               </div>
               <div className="flex flex-col gap-1 flex-1">
                 <label className="text-sm font-medium" htmlFor="eventEndDate">
-                  終了日{" "}
+                  {t("eventForm.endDateLabel")}{" "}
                   <span className="text-xs text-gray-400 font-normal">
-                    （任意）
+                    {t("wizard.optional")}
                   </span>
                 </label>
                 <Input
                   id="eventEndDate"
                   type="date"
+                  lang={locale}
                   {...register("eventEndDate")}
                 />
                 {errors.eventEndDate && (
@@ -196,31 +218,33 @@ function NewEventPage() {
                 checked={showTime}
                 onCheckedChange={(v) => setValue("showTime", v)}
               />
-              <span className="text-sm">時刻を追加</span>
+              <span className="text-sm">{t("eventForm.addTime")}</span>
             </label>
 
             {showTime && (
               <div className="flex gap-3">
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-sm font-medium" htmlFor="eventTime">
-                    開始時刻
+                    {t("eventForm.startTimeLabel")}
                   </label>
                   <Input
                     id="eventTime"
                     type="time"
+                    lang={locale}
                     {...register("eventTime")}
                   />
                 </div>
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-sm font-medium" htmlFor="eventEndTime">
-                    終了時刻{" "}
+                    {t("eventForm.endTimeLabel")}{" "}
                     <span className="text-xs text-gray-400 font-normal">
-                      （任意）
+                      {t("wizard.optional")}
                     </span>
                   </label>
                   <Input
                     id="eventEndTime"
                     type="time"
+                    lang={locale}
                     {...register("eventEndTime")}
                   />
                 </div>
@@ -229,9 +253,9 @@ function NewEventPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" htmlFor="description">
-                説明{" "}
+                {t("eventForm.descriptionLabel")}{" "}
                 <span className="text-xs text-gray-400 font-normal">
-                  （任意）
+                  {t("wizard.optional")}
                 </span>
               </label>
               <div className="relative">
@@ -240,7 +264,7 @@ function NewEventPage() {
                   {...register("description")}
                   aria-invalid={!!errors.description}
                   maxLength={1000}
-                  placeholder="イベントの詳細・注意事項など"
+                  placeholder={t("eventForm.descriptionPlaceholder")}
                   className="pb-6"
                 />
                 <span className="absolute bottom-2 right-3 text-xs text-gray-400">
@@ -260,11 +284,11 @@ function NewEventPage() {
             size="lg"
             className="w-full rounded-xl"
           >
-            {isSubmitting ? "作成中..." : "イベントを作成する"}
+            {isSubmitting ? t("eventForm.creating") : t("eventForm.submitButton")}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            作成後、QRコード付きイベントページに移動します
+            {t("eventForm.afterCreateHint")}
           </p>
         </form>
     </div>

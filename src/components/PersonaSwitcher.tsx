@@ -5,6 +5,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "../lib/i18n/context";
 
 interface Persona {
   id: string;
@@ -26,8 +27,10 @@ export function PersonaSwitcher({
   onSwitch,
   onCreateNew,
 }: PersonaSwitcherProps) {
+  const t = useT();
   const current = personas.find((p) => p.id === currentPersonaId);
-  const currentLabel = current?.label || current?.displayName || "なふだ";
+  const currentLabel =
+    current?.label || current?.displayName || t("common.brandName");
 
   return (
     <DropdownMenu>
@@ -54,7 +57,7 @@ export function PersonaSwitcher({
             </span>
             {p.id === currentPersonaId && (
               <span className="text-xs text-muted-foreground shrink-0">
-                使用中
+                {t("personaSwitcher.inUse")}
               </span>
             )}
           </DropdownMenuItem>
@@ -64,7 +67,7 @@ export function PersonaSwitcher({
           onSelect={onCreateNew}
           className="text-blue-600 focus:text-blue-600 focus:bg-blue-50"
         >
-          ＋ なふだを追加
+          {t("personaSwitcher.addNafuda")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

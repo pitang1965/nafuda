@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../lib/i18n/context";
 
 export function HolographicOverlay() {
+  const t = useT();
   const tiltLayerRef = useRef<HTMLDivElement>(null);
   const [needsIOSPermission, setNeedsIOSPermission] = useState(false);
   const [listening, setListening] = useState(false);
@@ -124,7 +126,7 @@ export function HolographicOverlay() {
               boxShadow: "0 0 16px rgba(180,150,255,0.3)",
             }}
           >
-            ✦ きらきらを有効にする
+            {t("holographicOverlay.enableSparkle")}
           </button>
         </div>
       )}

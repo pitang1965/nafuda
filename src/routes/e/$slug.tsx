@@ -16,6 +16,16 @@ import { ParticipantCard } from "../../components/ParticipantCard";
 import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { EmptyState } from "../../components/EmptyState";
+import { LanguageToggle } from "../../components/LanguageToggle";
+import { useT, useLocale } from "../../lib/i18n/context";
+import {
+  formatJstDate,
+  formatJstDateTime,
+  formatJstTime,
+} from "../../lib/i18n/formatDate";
+import type { Locale } from "../../lib/i18n/types";
+import { dictionaries } from "../../lib/i18n/dictionaries";
+import { translate } from "../../lib/i18n/translate";
 
 const getOptionalSession = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -24,47 +34,35 @@ const getOptionalSession = createServerFn({ method: "GET" }).handler(
   },
 );
 
-function formatEventDate(date: Date | string, showTime: boolean): string {
-  const d = new Date(date);
-  if (showTime) {
-    return d.toLocaleString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-  return d.toLocaleDateString("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+function formatEventDate(
+  date: Date | string,
+  showTime: boolean,
+  locale: Locale,
+): string {
+  return showTime
+    ? formatJstDateTime(date, locale)
+    : formatJstDate(date, locale);
 }
 
 function formatEventPeriod(
   start: Date | string,
   end: Date | string | null,
   showTime: boolean,
+  locale: Locale,
 ): string {
-  const startStr = formatEventDate(start, showTime);
+  const startStr = formatEventDate(start, showTime, locale);
   if (!end) return startStr;
   const s = new Date(start);
   const e = new Date(end);
   const sameDay = s.toDateString() === e.toDateString();
+  const separator = translate(dictionaries[locale], "eventDetail.periodSeparator");
   // 同日かつ時刻表示なら終了は時刻だけ、それ以外は終了も全体表示。
   if (sameDay) {
     if (!showTime) return startStr;
-    const endTime = e.toLocaleTimeString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${startStr} 〜 ${endTime}`;
+    const endTime = formatJstTime(end, locale);
+    return `${startStr}${separator}${endTime}`;
   }
-  return `${startStr} 〜 ${formatEventDate(end, showTime)}`;
+  return `${startStr}${separator}${formatEventDate(end, showTime, locale)}`;
 }
 
 export const Route = createFileRoute("/e/$slug")({
@@ -123,6 +121,8 @@ export const Route = createFileRoute("/e/$slug")({
 });
 
 function EventPage() {
+  const t = useT();
+  const { locale } = useLocale();
   const {
     data,
     token,
@@ -185,12 +185,12 @@ function EventPage() {
       await refreshParticipants();
     } catch (err) {
       setCheckinError(
-        err instanceof Error ? err.message : "チェックインに失敗しました",
+        err instanceof Error ? err.message : t("eventDetail.checkinFailedGeneric"),
       );
     } finally {
       setIsCheckingIn(false);
     }
-  }, [selectedPersonaId, data, isCheckedIn, token, refreshParticipants]);
+  }, [selectedPersonaId, data, isCheckedIn, token, refreshParticipants, t]);
 
   const handleCancel = useCallback(async () => {
     if (!selectedPersonaId || !data) return;
@@ -204,20 +204,20 @@ function EventPage() {
       await refreshParticipants();
     } catch (err) {
       setCancelError(
-        err instanceof Error ? err.message : "取り消しに失敗しました",
+        err instanceof Error ? err.message : t("eventDetail.cancelFailedGeneric"),
       );
     } finally {
       setIsCancelling(false);
     }
-  }, [selectedPersonaId, data, token, refreshParticipants]);
+  }, [selectedPersonaId, data, token, refreshParticipants, t]);
 
   if (!data) {
     return (
       <EmptyState
         icon="📅"
-        title="イベントが見つかりません"
-        description="削除されたか、URLが間違っている可能性があります。"
-        cta={{ label: "トップへ戻る", to: "/" }}
+        title={t("eventDetail.notFoundTitle")}
+        description={t("publicProfile.notFoundDescription")}
+        cta={{ label: t("common.backToTop"), to: "/" }}
         showBack
       />
     );
@@ -230,7 +230,7 @@ function EventPage() {
           <button
             onClick={() => router.navigate({ to: "/" })}
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="戻る"
+            aria-label={t("common.back")}
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -243,9 +243,10 @@ function EventPage() {
               params={{ slug: token }}
               className="text-sm text-gray-500 underline shrink-0"
             >
-              編集
+              {t("me.edit")}
             </Link>
           )}
+          <LanguageToggle />
         </div>
 
         <main className="p-6 flex flex-col gap-6">
@@ -257,6 +258,7 @@ function EventPage() {
                 data.event.eventDate,
                 data.event.eventEndDate,
                 data.event.showTime,
+                locale,
               )}
             </p>
             {data.event.description && (
@@ -271,7 +273,7 @@ function EventPage() {
             onClick={() => setQrOpen(true)}
             className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
           >
-            QRコードを表示
+            {t("eventDetail.showQr")}
           </button>
 
           {/* 参加ボタン / ログイン誘導 */}
@@ -281,7 +283,7 @@ function EventPage() {
                 {personas.length > 1 && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">
-                      なふだを選択：
+                      {t("eventDetail.selectNafuda")}
                     </span>
                     <PersonaSwitcher
                       personas={personas}
@@ -299,14 +301,21 @@ function EventPage() {
                 {isCheckedIn ? (
                   <>
                     <div className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-sm font-semibold text-center">
-                      参加済み{myPersonaName ? `（${myPersonaName}）` : ""}
+                      {t("eventDetail.checkedIn")}
+                      {myPersonaName
+                        ? t("eventDetail.checkedInSuffix", {
+                            name: myPersonaName,
+                          })
+                        : ""}
                     </div>
                     <button
                       onClick={handleCancel}
                       disabled={isCancelling}
                       className="w-full py-2 rounded-xl border border-red-200 text-red-500 text-xs font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      {isCancelling ? "取り消し中..." : "参加を取り消す"}
+                      {isCancelling
+                        ? t("eventDetail.cancelling")
+                        : t("eventDetail.cancelParticipation")}
                     </button>
                     {cancelError && (
                       <p className="text-xs text-red-500 text-center">
@@ -320,7 +329,7 @@ function EventPage() {
                     disabled={isCheckingIn}
                     className="w-full py-3 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {isCheckingIn ? "参加中..." : "参加する"}
+                    {isCheckingIn ? t("eventDetail.joining") : t("eventDetail.join")}
                   </button>
                 )}
                 {checkinError && (
@@ -335,7 +344,7 @@ function EventPage() {
                 search={{ redirect: `/e/${token}` }}
                 className="block w-full py-3 rounded-xl border border-black text-center text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
-                なふだを作って参加する
+                {t("eventDetail.createNafudaToJoin")}
               </Link>
             )
           ) : (
@@ -344,21 +353,21 @@ function EventPage() {
               search={{ redirect: `/e/${token}` }}
               className="block w-full py-3 rounded-xl bg-black text-white text-center text-sm font-semibold hover:bg-gray-800 transition-colors"
             >
-              ログインして参加する
+              {t("eventDetail.loginToJoin")}
             </Link>
           )}
 
           {/* 参加者カウント */}
           <p className="text-sm text-gray-600 font-medium">
-            {participants.length}人が参加
+            {t("eventDetail.participantsCount", { count: participants.length })}
           </p>
 
           {!isLoggedIn && participants.length > 0 && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
               <Link to="/login" className="font-semibold underline">
-                ログイン
+                {t("eventDetail.loginLinkText")}
               </Link>
-              するとなふだを閲覧できます
+              {t("eventDetail.loginPromptSuffix")}
             </p>
           )}
 
@@ -380,7 +389,7 @@ function EventPage() {
             </div>
           ) : (
             <p className="text-sm text-gray-400 text-center py-8">
-              まだ参加者はいません
+              {t("eventDetail.noParticipantsYet")}
             </p>
           )}
 
@@ -388,7 +397,7 @@ function EventPage() {
             isOpen={qrOpen}
             onClose={() => setQrOpen(false)}
             url={currentUrl}
-            label={`イベント：${data.event.name}`}
+            label={t("eventDetail.qrLabel", { name: data.event.name })}
           />
         </main>
       </div>

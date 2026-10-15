@@ -39,14 +39,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { useT, useLocale } from "../../lib/i18n/context";
+import { formatJstDateTime } from "../../lib/i18n/formatDate";
 
 export const Route = createFileRoute("/_protected/connections")({
   loader: () => getMyConnections(),
-  staticData: { title: "つながり" },
+  staticData: { title: "nav.connections" },
   component: ConnectionsPage,
 });
 
 function ConnectionsPage() {
+  const t = useT();
   const connections = Route.useLoaderData();
   const router = useRouter();
 
@@ -62,12 +65,15 @@ function ConnectionsPage() {
       ) : (
         /* 同じデータの別ビュー。リスト＝実務（検索・メモ・削除）／夜空＝情緒（ADR-0025） */
         <Tabs defaultValue="list" className="gap-3">
-          <TabsList aria-label="表示切替" className="self-center rounded-full">
+          <TabsList
+            aria-label={t("connections.tabsAriaLabel")}
+            className="self-center rounded-full"
+          >
             <TabsTrigger value="list" className="rounded-full px-4">
-              リスト
+              {t("connections.tabList")}
             </TabsTrigger>
             <TabsTrigger value="sky" className="rounded-full px-4">
-              夜空
+              {t("connections.tabSky")}
             </TabsTrigger>
           </TabsList>
 
@@ -136,18 +142,14 @@ function ConnectionCard({
   conn: Connection;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
-  const connectedDate = new Date(conn.connectedAt).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const connectedDate = formatJstDateTime(conn.connectedAt, locale);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -176,7 +178,10 @@ function ConnectionCard({
               {conn.toDisplayName}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {conn.fromLabel || conn.fromDisplayName} として · {connectedDate}
+              {t("connections.asLabelDate", {
+                label: conn.fromLabel || conn.fromDisplayName,
+                date: connectedDate,
+              })}
             </p>
 
             {conn.eventName && (
@@ -189,11 +194,14 @@ function ConnectionCard({
                   <span className="text-pink-400">
                     {" "}
                     (
-                    {new Date(conn.eventDate).toLocaleDateString("ja-JP", {
-                      timeZone: "Asia/Tokyo",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {new Date(conn.eventDate).toLocaleDateString(
+                      locale === "ja" ? "ja-JP" : "en-US",
+                      {
+                        timeZone: "Asia/Tokyo",
+                        month: "short",
+                        day: "numeric",
+                      },
+                    )}
                     )
                   </span>
                 )}
@@ -217,8 +225,8 @@ function ConnectionCard({
               target="_blank"
               rel="noopener noreferrer"
               className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-pink-500 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="会った場所を地図で開く"
-              title="会った場所を地図で開く"
+              aria-label={t("connections.mapAriaLabel")}
+              title={t("connections.mapAriaLabel")}
             >
               <MapPinIcon className="w-4 h-4" />
             </a>
@@ -229,7 +237,7 @@ function ConnectionCard({
                 variant="ghost"
                 size="icon-sm"
                 className="rounded-full text-gray-300 hover:bg-gray-100 hover:text-gray-500"
-                aria-label="メニュー"
+                aria-label={t("connections.menuAriaLabel")}
               >
                 <svg
                   width="16"
@@ -245,13 +253,13 @@ function ConnectionCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setShowEdit(true)}>
-                編集
+                {t("connections.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-red-500 focus:text-red-500 focus:bg-red-50"
                 onSelect={() => setShowConfirm(true)}
               >
-                削除
+                {t("connections.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -279,22 +287,23 @@ function ConnectionCard({
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>つながりを削除</AlertDialogTitle>
+            <AlertDialogTitle>{t("connections.deleteDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div>
                 <p>
-                  <span className="font-medium">{conn.toDisplayName}</span>{" "}
-                  とのつながりを削除します。
+                  {t("connections.deleteDialogBody", {
+                    name: conn.toDisplayName,
+                  })}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  相手の記録は残ります。この操作は取り消せません。
+                  {t("connections.deleteDialogHint")}
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row gap-2">
             <AlertDialogCancel className="flex-1" disabled={isDeleting}>
-              キャンセル
+              {t("common.cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"
@@ -302,7 +311,7 @@ function ConnectionCard({
               onClick={handleDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? "削除中..." : "削除する"}
+              {isDeleting ? t("connections.deleting") : t("connections.deleteConfirm")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -320,6 +329,7 @@ function EditDialog({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const t = useT();
   // 企画イベント由来の文脈のみ事実として固定。即時イベントは各自が編集可能（CONTEXT.md ③ / ADR-0012）
   const contextLocked = conn.eventId !== null && conn.isInstant === false;
   const [eventName, setEventName] = useState(conn.eventName ?? "");
@@ -355,9 +365,9 @@ function EditDialog({
     >
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>つながりを編集</DialogTitle>
+          <DialogTitle>{t("connections.editDialogTitle")}</DialogTitle>
           <DialogDescription>
-            <span className="font-medium">{conn.toDisplayName}</span> さん
+            {t("connections.editDialogWith", { name: conn.toDisplayName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -366,7 +376,7 @@ function EditDialog({
             conn.eventName && (
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-1">
-                  出会った場所
+                  {t("connections.metLocationLabel")}
                 </p>
                 <div className="px-2 py-1 bg-pink-50 rounded text-xs text-pink-700 inline-block">
                   <span className="font-medium">{conn.eventName}</span>
@@ -375,7 +385,7 @@ function EditDialog({
                   )}
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  イベントの記録は編集できません
+                  {t("connections.eventLockedHint")}
                 </p>
               </div>
             )
@@ -386,14 +396,14 @@ function EditDialog({
                   htmlFor="conn-event-name"
                   className="text-xs font-medium text-gray-500 mb-1 block"
                 >
-                  イベント名
+                  {t("connections.eventNameLabel")}
                 </label>
                 <Input
                   id="conn-event-name"
                   value={eventName}
                   onChange={(e) => setEventName(e.target.value)}
                   maxLength={100}
-                  placeholder="○○オフ会"
+                  placeholder={t("connections.eventNamePlaceholder")}
                 />
               </div>
               <div>
@@ -401,14 +411,14 @@ function EditDialog({
                   htmlFor="conn-venue-name"
                   className="text-xs font-medium text-gray-500 mb-1 block"
                 >
-                  場所
+                  {t("connections.venueLabel")}
                 </label>
                 <Input
                   id="conn-venue-name"
                   value={venueName}
                   onChange={(e) => setVenueName(e.target.value)}
                   maxLength={100}
-                  placeholder="渋谷・バー○○"
+                  placeholder={t("connections.venuePlaceholder")}
                 />
               </div>
             </>
@@ -420,9 +430,9 @@ function EditDialog({
               className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1"
             >
               <LockIcon className="w-3 h-3" />
-              プライベートメモ
+              {t("connections.privateMemoLabel")}
               <span className="font-normal text-gray-400">
-                — 自分だけに表示されます
+                {t("connections.privateMemoHint")}
               </span>
             </label>
             <div className="relative">
@@ -431,7 +441,7 @@ function EditDialog({
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 maxLength={500}
-                placeholder="相手についての覚え書き"
+                placeholder={t("connections.memoPlaceholder")}
                 className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
@@ -448,10 +458,10 @@ function EditDialog({
             onClick={onClose}
             disabled={isSaving}
           >
-            キャンセル
+            {t("common.cancel")}
           </Button>
           <Button className="flex-1" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "保存中..." : "保存する"}
+            {isSaving ? t("edit.saving") : t("edit.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -460,14 +470,15 @@ function EditDialog({
 }
 
 function EmptyState() {
+  const t = useT();
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
       <div className="text-4xl">🤝</div>
       <p className="text-sm text-gray-500 text-center">
-        まだつながりがありません
+        {t("connections.emptyTitle")}
       </p>
       <p className="text-xs text-gray-400 text-center">
-        「なふだを交換する」で相手にQRコードをスキャンしてもらいましょう
+        {t("connections.emptyHint")}
       </p>
     </div>
   );

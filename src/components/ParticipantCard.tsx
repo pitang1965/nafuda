@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { UserAvatar } from "./UserAvatar";
+import { useT } from "../lib/i18n/context";
 
 interface ParticipantCardProps {
   displayName: string;
@@ -14,6 +15,7 @@ export function ParticipantCard({
   profileHref,
   className,
 }: ParticipantCardProps) {
+  const t = useT();
   const content = (
     <div
       className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 bg-white ${profileHref ? "hover:border-pink-300 hover:shadow-sm transition-all" : "opacity-80"} ${className ?? ""}`}
@@ -23,7 +25,9 @@ export function ParticipantCard({
         {displayName}
       </span>
       {profileHref && (
-        <span className="text-xs text-pink-500">プロフィールを見る</span>
+        <span className="text-xs text-pink-500">
+          {t("participantCard.viewProfile")}
+        </span>
       )}
     </div>
   );

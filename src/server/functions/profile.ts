@@ -18,6 +18,7 @@ import {
   account as accountTable,
 } from "../db/schema";
 import { auth } from "../auth";
+import { serverT } from "../../lib/i18n/serverT";
 import { deleteFromR2 } from "../storage";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -231,8 +232,8 @@ export const createPersona = createServerFn({ method: "POST" })
     z.object({
       displayName: z
         .string()
-        .min(1, "表示名を入力してください")
-        .max(50, "50文字以下"),
+        .min(1, { error: () => serverT("wizard.errorDisplayNameRequired") })
+        .max(50, { error: () => serverT("wizard.errorDisplayNameMax") }),
       label: z.string().max(20).optional().nullable(),
       purpose: z.string().max(32).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
@@ -482,13 +483,11 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
     if (!persona[0]) throw new Error("Forbidden");
 
     if (!isValidHttpsUrl(data.url)) {
-      throw new Error("URL は https:// から始まるフルURLを入力してください。");
+      throw new Error(serverT("errors.urlMustBeHttps"));
     }
 
     if (isNafudaTokenUrl(data.url)) {
-      throw new Error(
-        "なふだのプロフィール／つながるURLは SNSリンクに登録できません。自分の別のなふだは「なふだリンク」から追加してください。",
-      );
+      throw new Error(serverT("errors.nafudaUrlNotAllowedAsSns"));
     }
 
     const title = data.title?.trim() || null;
@@ -702,7 +701,7 @@ export const deletePersona = createServerFn({ method: "POST" })
 
     // 最後の1枚は削除させない（全削除は退会に委ねる — ADR-0011）
     if (myPersonas.length <= 1) {
-      throw new Error("最後のなふだは削除できません");
+      throw new Error(serverT("errors.lastPersonaCannotBeDeleted"));
     }
 
     const personaIds = [data.personaId];

@@ -11,6 +11,24 @@ import "../index.css";
 import { initAnalytics, setInternalUser } from "../lib/analytics";
 import { useSession } from "../lib/auth-client";
 import { EmptyState } from "../components/EmptyState";
+import { LocaleProvider, useLocale, useT } from "../lib/i18n/context";
+import { resolveLocale } from "../lib/i18n/detect";
+import { DEFAULT_LOCALE, type Locale } from "../lib/i18n/types";
+import { dictionaries } from "../lib/i18n/dictionaries";
+import { translate } from "../lib/i18n/translate";
+
+// 初期ロケールの決定（ADR-0029: URLには持たせず Cookie / Accept-Language のみで決まる）。
+// SSR 時は getRequest() でリクエストヘッダーを読み、クライアント側の再実行（初回水和や
+// クライアントナビゲーション）では document.cookie / navigator.language を使う。
+// router.tsx の CSP nonce と同じ「import.meta.env.SSR で分岐する動的 import」パターン。
+async function resolveInitialLocale(): Promise<Locale> {
+  if (import.meta.env.SSR) {
+    const { getServerLocale } = await import("../lib/i18n/server");
+    return getServerLocale();
+  }
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  return resolveLocale(document.cookie, navigator.language);
+}
 
 // ログイン中ユーザーが内部ユーザー（自分）なら is_internal を付与し、PostHog で除外できるようにする。
 function useInternalUserTag() {
@@ -26,10 +44,13 @@ function useInternalUserTag() {
   }, [uid]);
 }
 
-function RootDocument({ children }: { children: ReactNode }) {
+// <html lang> は LocaleProvider の実ロケールを読んで出す（切替時に React が再レンダーして
+// 追従する）。LocaleProvider は Document の外側に置く必要がある（html 自体を包むため）。
+function Document({ children }: { children: ReactNode }) {
   // CSP script-src はリクエストごとの nonce のみ許可（router.tsx参照）。
   // このインラインスクリプトにも同じ nonce を付けないとブロックされる。
   const nonce = useRouter().options.ssr?.nonce;
+  const { locale } = useLocale();
 
   useEffect(() => {
     initAnalytics();
@@ -49,7 +70,7 @@ function RootDocument({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <html lang="ja">
+    <html lang={locale}>
       <head>
         {/* beforeinstallprompt はReactハイドレーション前に発火するため、ここで早期キャプチャ */}
         <script
@@ -77,44 +98,69 @@ function RootDocument({ children }: { children: ReactNode }) {
   );
 }
 
+function RootDocument({
+  children,
+  locale,
+}: {
+  children: ReactNode;
+  locale: Locale;
+}) {
+  return (
+    <LocaleProvider initialLocale={locale}>
+      <Document>{children}</Document>
+    </LocaleProvider>
+  );
+}
+
 function NotFound() {
+  const t = useT();
   return (
     <EmptyState
       icon="🔍"
-      title="ページが見つかりません"
-      description="お探しのページは存在しないか、移動した可能性があります。"
-      cta={{ label: "トップへ戻る", to: "/" }}
+      title={t("notFound.title")}
+      description={t("notFound.description")}
+      cta={{ label: t("notFound.cta"), to: "/" }}
       showBack
     />
   );
 }
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
-const SITE_DESCRIPTION =
-  "なふだは、勉強会・オフ会・飲みの席など“仕事じゃない”出会いのためのSNS名刺アプリ。QRコードを見せるだけで、X・Instagramなどのつながりを、いつ・どこで出会ったかの文脈ごと残せます。推し活にもぴったり。今すぐ無料で始めましょう。";
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { title: "なふだ｜“仕事じゃない”出会いのSNS名刺アプリ" },
-      { name: "description", content: SITE_DESCRIPTION },
-      { property: "og:type", content: "website" },
-      {
-        property: "og:title",
-        content: "なふだ — “仕事じゃない”出会いのSNS名刺アプリ",
-      },
-      { property: "og:description", content: SITE_DESCRIPTION },
-      { property: "og:image", content: `${BASE_URL}/icons/icon-512.png` },
-      { property: "og:url", content: BASE_URL },
-      { property: "og:site_name", content: "なふだ" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
-  }),
-  component: () => (
-    <RootDocument>
+function RootComponent() {
+  const { locale } = Route.useRouteContext();
+  return (
+    <RootDocument locale={locale}>
       <Outlet />
     </RootDocument>
-  ),
+  );
+}
+
+export const Route = createRootRoute({
+  beforeLoad: async () => ({ locale: await resolveInitialLocale() }),
+  // ランディングページ（"/"）向けのタイトル・説明文。ログイン画面など、自前の head
+  // を持たない他ページのフォールバックにもなる。辞書の dictionaries を直接引く
+  // （この head() は React 外で実行されるため useT フックは使えない）。
+  head: ({ match }) => {
+    const dict = dictionaries[match.context.locale];
+    const title = translate(dict, "common.siteTitle");
+    const description = translate(dict, "common.siteDescription");
+    const siteName = translate(dict, "common.brandName");
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: `${BASE_URL}/icons/icon-512.png` },
+        { property: "og:url", content: BASE_URL },
+        { property: "og:site_name", content: siteName },
+        { name: "twitter:card", content: "summary" },
+      ],
+      links: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+    };
+  },
+  component: RootComponent,
   notFoundComponent: NotFound,
 });

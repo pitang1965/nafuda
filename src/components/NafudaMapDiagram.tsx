@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { UserAvatar } from "./UserAvatar";
+import { useT } from "../lib/i18n/context";
 
 // なふだマップの図コンポーネント（CONTEXT.md「なふだマップ」）。
 // 依存ゼロの自前の円環レイアウト＋静的SVGで有向グラフを描く（mermaid 等の
@@ -60,6 +61,7 @@ export function NafudaMapDiagram({
   nodes: MapNode[];
   edges: MapEdge[];
 }) {
+  const t = useT();
   const [selected, setSelected] = useState<string | null>(null);
 
   // ノード座標（円周上に等間隔、先頭を上に置く）
@@ -149,7 +151,7 @@ export function NafudaMapDiagram({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-gray-500 text-center">
-        なふだをタップすると、それを見せたときに広がる露出を色で示します。
+        {t("nafudaMap.tapHint")}
       </p>
 
       {/* 図（正方形・円環配置） */}
@@ -230,7 +232,7 @@ export function NafudaMapDiagram({
               type="button"
               onClick={() => setSelected((s) => (s === n.id ? null : n.id))}
               aria-pressed={isSelected}
-              aria-label={`${nodeName(n)}${isSelected ? "（選択中）" : ""}`}
+              aria-label={`${nodeName(n)}${isSelected ? t("nafudaMap.selectedAriaSuffix") : ""}`}
               className="absolute flex flex-col items-center gap-0.5 outline-none"
               style={{
                 left: `${pos.x}%`,
@@ -271,11 +273,9 @@ export function NafudaMapDiagram({
 
       {/* 凡例 */}
       <div className="mx-auto flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-gray-600">
-        <LegendDot color={COLOR.down} label="露出する先" />
-        <LegendDot color={COLOR.up} label="露出させる元" />
-        <span className="text-gray-400">
-          矢印 A→B ＝ A を見せると B が開ける
-        </span>
+        <LegendDot color={COLOR.down} label={t("nafudaMap.legendExposesTo")} />
+        <LegendDot color={COLOR.up} label={t("nafudaMap.legendExposedBy")} />
+        <span className="text-gray-400">{t("nafudaMap.legendArrow")}</span>
       </div>
 
       {/* 情報パネル（選択時） */}
@@ -292,24 +292,24 @@ export function NafudaMapDiagram({
           <ExposureRow
             arrow="→"
             color={COLOR.down}
-            heading="露出する先"
-            help="これを見せた相手が、なふだリンクをたどって開けてしまう別のなふだ"
+            heading={t("nafudaMap.exposesToHeading")}
+            help={t("nafudaMap.exposesToHelp")}
             names={downList.map(nodeName)}
           />
           <ExposureRow
             arrow="←"
             color={COLOR.up}
-            heading="露出させる元"
-            help="これらを見せると、このなふだが開けてしまう入口"
+            heading={t("nafudaMap.exposedByHeading")}
+            help={t("nafudaMap.exposedByHelp")}
             names={upList.map(nodeName)}
           />
           <p className="mt-3 text-xs text-gray-400">
-            意図しない露出があれば、そのなふだの編集画面でなふだリンクを外してください。
+            {t("nafudaMap.editHint")}
           </p>
         </div>
       ) : (
         <p className="text-center text-xs text-gray-400">
-          孤立したなふだ（どことも繋がっていない＝露出なし）は枠だけで表示されます。
+          {t("nafudaMap.isolatedHint")}
         </p>
       )}
     </div>
@@ -341,6 +341,7 @@ function ExposureRow({
   help: string;
   names: string[];
 }) {
+  const t = useT();
   return (
     <div className="mt-2">
       <div className="flex items-center gap-1">
@@ -351,7 +352,7 @@ function ExposureRow({
       </div>
       <p className="mb-1 text-[11px] text-gray-400">{help}</p>
       {names.length === 0 ? (
-        <span className="text-xs text-gray-400">（なし）</span>
+        <span className="text-xs text-gray-400">{t("nafudaMap.none")}</span>
       ) : (
         <div className="flex flex-wrap gap-1">
           {names.map((name) => (

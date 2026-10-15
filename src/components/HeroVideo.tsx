@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../lib/i18n/context";
 
 export function HeroVideo() {
+  const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ended, setEnded] = useState(false);
 
@@ -45,11 +47,11 @@ export function HeroVideo() {
         <button
           type="button"
           onClick={replay}
-          aria-label="動画をもう一度見る"
+          aria-label={t("heroVideo.replayAriaLabel")}
           className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/30 transition-colors hover:bg-black/40"
         >
           <span className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-gray-800 shadow-md">
-            ▶ もう一度見る
+            {t("heroVideo.replayLabel")}
           </span>
         </button>
       )}

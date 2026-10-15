@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { capture } from "@/lib/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,16 +10,20 @@ import {
   getOwnProfile,
 } from "../../../server/functions/profile";
 import {
-  PURPOSE_CONFIGS,
   PURPOSE_PICKER_ORDER,
+  purposeLabel,
+  purposeDescription,
   purposeLabelPlaceholder,
   purposeEditTagLabel,
   purposeEditTagHint,
+  PURPOSE_CONFIGS,
   type PurposeId,
 } from "@/lib/purpose";
 import { OshiTagInput } from "../../../components/OshiTagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT, useLocale } from "../../../lib/i18n/context";
+import { LanguageToggle } from "../../../components/LanguageToggle";
 
 export const Route = createFileRoute("/_protected/profile/wizard")({
   validateSearch: z.object({
@@ -34,18 +38,23 @@ export const Route = createFileRoute("/_protected/profile/wizard")({
 
 // Steps: 1=用途タイプ, 2=表示名/ラベル, 3=推しタグ, 4=完了
 
-const WizardSchema = z.object({
-  displayName: z
-    .string()
-    .min(1, "表示名を入力してください")
-    .max(50, "50文字以下"),
-  label: z.string().max(20, "20文字以下").optional().or(z.literal("")),
-  oshiTags: z.array(z.string()),
-});
+// バリデーションメッセージは t() を使うため、スキーマはコンポーネント内で生成する。
+function createWizardSchema(t: (key: string) => string) {
+  return z.object({
+    displayName: z
+      .string()
+      .min(1, t("wizard.errorDisplayNameRequired"))
+      .max(50, t("wizard.errorDisplayNameMax")),
+    label: z.string().max(20, t("wizard.errorLabelMax")).optional().or(z.literal("")),
+    oshiTags: z.array(z.string()),
+  });
+}
 
-type WizardForm = z.infer<typeof WizardSchema>;
+type WizardForm = z.infer<ReturnType<typeof createWizardSchema>>;
 
 function WizardPage() {
+  const t = useT();
+  const { locale } = useLocale();
   const { personas } = Route.useLoaderData();
   const { redirect } = Route.useSearch();
   const isFromEvent = redirect?.startsWith("/e/") ?? false;
@@ -58,8 +67,12 @@ function WizardPage() {
     capture("wizard_started", { is_first_persona: isFirstPersona });
   }, [isFirstPersona]);
 
+  // 言語切替への追従はせず、マウント時点のロケールでメッセージを固定する（意図的）。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const wizardSchema = useMemo(() => createWizardSchema(t), []);
+
   const methods = useForm<WizardForm>({
-    resolver: zodResolver(WizardSchema),
+    resolver: zodResolver(wizardSchema),
     defaultValues: {
       oshiTags: [],
       label: "",
@@ -123,34 +136,35 @@ function WizardPage() {
         window.location.href = "/me";
       }
     } catch {
-      setSubmitError("エラーが発生しました。もう一度お試しください。");
+      setSubmitError(t("wizard.submitErrorGeneric"));
     }
   };
 
-  const steps = ["用途", "表示名", purposeEditTagLabel(purpose), "完了"];
+  const STEP_COUNT = 4;
 
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Link
           to="/me"
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
         >
           <ChevronLeft className="size-4" />
-          トップに戻る
+          {t("wizard.backToTop")}
         </Link>
+        <LanguageToggle />
       </div>
-      {/* Step indicator */}
+      {/* Step indicator（番号のみ表示。文言は画面に出ない） */}
       <div className="flex items-center justify-center gap-2 mb-8">
-        {steps.map((label, i) => (
-          <div key={label} className="flex items-center gap-1">
+        {Array.from({ length: STEP_COUNT }, (_, i) => (
+          <div key={i} className="flex items-center gap-1">
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
               ${i + 1 === step ? "bg-black text-white" : i + 1 < step ? "bg-gray-400 text-white" : "bg-gray-100 text-gray-400"}`}
             >
               {i + 1}
             </div>
-            {i < steps.length - 1 && <div className="w-6 h-px bg-gray-200" />}
+            {i < STEP_COUNT - 1 && <div className="w-6 h-px bg-gray-200" />}
           </div>
         ))}
       </div>
@@ -163,9 +177,9 @@ function WizardPage() {
           {/* Step 1: Purpose */}
           {step === 1 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">何のためのなふだ？</h2>
+              <h2 className="text-xl font-bold">{t("wizard.step1Title")}</h2>
               <p className="text-sm text-gray-500">
-                用途を選ぶと、なふだの見せ方がそれに合わせて変わります。あとから変更できます。
+                {t("wizard.step1Description")}
               </p>
               <div className="flex flex-col gap-2">
                 {PURPOSE_PICKER_ORDER.map((id) => {
@@ -181,9 +195,11 @@ function WizardPage() {
                     >
                       <span className="text-2xl">{cfg.emoji}</span>
                       <span className="flex flex-col">
-                        <span className="font-bold">{cfg.label}</span>
+                        <span className="font-bold">
+                          {purposeLabel(id, locale)}
+                        </span>
                         <span className="text-xs text-gray-500">
-                          {cfg.description}
+                          {purposeDescription(id, locale)}
                         </span>
                       </span>
                     </button>
@@ -202,7 +218,7 @@ function WizardPage() {
                 size="lg"
                 className="w-full"
               >
-                次へ
+                {t("wizard.next")}
               </Button>
             </div>
           )}
@@ -210,14 +226,14 @@ function WizardPage() {
           {/* Step 2: Display name + label */}
           {step === 2 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">表示名を決めましょう</h2>
+              <h2 className="text-xl font-bold">{t("wizard.step2Title")}</h2>
               <p className="text-sm text-gray-500">
-                本名は不要です。ハンドル名・ニックネームでOK。絵文字も使えます。
+                {t("wizard.step2Description")}
               </p>
               <div>
                 <Input
                   {...register("displayName")}
-                  placeholder="例：ゆきたん⭐"
+                  placeholder={t("wizard.displayNamePlaceholder")}
                   className="h-12"
                 />
                 {errors.displayName && (
@@ -228,15 +244,15 @@ function WizardPage() {
               </div>
               <div>
                 <label className="text-sm font-medium">
-                  ラベル{" "}
+                  {t("wizard.labelFieldLabel")}{" "}
                   <span className="text-xs text-gray-400 font-normal">
-                    （自分だけが見る用途メモ・任意）
+                    {t("wizard.labelFieldHint")}
                   </span>
                 </label>
                 <div className="relative mt-1">
                   <Input
                     {...register("label")}
-                    placeholder={purposeLabelPlaceholder(purpose)}
+                    placeholder={purposeLabelPlaceholder(purpose, locale)}
                     maxLength={20}
                     className="h-12 pr-12"
                   />
@@ -257,7 +273,7 @@ function WizardPage() {
                   onClick={() => setStep(1)}
                   className="flex-1"
                 >
-                  戻る
+                  {t("common.back")}
                 </Button>
                 <Button
                   type="button"
@@ -270,7 +286,7 @@ function WizardPage() {
                   disabled={!displayName.trim()}
                   className="flex-1"
                 >
-                  次へ
+                  {t("wizard.next")}
                 </Button>
               </div>
             </div>
@@ -280,19 +296,23 @@ function WizardPage() {
           {step === 3 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
-                {purposeEditTagLabel(purpose)}を登録しましょう{" "}
+                {t("wizard.step3Title", {
+                  tagLabel: purposeEditTagLabel(purpose, locale),
+                })}{" "}
                 <span className="text-sm font-normal text-gray-400">
-                  （任意）
+                  {t("wizard.optional")}
                 </span>
               </h2>
               <p className="text-sm text-gray-500">
-                {purposeEditTagHint(purpose)}自由に入力できます。
+                {t("wizard.step3Hint", {
+                  tagHint: purposeEditTagHint(purpose, locale),
+                })}
                 <br />
-                入力して{" "}
+                {t("wizard.pressEnterPrefix")}
                 <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">
                   Enter
-                </kbd>{" "}
-                で追加、×で削除。複数登録OK。
+                </kbd>
+                {t("wizard.pressEnterSuffix")}
               </p>
               <OshiTagInput name="oshiTags" purpose={purpose} />
               <div className="flex gap-2">
@@ -302,14 +322,14 @@ function WizardPage() {
                   onClick={() => setStep(2)}
                   className="flex-1"
                 >
-                  戻る
+                  {t("common.back")}
                 </Button>
                 <Button
                   type="button"
                   onClick={handleProceedFromOshi}
                   className="flex-1"
                 >
-                  次へ
+                  {t("wizard.next")}
                 </Button>
               </div>
             </div>
@@ -319,12 +339,14 @@ function WizardPage() {
           {step === 4 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold">
-                {isFromEvent ? "設定完了！" : "なふだができました！"}
+                {isFromEvent
+                  ? t("wizard.step4TitleFromEvent")
+                  : t("wizard.step4TitleDefault")}
               </h2>
               <p className="text-sm text-gray-500">
                 {isFromEvent
-                  ? "なふだを作成してイベントに参加しましょう。"
-                  : "SNSリンクや自己紹介を追加すると、より伝わるなふだになります。"}
+                  ? t("wizard.step4DescriptionFromEvent")
+                  : t("wizard.step4DescriptionDefault")}
               </p>
               {submitError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -339,14 +361,14 @@ function WizardPage() {
                     onClick={() => setStep(3)}
                     className="flex-1"
                   >
-                    戻る
+                    {t("common.back")}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => handleSubmit((v) => onSubmit(v, "me"))()}
                     className="flex-1"
                   >
-                    作成してイベントへ
+                    {t("wizard.createAndGoToEvent")}
                   </Button>
                 </div>
               ) : (
@@ -356,7 +378,7 @@ function WizardPage() {
                     onClick={() => handleSubmit((v) => onSubmit(v, "edit"))()}
                     className="w-full"
                   >
-                    編集画面で仕上げる
+                    {t("wizard.finishInEditor")}
                   </Button>
                   <Button
                     type="button"
@@ -364,7 +386,7 @@ function WizardPage() {
                     onClick={() => handleSubmit((v) => onSubmit(v, "me"))()}
                     className="w-full"
                   >
-                    あとで編集する
+                    {t("wizard.finishLater")}
                   </Button>
                   <button
                     type="button"
@@ -372,7 +394,9 @@ function WizardPage() {
                     className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mt-1"
                   >
                     <ChevronLeft className="size-4" />
-                    <span className="underline underline-offset-2">戻る</span>
+                    <span className="underline underline-offset-2">
+                      {t("common.back")}
+                    </span>
                   </button>
                 </div>
               )}

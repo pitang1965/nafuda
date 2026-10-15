@@ -9,8 +9,10 @@ import { getRequest, removeResponseHeader } from "@tanstack/react-start/server";
 import { auth } from "../server/auth";
 import { AppHeader } from "../components/AppHeader";
 import { BottomNav } from "../components/BottomNav";
+import { useT } from "../lib/i18n/context";
 
-// 各保護ルートが staticData で宣言するメタ。title はヘッダーに表示し、
+// 各保護ルートが staticData で宣言するメタ。title は辞書キー（例: "nav.myNafuda"）を
+// 持たせ、ProtectedLayout 側で t() して表示する（モジュール評価時は t() を呼べないため）。
 // hideChrome を立てたルート（初回ウィザード等）はシェルを外して全画面表示する。
 // hideBottomNav はヘッダーを残したままボトムナビだけ外す（アカウント等の二次画面用）。
 declare module "@tanstack/react-router" {
@@ -51,12 +53,14 @@ export const Route = createFileRoute("/_protected")({
 });
 
 function ProtectedLayout() {
+  const t = useT();
   const matches = useMatches();
   const hideChrome = matches.some((m) => m.staticData?.hideChrome);
   const hideBottomNav = matches.some((m) => m.staticData?.hideBottomNav);
-  const title =
+  const titleKey =
     [...matches].reverse().find((m) => m.staticData?.title)?.staticData
       ?.title ?? "";
+  const title = titleKey ? t(titleKey) : "";
 
   // 初回ウィザード等は独自の多段フローを持つため、シェル（ヘッダー/ボトムナビ）を
   // 被せず全画面で表示する。

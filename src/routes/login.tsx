@@ -3,6 +3,8 @@ import { ChevronLeft } from "lucide-react";
 import { z } from "zod";
 import { authClient } from "../lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { useT } from "../lib/i18n/context";
+import { LanguageToggle } from "../components/LanguageToggle";
 
 export const Route = createFileRoute("/login")({
   validateSearch: z.object({
@@ -12,6 +14,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+  const t = useT();
   const { redirect } = Route.useSearch();
   // Reject protocol-relative URLs (//evil.com) to prevent open redirect
   const callbackURL =
@@ -43,11 +46,12 @@ function LoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6 bg-white">
+      <LanguageToggle className="fixed top-4 right-4" />
       <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight">なふだ</h1>
-        <p className="mt-2 text-sm text-gray-500">
-          SNSをまとめて、出会いも記録する
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight">
+          {t("common.brandName")}
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">{t("login.tagline")}</p>
       </div>
 
       <div className="w-full max-w-xs flex flex-col gap-3">
@@ -58,7 +62,7 @@ function LoginPage() {
           className="w-full gap-2 bg-[#06C755] text-white hover:bg-[#05b34c]"
         >
           <LineLogo className="size-5" />
-          LINEでログイン
+          {t("login.lineLogin")}
         </Button>
         <Button
           onClick={handleGoogle}
@@ -67,7 +71,7 @@ function LoginPage() {
           className="w-full gap-2"
         >
           <span>G</span>
-          Googleでログイン
+          {t("login.googleLogin")}
         </Button>
         <Button
           onClick={handleFacebook}
@@ -75,26 +79,26 @@ function LoginPage() {
           className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
         >
           <span>f</span>
-          Facebookでログイン
+          {t("login.facebookLogin")}
         </Button>
       </div>
 
       <p className="w-full max-w-xs text-xs text-gray-400 text-center leading-relaxed">
-        ログインすることで、
+        {t("login.consentPrefix")}
         <Link
           to="/terms"
           className="underline underline-offset-2 hover:text-gray-600"
         >
-          利用規約
+          {t("login.terms")}
         </Link>
-        および
+        {t("login.consentMiddle")}
         <Link
           to="/privacy"
           className="underline underline-offset-2 hover:text-gray-600"
         >
-          プライバシーポリシー
+          {t("login.privacy")}
         </Link>
-        に同意したものとみなします。
+        {t("login.consentSuffix")}
       </p>
 
       <Link
@@ -102,7 +106,9 @@ function LoginPage() {
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
       >
         <ChevronLeft className="size-4" />
-        <span className="underline underline-offset-2">トップに戻る</span>
+        <span className="underline underline-offset-2">
+          {t("login.backToTop")}
+        </span>
       </Link>
 
       <OAuthErrorMessage />
@@ -125,6 +131,7 @@ function LineLogo({ className }: { className?: string }) {
 }
 
 function OAuthErrorMessage() {
+  const t = useT();
   const search =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search)
@@ -137,14 +144,14 @@ function OAuthErrorMessage() {
   if (error === "email_is_missing") {
     return (
       <div className="w-full max-w-xs p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-        LINEからメールアドレスを取得できなかったため、ログインできませんでした。LINEログイン時に「メールアドレス」の提供を許可するか、Googleでログインしてお試しください。（LINEにメール未登録の場合は、先にLINE側での登録が必要です）
+        {t("login.errorEmailMissing")}
       </div>
     );
   }
 
   return (
     <div className="w-full max-w-xs p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-      ログインに失敗しました。もう一度お試しください。
+      {t("login.errorGeneric")}
       <Button
         variant="link"
         size="sm"
@@ -153,7 +160,7 @@ function OAuthErrorMessage() {
         }}
         className="ml-1 p-0 h-auto text-red-700 underline"
       >
-        再試行
+        {t("login.retry")}
       </Button>
     </div>
   );

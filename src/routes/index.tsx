@@ -3,37 +3,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { auth } from "../server/auth";
 import { HeroVideo } from "../components/HeroVideo";
+import { useT } from "../lib/i18n/context";
+import { LanguageToggle } from "../components/LanguageToggle";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
   return auth.api.getSession({ headers: request.headers });
 });
-
-const features = [
-  {
-    icon: "🔗",
-    title: "SNSリンクをひとつにまとめる",
-    description:
-      "X・Instagram・YouTubeなど、バラバラなリンクを1枚のなふだに。SNSのbioリンクはこれひとつで。",
-  },
-  {
-    icon: "🪪",
-    title: "QRで名刺交換",
-    description: "イベント会場でQRを見せ合うだけ。その場でつながれる。",
-  },
-  {
-    icon: "🗂",
-    title: "出会いの文脈を残す",
-    description:
-      "いつ・どこで出会ったか、自動で記録。ライブ・オフ会・握手会の思い出に。",
-  },
-  {
-    icon: "🪄",
-    title: "シーンで使い分ける",
-    description:
-      "推し活用・オフ会用・飲み会用を別々のなふだに。見せたい情報だけを見せられる。",
-  },
-];
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -46,25 +22,50 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
+  const t = useT();
+
+  const features = [
+    {
+      icon: "🔗",
+      title: t("landing.feature1Title"),
+      description: t("landing.feature1Description"),
+    },
+    {
+      icon: "🪪",
+      title: t("landing.feature2Title"),
+      description: t("landing.feature2Description"),
+    },
+    {
+      icon: "🗂",
+      title: t("landing.feature3Title"),
+      description: t("landing.feature3Description"),
+    },
+    {
+      icon: "🪄",
+      title: t("landing.feature4Title"),
+      description: t("landing.feature4Description"),
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-linear-to-b from-pink-50 to-white flex flex-col items-center px-4 py-12">
       <div className="max-w-md w-full flex flex-col items-center">
+        <LanguageToggle className="fixed top-4 right-4" />
         <p className="text-2xl font-bold text-pink-500 tracking-widest mb-3">
-          なふだ
+          {t("common.brandName")}
         </p>
         <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center leading-snug">
-          その場で会った“仕事じゃない”人と、SNSでつながる。
+          {t("landing.heroTitle")}
         </h1>
         <p className="text-sm text-gray-600 mb-10 text-center leading-relaxed">
-          勉強会、オフ会、飲みの席。紙の名刺は出さないけど、また会いたい人がいる。
-          QRを見せるだけで、SNSのつながりを、いつ・どこでという文脈ごと残せる。
+          {t("landing.heroSubtitle")}
         </p>
 
         <Link
           to="/login"
           className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-full shadow-md transition-colors mb-12 text-base text-center block"
         >
-          はじめる
+          {t("landing.cta")}
         </Link>
 
         <p className="text-xs text-gray-500 text-center">
@@ -72,14 +73,14 @@ function LandingPage() {
             to="/terms"
             className="underline underline-offset-2 hover:text-gray-700"
           >
-            利用規約
+            {t("login.terms")}
           </Link>
           ・
           <Link
             to="/privacy"
             className="underline underline-offset-2 hover:text-gray-700"
           >
-            プライバシーポリシー
+            {t("login.privacy")}
           </Link>
         </p>
 
@@ -89,10 +90,10 @@ function LandingPage() {
             <HeroVideo />
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-800">
-                自分だけのなふだを作ろう
+                {t("landing.makeYourOwn")}
               </p>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                スタイルを選んで個性を演出。推し活用・オフ会用など複数のなふだを使い分けられる。
+                {t("landing.makeYourOwnDescription")}
               </p>
             </div>
           </div>
@@ -106,29 +107,29 @@ function LandingPage() {
             >
               <img
                 src="/demo-qrl.png"
-                alt="なふだのQRコード例"
+                alt={t("landing.qrAlt")}
                 width={300}
                 height={349}
                 loading="lazy"
                 className="w-48 h-48 rounded-2xl shadow-lg"
               />
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-pink-500 px-3 py-1 text-xs font-semibold text-white shadow-md">
-                👆 タップで開く
+                {t("landing.tapToOpen")}
               </span>
             </a>
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-800 mt-2">
-                上のなふだを、実際に開いてみる
+                {t("landing.tryOpening")}
               </p>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                スマホならQRをスキャン、この画面ならタップするだけ。推測されにくいURLで、必要な人にだけ情報を届けられる。
+                {t("landing.tryOpeningDescription")}
               </p>
             </div>
           </div>
         </div>
 
         <p className="text-sm font-bold text-gray-700 tracking-wider mb-4 self-start mt-8">
-          できること
+          {t("landing.whatYouCanDo")}
         </p>
         <div className="flex flex-col gap-4 w-full">
           {features.map((f) => (

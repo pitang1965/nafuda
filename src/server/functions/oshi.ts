@@ -5,6 +5,7 @@ import { eq, and, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import { personas } from '../db/schema'
 import { auth } from '../auth'
+import { serverT } from '../../lib/i18n/serverT'
 
 // Get oshi tag suggestions for autocomplete
 // Returns top 20 most-used tags matching the query prefix across all personas.
@@ -51,7 +52,9 @@ export const getPopularOshiTags = createServerFn({ method: 'GET' })
 export const updateOshiTags = createServerFn({ method: 'POST' })
   .validator(z.object({
     personaId: z.uuid(),
-    tags: z.array(z.string().min(1).max(50)).max(20, '推しタグは20個まで'),
+    tags: z.array(z.string().min(1).max(50)).max(20, {
+      error: () => serverT('errors.oshiTagsMax'),
+    }),
   }))
   .handler(async ({ data }) => {
     const db = getDb()

@@ -4,7 +4,7 @@ import {
   useRouter,
   Link,
 } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,10 +16,11 @@ import {
   setNafudaLinks,
   deletePersona,
 } from "../../../server/functions/profile";
-import { NAFUDA_STYLES } from "../../../lib/nafuda-styles";
+import { NAFUDA_STYLES, styleName } from "../../../lib/nafuda-styles";
 import {
   PURPOSE_CONFIGS,
   PURPOSE_PICKER_ORDER,
+  purposeLabel,
   purposeLabelPlaceholder,
   purposeEditTagLabel,
   purposeEditTagHint,
@@ -68,6 +69,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { useT, useLocale } from "../../../lib/i18n/context";
+import { LanguageToggle } from "../../../components/LanguageToggle";
 
 export const Route = createFileRoute("/_protected/profile/edit")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -101,6 +104,22 @@ const PLATFORMS = [
 ] as const;
 
 type Platform = (typeof PLATFORMS)[number]["value"];
+
+// プラットフォーム名のうちブランド固有名詞でないもの（翻訳が要るもの）だけキーで上書きする。
+const PLATFORM_LABEL_KEYS: Partial<Record<Platform, string>> = {
+  line_openchat: "edit.platformLineOpenchat",
+  minkara: "edit.platformMinkara",
+  other: "edit.platformOther",
+};
+
+function platformDisplayLabel(
+  platform: Platform,
+  fallbackLabel: string,
+  t: (key: string) => string,
+): string {
+  const key = PLATFORM_LABEL_KEYS[platform];
+  return key ? t(key) : fallbackLabel;
+}
 
 // Platforms where a bare username can be entered (no https:// required)
 const USERNAME_BASE: Partial<Record<Platform, string>> = {
@@ -137,8 +156,11 @@ function isValidHttpsUrl(url: string): boolean {
   return /^https:\/\//i.test(url);
 }
 
-function getSnsPlaceholder(platform: Platform): string {
-  if (platform in USERNAME_BASE) return "ユーザー名 または https://...";
+function getSnsPlaceholder(
+  platform: Platform,
+  t: (key: string) => string,
+): string {
+  if (platform in USERNAME_BASE) return t("edit.snsUsernameOrUrlPlaceholder");
   if (platform === "discord") return "https://discord.gg/...";
   if (platform === "line_openchat") return "https://line.me/ti/g2/...";
   return "https://...";
@@ -153,26 +175,29 @@ interface SnsLinkState {
   isNew: boolean;
 }
 
-const EditSchema = z.object({
-  displayName: z
-    .string()
-    .min(1, "表示名を入力してください")
-    .max(50, "50文字以下"),
-  label: z.string().max(20, "20文字以下").optional().or(z.literal("")),
-  bio: z.string().max(200, "200文字以下").optional().or(z.literal("")),
-  displayNameVisibility: z.enum(["public", "private"]),
-  bioVisibility: z.enum(["public", "private"]),
-  avatarVisibility: z.enum(["public", "private"]),
-  snsLinksVisibility: z.enum(["public", "private"]),
-  oshiTagsVisibility: z.enum(["public", "private"]),
-  galleryVisibility: z.enum(["public", "private"]),
-  // oshiTags managed via OshiTagInput (FormProvider context) — RHF field
-  oshiTags: z.array(z.string()),
-  // dojinReject stored as string in radio input, converted to boolean on save
-  dojinReject: z.enum(["false", "true"]),
-});
+// バリデーションメッセージは t() を使うため、スキーマはコンポーネント内で生成する。
+function createEditSchema(t: (key: string) => string) {
+  return z.object({
+    displayName: z
+      .string()
+      .min(1, t("wizard.errorDisplayNameRequired"))
+      .max(50, t("wizard.errorDisplayNameMax")),
+    label: z.string().max(20, t("wizard.errorLabelMax")).optional().or(z.literal("")),
+    bio: z.string().max(200, t("edit.errorBioMax")).optional().or(z.literal("")),
+    displayNameVisibility: z.enum(["public", "private"]),
+    bioVisibility: z.enum(["public", "private"]),
+    avatarVisibility: z.enum(["public", "private"]),
+    snsLinksVisibility: z.enum(["public", "private"]),
+    oshiTagsVisibility: z.enum(["public", "private"]),
+    galleryVisibility: z.enum(["public", "private"]),
+    // oshiTags managed via OshiTagInput (FormProvider context) — RHF field
+    oshiTags: z.array(z.string()),
+    // dojinReject stored as string in radio input, converted to boolean on save
+    dojinReject: z.enum(["false", "true"]),
+  });
+}
 
-type EditForm = z.infer<typeof EditSchema>;
+type EditForm = z.infer<ReturnType<typeof createEditSchema>>;
 
 function VisibilityToggle({
   value,
@@ -183,6 +208,7 @@ function VisibilityToggle({
   onChange: (v: "public" | "private") => void;
   label: string;
 }) {
+  const t = useT();
   const isPublic = value === "public";
   return (
     <label className="flex cursor-pointer items-center gap-2 select-none">
@@ -192,18 +218,19 @@ function VisibilityToggle({
           isPublic ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        {isPublic ? "公開" : "非公開"}
+        {isPublic ? t("edit.visibilityPublic") : t("edit.visibilityPrivate")}
       </span>
       <Switch
         checked={isPublic}
         onCheckedChange={(checked) => onChange(checked ? "public" : "private")}
-        aria-label={`${label}の公開設定`}
+        aria-label={t("edit.visibilityAriaLabel", { label })}
       />
     </label>
   );
 }
 
 function EditPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { personas, urlId } = Route.useLoaderData();
   const { personaId: searchPersonaId } = Route.useSearch();
@@ -216,9 +243,9 @@ function EditPage() {
   if (!defaultPersona || !urlId) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
-        <p className="text-sm text-gray-500">なふだがまだ設定されていません</p>
+        <p className="text-sm text-gray-500">{t("edit.noPersonaYet")}</p>
         <Button onClick={() => navigate({ to: "/profile/wizard" })} size="lg">
-          なふだを作成する
+          {t("edit.createNafuda")}
         </Button>
       </main>
     );
@@ -338,6 +365,8 @@ function EditForm({
   }[];
   initialStyleId: string | null;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const router = useRouter();
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -400,8 +429,12 @@ function EditForm({
   // 用途タイプに応じて SNS プラットフォームのサジェスト順を並べ替える
   const orderedPlatforms = orderPlatformsByPurpose(PLATFORMS, purpose);
 
+  // 言語切替への追従はせず、マウント時点のロケールでメッセージを固定する（意図的。wizard.tsxと同じ）。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const editSchema = useMemo(() => createEditSchema(t), []);
+
   const methods = useForm<EditForm>({
-    resolver: zodResolver(EditSchema),
+    resolver: zodResolver(editSchema),
     defaultValues: {
       displayName: initialDisplayName,
       label: initialLabel,
@@ -562,18 +595,19 @@ function EditForm({
       (l) => l.platform === "other" && !l.title.trim() && l.url.trim(),
     );
     if (otherWithoutTitle) {
-      showSaveError("「その他」のSNSリンクには表示名を入力してください。");
+      showSaveError(t("edit.snsOtherTitleRequiredError"));
       return;
     }
     // SNSリンクのURLを保存前に一括検証（部分書き込みを避けるため mutation 前に行う）。
     for (const link of snsLinks) {
       if (!link.url.trim()) continue;
       if (!isValidHttpsUrl(normalizeUrl(link.platform, link.url))) {
-        const label =
-          PLATFORMS.find((p) => p.value === link.platform)?.label ??
-          link.platform;
+        const platformEntry = PLATFORMS.find((p) => p.value === link.platform);
+        const platformLabel = platformEntry
+          ? platformDisplayLabel(platformEntry.value, platformEntry.label, t)
+          : link.platform;
         showSaveError(
-          `${label} の URL は https:// から始まるフルURLを入力してください。`,
+          t("edit.snsUrlInvalidError", { platform: platformLabel }),
         );
         return;
       }
@@ -639,9 +673,7 @@ function EditForm({
     } catch (err) {
       // サーバーが投げた具体的なメッセージ（nafuda.me 拒否など）をそのまま表示する
       showSaveError(
-        err instanceof Error
-          ? err.message
-          : "保存に失敗しました。もう一度お試しください。",
+        err instanceof Error ? err.message : t("edit.saveFailedGeneric"),
       );
     } finally {
       setSaving(false);
@@ -656,7 +688,7 @@ function EditForm({
       await router.invalidate();
       navigate({ to: "/me" });
     } catch {
-      setDeleteError("削除に失敗しました。もう一度お試しください。");
+      setDeleteError(t("edit.deleteFailedGeneric"));
       setDeleting(false);
     }
   };
@@ -707,13 +739,16 @@ function EditForm({
             variant="ghost"
             size="icon-sm"
             onClick={handleBack}
-            aria-label="戻る"
+            aria-label={t("common.back")}
           >
             <ChevronLeft className="size-5" />
           </Button>
-          <h1 className="text-xl font-bold">
-            {initialLabel || initialDisplayName} を編集
+          <h1 className="text-xl font-bold flex-1">
+            {t("edit.editingTitle", {
+              name: initialLabel || initialDisplayName,
+            })}
           </h1>
+          <LanguageToggle />
         </div>
 
         {saveError && (
@@ -729,9 +764,11 @@ function EditForm({
           {/* Display name */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">表示名</label>
+              <label className="text-sm font-medium">
+                {t("edit.displayNameLabel")}
+              </label>
               <VisibilityToggle
-                label="表示名"
+                label={t("edit.displayNameLabel")}
                 value={displayNameVisibility}
                 onChange={(v) => {
                   setDisplayNameVisibility(v);
@@ -750,15 +787,15 @@ function EditForm({
           {/* Label */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">
-              ラベル{" "}
+              {t("wizard.labelFieldLabel")}{" "}
               <span className="text-xs text-gray-400 font-normal">
-                （自分だけが見る用途メモ・任意）
+                {t("wizard.labelFieldHint")}
               </span>
             </label>
             <div className="relative">
               <Input
                 {...register("label")}
-                placeholder={purposeLabelPlaceholder(purpose)}
+                placeholder={purposeLabelPlaceholder(purpose, locale)}
                 maxLength={20}
                 className="pr-12"
               />
@@ -774,9 +811,9 @@ function EditForm({
           {/* Purpose（用途タイプ） */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">
-              用途タイプ{" "}
+              {t("edit.purposeLabel")}{" "}
               <span className="text-xs text-gray-400 font-normal">
-                （見せ方が変わります）
+                {t("edit.purposeHint")}
               </span>
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -792,14 +829,16 @@ function EditForm({
                     ${selected ? "border-black bg-gray-50 ring-1 ring-black" : "border-gray-200 hover:border-gray-400"}`}
                   >
                     <span className="text-xl">{cfg.emoji}</span>
-                    <span className="text-sm font-medium">{cfg.label}</span>
+                    <span className="text-sm font-medium">
+                      {purposeLabel(id, locale)}
+                    </span>
                   </button>
                 );
               })}
             </div>
             {purpose === null && (
               <p className="text-xs text-gray-400">
-                未選択（従来表示）。選ぶとこのなふだの見せ方が用途に合わせて変わります。
+                {t("edit.purposeUnselectedHint")}
               </p>
             )}
           </div>
@@ -807,9 +846,9 @@ function EditForm({
           {/* Bio */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">自己紹介</label>
+              <label className="text-sm font-medium">{t("edit.bioLabel")}</label>
               <VisibilityToggle
-                label="自己紹介"
+                label={t("edit.bioLabel")}
                 value={bioVisibility}
                 onChange={(v) => {
                   setBioVisibility(v);
@@ -822,16 +861,14 @@ function EditForm({
                 {...register("bio")}
                 aria-invalid={!!errors.bio}
                 maxLength={200}
-                placeholder={"活動スタイルなど自由に。行頭に「- 」で箇条書きにできます\n- 車中泊\n- 聖地巡礼"}
+                placeholder={t("edit.bioPlaceholder")}
                 className="pb-6"
               />
               <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                 {bio.length}/200
               </span>
             </div>
-            <p className="text-xs text-gray-400">
-              行頭に「- 」または「・」を書くと箇条書きになります。
-            </p>
+            <p className="text-xs text-gray-400">{t("edit.bioBulletHint")}</p>
             {errors.bio && (
               <p className="text-xs text-red-600">{errors.bio.message}</p>
             )}
@@ -840,9 +877,11 @@ function EditForm({
           {/* Avatar */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">アバター</label>
+              <label className="text-sm font-medium">
+                {t("edit.avatarLabel")}
+              </label>
               <VisibilityToggle
-                label="アバター"
+                label={t("edit.avatarLabel")}
                 value={avatarVisibility}
                 onChange={(v) => {
                   setAvatarVisibility(v);
@@ -858,9 +897,9 @@ function EditForm({
                 onAvatarChange={setAvatarUrl}
               />
               <p className="text-xs text-gray-500">
-                タップして写真を選択
+                {t("edit.avatarHint1")}
                 <br />
-                切り取り後に保存されます
+                {t("edit.avatarHint2")}
               </p>
             </div>
           </div>
@@ -868,9 +907,11 @@ function EditForm({
           {/* Gallery */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">ギャラリー</label>
+              <label className="text-sm font-medium">
+                {t("edit.galleryLabel")}
+              </label>
               <VisibilityToggle
-                label="ギャラリー"
+                label={t("edit.galleryLabel")}
                 value={galleryVisibility}
                 onChange={(v) => {
                   setGalleryVisibility(v);
@@ -889,10 +930,10 @@ function EditForm({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">
-                {purposeEditTagLabel(purpose)}
+                {purposeEditTagLabel(purpose, locale)}
               </label>
               <VisibilityToggle
-                label={purposeEditTagLabel(purpose)}
+                label={purposeEditTagLabel(purpose, locale)}
                 value={oshiTagsVisibility}
                 onChange={(v) => {
                   setOshiTagsVisibility(v);
@@ -901,11 +942,13 @@ function EditForm({
               />
             </div>
             <p className="text-xs text-gray-500">
-              {purposeEditTagHint(purpose)}自由に入力できます。入力して{" "}
+              {t("edit.tagInputHint", {
+                tagHint: purposeEditTagHint(purpose, locale),
+              })}
               <kbd className="px-1 py-0.5 text-xs bg-gray-100 border rounded">
                 Enter
-              </kbd>{" "}
-              で追加、×で削除。
+              </kbd>
+              {t("edit.tagInputSuffix")}
             </p>
             <OshiTagInput
               name="oshiTags"
@@ -917,7 +960,9 @@ function EditForm({
           {/* Dojin reject — 推し活(oshi)と既存(null)でのみ表示。非表示でも DB の値は保持する */}
           {purposeShowsDojinReject(purpose) && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">同担設定</h3>
+              <h3 className="text-sm font-medium">
+                {t("edit.dojinSettingTitle")}
+              </h3>
               <Controller
                 control={control}
                 name="dojinReject"
@@ -937,7 +982,7 @@ function EditForm({
                         className="mt-0.5"
                       />
                       <span className="text-sm">
-                        同担の方にも表示される（デフォルト）
+                        {t("edit.dojinOptionShow")}
                       </span>
                     </label>
                     <label
@@ -950,7 +995,7 @@ function EditForm({
                         className="mt-0.5"
                       />
                       <span className="text-sm">
-                        同担の方の一覧に表示されたくない場合はオンにしてください
+                        {t("edit.dojinOptionHide")}
                       </span>
                     </label>
                   </RadioGroup>
@@ -962,9 +1007,11 @@ function EditForm({
           {/* SNS links */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">SNSリンク</label>
+              <label className="text-sm font-medium">
+                {t("edit.snsLinksLabel")}
+              </label>
               <VisibilityToggle
-                label="SNSリンク"
+                label={t("edit.snsLinksLabel")}
                 value={snsLinksVisibility}
                 onChange={(v) => {
                   setSnsLinksVisibility(v);
@@ -973,13 +1020,12 @@ function EditForm({
               />
             </div>
 
-            <p className="text-xs text-gray-500">
-              「表示名」はボタンに表示される文字です。空欄ならURLからユーザー名（例:
-              @username）を自動表示します。
-            </p>
+            <p className="text-xs text-gray-500">{t("edit.snsLinksHint")}</p>
 
             {snsLinks.length === 0 && (
-              <p className="text-xs text-gray-400">SNSリンクがありません</p>
+              <p className="text-xs text-gray-400">
+                {t("edit.snsLinksEmpty")}
+              </p>
             )}
 
             <div className="flex flex-col gap-2">
@@ -1001,7 +1047,7 @@ function EditForm({
                       <SelectContent>
                         {orderedPlatforms.map((p) => (
                           <SelectItem key={p.value} value={p.value}>
-                            {p.label}
+                            {platformDisplayLabel(p.value, p.label, t)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1014,7 +1060,7 @@ function EditForm({
                         className="size-11"
                         onClick={() => moveSnsLink(index, "up")}
                         disabled={index === 0}
-                        aria-label="上に移動"
+                        aria-label={t("edit.moveUp")}
                       >
                         <ArrowUp className="size-5" />
                       </Button>
@@ -1025,7 +1071,7 @@ function EditForm({
                         className="size-11"
                         onClick={() => moveSnsLink(index, "down")}
                         disabled={index === snsLinks.length - 1}
-                        aria-label="下に移動"
+                        aria-label={t("edit.moveDown")}
                       >
                         <ArrowDown className="size-5" />
                       </Button>
@@ -1036,7 +1082,7 @@ function EditForm({
                       size="icon"
                       className="size-11 ml-3 text-red-600 hover:bg-red-50 hover:text-red-600"
                       onClick={() => removeSnsLink(index)}
-                      aria-label="削除"
+                      aria-label={t("edit.remove")}
                     >
                       <X className="size-5" />
                     </Button>
@@ -1046,7 +1092,7 @@ function EditForm({
                     onChange={(e) =>
                       updateSnsLinkField(index, "url", e.target.value)
                     }
-                    placeholder={getSnsPlaceholder(link.platform)}
+                    placeholder={getSnsPlaceholder(link.platform, t)}
                     className="bg-white"
                   />
                   <Input
@@ -1056,8 +1102,8 @@ function EditForm({
                     }
                     placeholder={
                       link.platform === "other"
-                        ? "表示名（必須）"
-                        : "表示名（省略可）"
+                        ? t("edit.snsTitlePlaceholderRequired")
+                        : t("edit.snsTitlePlaceholderOptional")
                     }
                     className="bg-white"
                   />
@@ -1071,28 +1117,28 @@ function EditForm({
               onClick={addSnsLink}
               className="mt-1 w-full border-dashed text-gray-500"
             >
-              ＋ SNSリンクを追加
+              {t("edit.addSnsLink")}
             </Button>
           </div>
 
           {/* なふだリンク（ADR-0015） */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">
-              なふだリンク{" "}
+              {t("edit.nafudaLinksLabel")}{" "}
               <span className="text-xs text-gray-400 font-normal">
-                （自分の別のなふだへの導線）
+                {t("edit.nafudaLinksHint")}
               </span>
             </label>
 
             {otherPersonas.length === 0 ? (
               <p className="text-xs text-gray-400">
-                リンクできる他のなふだがありません
+                {t("edit.nafudaLinksNoneAvailable")}
               </p>
             ) : (
               <>
                 {nafudaLinkTargets.length === 0 && (
                   <p className="text-xs text-gray-400">
-                    なふだリンクがありません
+                    {t("edit.nafudaLinksEmpty")}
                   </p>
                 )}
 
@@ -1125,7 +1171,7 @@ function EditForm({
                             className="size-11"
                             onClick={() => moveNafudaLink(index, "up")}
                             disabled={index === 0}
-                            aria-label="上に移動"
+                            aria-label={t("edit.moveUp")}
                           >
                             <ArrowUp className="size-5" />
                           </Button>
@@ -1136,7 +1182,7 @@ function EditForm({
                             className="size-11"
                             onClick={() => moveNafudaLink(index, "down")}
                             disabled={index === nafudaLinkTargets.length - 1}
-                            aria-label="下に移動"
+                            aria-label={t("edit.moveDown")}
                           >
                             <ArrowDown className="size-5" />
                           </Button>
@@ -1146,7 +1192,7 @@ function EditForm({
                             size="icon"
                             className="size-11 ml-3 text-red-600 hover:bg-red-50 hover:text-red-600"
                             onClick={() => removeNafudaLink(targetId)}
-                            aria-label="削除"
+                            aria-label={t("edit.remove")}
                           >
                             <X className="size-5" />
                           </Button>
@@ -1159,7 +1205,7 @@ function EditForm({
                 {availablePersonas.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger className="mt-1 w-full px-3 py-2 border border-dashed rounded-lg text-sm text-gray-500 bg-white outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-                      ＋ なふだリンクを追加
+                      {t("edit.addNafudaLink")}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
                       {availablePersonas.map((p) => (
@@ -1179,7 +1225,9 @@ function EditForm({
 
           {/* なふだスタイル */}
           <div className="flex flex-col gap-3">
-            <label className="text-sm font-medium">なふだスタイル</label>
+            <label className="text-sm font-medium">
+              {t("edit.styleLabel")}
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {/* デフォルト（なし） */}
               <button
@@ -1195,7 +1243,9 @@ function EditForm({
                 }`}
               >
                 <div className="w-full h-12 rounded-lg bg-white border border-gray-200" />
-                <span className="text-xs text-gray-600">なし</span>
+                <span className="text-xs text-gray-600">
+                  {t("edit.styleNone")}
+                </span>
                 {!selectedStyleId && (
                   <span className="absolute top-1 right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -1234,7 +1284,9 @@ function EditForm({
                       PRO
                     </span>
                   )}
-                  <span className="text-xs text-gray-600">{s.name}</span>
+                  <span className="text-xs text-gray-600">
+                    {styleName(s, locale)}
+                  </span>
                   {selectedStyleId === s.id && (
                     <span className="absolute top-1 right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center">
                       <svg
@@ -1267,7 +1319,7 @@ function EditForm({
               className="flex-1"
               onClick={() => setPreviewOpen(true)}
             >
-              プレビュー
+              {t("edit.preview")}
             </Button>
             <Button
               type="submit"
@@ -1275,7 +1327,7 @@ function EditForm({
               size="lg"
               className="flex-1"
             >
-              {saving ? "保存中..." : "保存する"}
+              {saving ? t("edit.saving") : t("edit.save")}
             </Button>
           </div>
         </form>
@@ -1284,11 +1336,11 @@ function EditForm({
         <div className="mt-2 pt-6 border-t border-gray-200 flex flex-col gap-2">
           {isLastPersona ? (
             <p className="text-xs text-gray-400">
-              これは最後のなふだのため削除できません。アカウントごと消す場合は{" "}
+              {t("edit.lastPersonaDeleteHintPrefix")}
               <Link to="/account" className="underline">
-                アカウント画面の「退会」
+                {t("edit.accountDeleteLinkText")}
               </Link>
-              から手続きしてください。
+              {t("edit.lastPersonaDeleteHintSuffix")}
             </p>
           ) : (
             <Button
@@ -1297,7 +1349,7 @@ function EditForm({
               onClick={() => setShowDeleteModal(true)}
               className="self-start h-auto p-0 text-sm text-red-600 underline hover:bg-transparent hover:text-red-700"
             >
-              このなふだを削除する
+              {t("edit.deleteThisNafuda")}
             </Button>
           )}
         </div>
@@ -1306,18 +1358,18 @@ function EditForm({
       <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>変更内容が保存されていません</AlertDialogTitle>
+            <AlertDialogTitle>{t("edit.unsavedChangesTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              このまま戻ると、保存されていない変更内容は破棄されます。
+              {t("edit.unsavedChangesDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>編集を続ける</AlertDialogCancel>
+            <AlertDialogCancel>{t("edit.continueEditing")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               onClick={() => router.history.back()}
             >
-              破棄して戻る
+              {t("edit.discardAndLeave")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1345,17 +1397,18 @@ function EditForm({
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>なふだの削除</AlertDialogTitle>
+            <AlertDialogTitle>{t("edit.deleteNafudaTitle")}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div>
                 <p>
-                  なふだ「{initialLabel || initialDisplayName}
-                  」を削除します。以下のデータが完全に削除されます（復元できません）：
+                  {t("edit.deleteConfirmText", {
+                    name: initialLabel || initialDisplayName,
+                  })}
                 </p>
                 <ul className="mt-3 list-disc space-y-1 pl-4">
-                  <li>このなふだのつながり（相手側の記録も含む）</li>
-                  <li>このなふだのチェックイン履歴</li>
-                  <li>このなふだのSNSリンク・なふだリンク</li>
+                  <li>{t("edit.deleteListConnections")}</li>
+                  <li>{t("edit.deleteListCheckins")}</li>
+                  <li>{t("edit.deleteListLinks")}</li>
                 </ul>
               </div>
             </AlertDialogDescription>
@@ -1363,7 +1416,7 @@ function EditForm({
           {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
           <AlertDialogFooter className="flex-row gap-2">
             <AlertDialogCancel className="flex-1" disabled={deleting}>
-              キャンセル
+              {t("edit.cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"
@@ -1371,7 +1424,7 @@ function EditForm({
               onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting ? "削除中..." : "削除する"}
+              {deleting ? t("edit.deleting") : t("edit.delete")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

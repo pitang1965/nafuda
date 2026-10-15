@@ -19,6 +19,9 @@ import { UserAvatar } from "../../components/UserAvatar";
 import { NafudaFrame } from "../../components/NafudaFrame";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { EmptyState } from "../../components/EmptyState";
+import { useT, useLocale } from "../../lib/i18n/context";
+import { formatJstDate } from "../../lib/i18n/formatDate";
+import { LanguageToggle } from "../../components/LanguageToggle";
 
 export const Route = createFileRoute("/connect/$token")({
   loader: ({ params }) => getConnectPageData({ data: { token: params.token } }),
@@ -36,6 +39,8 @@ function ConnectPage() {
   const { token } = Route.useParams();
   const navigate = useNavigate();
   const router = useRouter();
+  const t = useT();
+  const { locale } = useLocale();
 
   // QRトークンが期限切れのとき、localStorage の inviteToken から復旧した発行者ビュー
   const [inviteView, setInviteView] = useState<ValidView | null>(null);
@@ -85,13 +90,13 @@ function ConnectPage() {
           data: { inviteToken: stored, fromPersonaId },
         });
       }
-      if (!result) throw new Error("つながり情報が見つかりません");
+      if (!result) throw new Error(t("connect.missingDataError"));
       capture("connection_completed");
       setConnected(true);
       setConnectedAt(result.connectedAt);
       clearPending();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "エラーが発生しました");
+      setError(err instanceof Error ? err.message : t("common.genericError"));
     } finally {
       setConnecting(false);
     }
@@ -165,16 +170,16 @@ function ConnectPage() {
     if (rescueLoading) {
       return (
         <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
-          <p className="text-sm text-gray-400">読み込み中...</p>
+          <p className="text-sm text-gray-400">{t("common.loading")}</p>
         </main>
       );
     }
     return (
       <EmptyState
         icon="⏰"
-        title="このQRコードは期限切れか無効です"
-        description="相手に新しいQRコードを表示してもらってください。"
-        cta={{ label: "トップへ戻る", to: "/" }}
+        title={t("connect.expiredTitle")}
+        description={t("connect.expiredDescription")}
+        cta={{ label: t("common.backToTop"), to: "/" }}
       />
     );
   }
@@ -213,25 +218,28 @@ function ConnectPage() {
   return (
     <div className={style ? "min-h-screen bg-gray-900" : "min-h-screen"}>
       <div className="mx-auto sm:max-w-sm w-full min-h-screen flex flex-col">
-        {canGoBack && (
-          <div
-            className="p-4 flex items-center"
-            style={
-              style
-                ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
-                : { borderBottom: "1px solid #e5e7eb" }
-            }
-          >
+        <div
+          className="flex items-center justify-between p-4"
+          style={
+            style
+              ? { borderBottom: "1px solid rgba(255,255,255,0.12)" }
+              : { borderBottom: "1px solid #e5e7eb" }
+          }
+        >
+          {canGoBack ? (
             <button
               onClick={() => router.history.back()}
               className="transition-colors"
               style={{ color: style ? "rgba(255,255,255,0.65)" : undefined }}
-              aria-label="戻る"
+              aria-label={t("common.back")}
             >
               <ChevronLeft className="size-5" />
             </button>
-          </div>
-        )}
+          ) : (
+            <span />
+          )}
+          <LanguageToggle />
+        </div>
 
         <main
           className="flex-1 relative"
@@ -300,25 +308,21 @@ function ConnectPage() {
                         : { background: "#f3f4f6", color: "#6b7280" }
                     }
                   >
-                    つながり済み ✓
+                    {t("connect.connectedLabel")}
                   </div>
                   {connectedAt && (
                     <p
                       className="text-xs text-center"
                       style={{ color: subtextColor ?? "#9ca3af" }}
                     >
-                      {new Date(connectedAt).toLocaleDateString("ja-JP", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {formatJstDate(connectedAt, locale)}
                     </p>
                   )}
                   <Link
                     to="/me"
                     className="w-full text-center px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors block"
                   >
-                    マイなふだを見る
+                    {t("connect.goToMyNafuda")}
                   </Link>
                 </div>
               ) : showPicker ? (
@@ -333,7 +337,7 @@ function ConnectPage() {
                   disabled={connecting}
                   className="w-full px-6 py-3 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
                 >
-                  {connecting ? "つながっています..." : "つながる"}
+                  {connecting ? t("connect.connecting") : t("connect.connectButton")}
                 </button>
               )}
               {error && (
@@ -356,10 +360,11 @@ function PersonaPicker({
   onSelect: (id: string) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-gray-600 text-center">
-        どのなふだとしてつながりますか？
+        {t("connect.whichNafuda")}
       </p>
       {personas.map((p) => (
         <button
@@ -369,7 +374,7 @@ function PersonaPicker({
         >
           <span>{p.displayName}</span>
           {p.isDefault && (
-            <span className="text-xs text-pink-200">デフォルト</span>
+            <span className="text-xs text-pink-200">{t("common.default")}</span>
           )}
         </button>
       ))}
@@ -377,7 +382,7 @@ function PersonaPicker({
         onClick={onCancel}
         className="w-full px-4 py-2 text-gray-400 text-sm"
       >
-        キャンセル
+        {t("common.cancel")}
       </button>
     </div>
   );

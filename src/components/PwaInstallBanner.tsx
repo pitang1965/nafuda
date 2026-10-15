@@ -4,12 +4,14 @@ import {
   isPwaBannerDismissed,
   dismissPwaBanner,
 } from "../hooks/usePwaInstall";
+import { useT } from "../lib/i18n/context";
 
 interface PwaInstallBannerProps {
   sticky?: boolean;
 }
 
 export function PwaInstallBanner({ sticky = false }: PwaInstallBannerProps) {
+  const t = useT();
   const { canInstall, isIos, isIosSafari, isInstalled, promptInstall } =
     usePwaInstall();
   const [dismissed, setDismissed] = useState(() => isPwaBannerDismissed());
@@ -34,8 +36,8 @@ export function PwaInstallBanner({ sticky = false }: PwaInstallBannerProps) {
       >
         <span>
           {isIosSafari
-            ? "Safari の共有（↑）→「ホーム画面に追加」でいつでも開けます"
-            : "ブラウザのメニュー→「ホーム画面に追加」でいつでも開けます"}
+            ? t("pwaInstallBanner.iosSafariHint")
+            : t("pwaInstallBanner.iosOtherHint")}
         </span>
         <button
           onClick={dismiss}
@@ -44,7 +46,7 @@ export function PwaInstallBanner({ sticky = false }: PwaInstallBannerProps) {
               ? "ml-3 shrink-0 text-gray-400 hover:text-gray-600 text-base leading-none"
               : "ml-2 shrink-0 text-blue-400 hover:text-blue-600"
           }
-          aria-label="閉じる"
+          aria-label={t("pwaInstallBanner.close")}
         >
           ✕
         </button>
@@ -56,19 +58,19 @@ export function PwaInstallBanner({ sticky = false }: PwaInstallBannerProps) {
     return (
       <div className={sticky ? wrapperClass : `${wrapperClass} bg-gray-50`}>
         <p className={sticky ? "text-gray-600" : "text-xs text-gray-600"}>
-          ホーム画面に追加していつでも開けるようにしましょう
+          {t("pwaInstallBanner.installPrompt")}
         </p>
         <div className="ml-3 shrink-0 flex items-center gap-2">
           <button
             onClick={promptInstall}
             className="px-3 py-1.5 bg-black text-white rounded-lg text-xs font-medium"
           >
-            追加する
+            {t("pwaInstallBanner.install")}
           </button>
           <button
             onClick={dismiss}
             className="text-gray-400 hover:text-gray-600 text-base leading-none"
-            aria-label="閉じる"
+            aria-label={t("pwaInstallBanner.close")}
           >
             ✕
           </button>

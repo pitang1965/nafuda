@@ -1,5 +1,6 @@
 import { Sheet } from "react-modal-sheet";
 import { useState, useEffect, useRef } from "react";
+import { useT } from "../lib/i18n/context";
 
 type GeoPermission = "granted" | "denied" | "prompt" | "unknown";
 
@@ -29,15 +30,18 @@ function getGpsCoordinates(): Promise<{ x: number; y: number } | null> {
 
 const GPS_STATUS: Record<
   GeoPermission,
-  { label: string; className: string } | null
+  { labelKey: string; className: string } | null
 > = {
-  granted: { label: "📍 現在地を保存します", className: "text-green-600" },
+  granted: {
+    labelKey: "exchangeContext.gpsGranted",
+    className: "text-green-600",
+  },
   denied: {
-    label: "📍 位置情報がブロックされています（保存されません）",
+    labelKey: "exchangeContext.gpsDenied",
     className: "text-gray-400",
   },
   prompt: {
-    label: "📍 送信時に位置情報の許可を確認します",
+    labelKey: "exchangeContext.gpsPrompt",
     className: "text-blue-500",
   },
   unknown: null,
@@ -49,6 +53,7 @@ export function ExchangeContextSheet({
   onSubmit,
   onSkip,
 }: ExchangeContextSheetProps) {
+  const t = useT();
   const [eventName, setEventName] = useState("");
   const [geoPermission, setGeoPermission] = useState<GeoPermission>("unknown");
   const [isGettingGps, setIsGettingGps] = useState(false);
@@ -71,8 +76,8 @@ export function ExchangeContextSheet({
         })
         .catch(() => setGeoPermission("unknown"));
     }
-    const t = setTimeout(() => inputRef.current?.focus(), 300);
-    return () => clearTimeout(t);
+    const focusTimer = setTimeout(() => inputRef.current?.focus(), 300);
+    return () => clearTimeout(focusTimer);
   }, [isOpen]);
 
   const handleSubmit = async () => {
@@ -95,10 +100,10 @@ export function ExchangeContextSheet({
   const gpsStatus = GPS_STATUS[geoPermission];
   const busy = isSubmitting || isGettingGps;
   const buttonLabel = isGettingGps
-    ? "📍 位置情報を取得中…"
+    ? t("exchangeContext.gettingLocation")
     : isSubmitting
-      ? "作成中…"
-      : "チェックインして QR を表示";
+      ? t("exchangeContext.creating")
+      : t("exchangeContext.checkinAndShowQr");
 
   return (
     <Sheet isOpen={isOpen} onClose={handleSkip} detent="content" disableDrag>
@@ -106,9 +111,11 @@ export function ExchangeContextSheet({
         <Sheet.Content>
           <div className="flex flex-col gap-4 p-6 pb-10">
             <div className="text-center">
-              <p className="text-lg font-bold text-gray-800">今どこで？</p>
+              <p className="text-lg font-bold text-gray-800">
+                {t("exchangeContext.title")}
+              </p>
               <p className="text-sm text-gray-500 mt-1">
-                出会いの場所やイベント名を入力すると自動で記録されます
+                {t("exchangeContext.description")}
               </p>
             </div>
             <input
@@ -117,14 +124,14 @@ export function ExchangeContextSheet({
               value={eventName}
               onChange={(e) => setEventName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="例：バーナイト＠立川"
+              placeholder={t("exchangeContext.placeholder")}
               maxLength={100}
               disabled={busy}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 disabled:opacity-50"
             />
             {gpsStatus && (
               <p className={`text-xs ${gpsStatus.className}`}>
-                {gpsStatus.label}
+                {t(gpsStatus.labelKey)}
               </p>
             )}
             <button
@@ -139,7 +146,7 @@ export function ExchangeContextSheet({
               disabled={busy}
               className="w-full px-4 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors disabled:opacity-40"
             >
-              スキップ
+              {t("exchangeContext.skip")}
             </button>
           </div>
         </Sheet.Content>
