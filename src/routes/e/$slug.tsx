@@ -18,14 +18,7 @@ import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { EmptyState } from "../../components/EmptyState";
 import { LanguageToggle } from "../../components/LanguageToggle";
 import { useT, useLocale } from "../../lib/i18n/context";
-import {
-  formatJstDate,
-  formatJstDateTime,
-  formatJstTime,
-} from "../../lib/i18n/formatDate";
-import type { Locale } from "../../lib/i18n/types";
-import { dictionaries } from "../../lib/i18n/dictionaries";
-import { translate } from "../../lib/i18n/translate";
+import { formatEventPeriod } from "../../lib/i18n/formatDate";
 
 const getOptionalSession = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -33,37 +26,6 @@ const getOptionalSession = createServerFn({ method: "GET" }).handler(
     return await auth.api.getSession({ headers: request.headers });
   },
 );
-
-function formatEventDate(
-  date: Date | string,
-  showTime: boolean,
-  locale: Locale,
-): string {
-  return showTime
-    ? formatJstDateTime(date, locale)
-    : formatJstDate(date, locale);
-}
-
-function formatEventPeriod(
-  start: Date | string,
-  end: Date | string | null,
-  showTime: boolean,
-  locale: Locale,
-): string {
-  const startStr = formatEventDate(start, showTime, locale);
-  if (!end) return startStr;
-  const s = new Date(start);
-  const e = new Date(end);
-  const sameDay = s.toDateString() === e.toDateString();
-  const separator = translate(dictionaries[locale], "eventDetail.periodSeparator");
-  // 同日かつ時刻表示なら終了は時刻だけ、それ以外は終了も全体表示。
-  if (sameDay) {
-    if (!showTime) return startStr;
-    const endTime = formatJstTime(end, locale);
-    return `${startStr}${separator}${endTime}`;
-  }
-  return `${startStr}${separator}${formatEventDate(end, showTime, locale)}`;
-}
 
 export const Route = createFileRoute("/e/$slug")({
   loader: async ({ params }) => {
@@ -259,6 +221,7 @@ function EventPage() {
                 data.event.eventEndDate,
                 data.event.showTime,
                 locale,
+                data.event.timezone,
               )}
             </p>
             {data.event.description && (

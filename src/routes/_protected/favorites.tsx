@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useT, useLocale } from "../../lib/i18n/context";
-import { formatJstDate } from "../../lib/i18n/formatDate";
+import { formatLocalDate } from "../../lib/i18n/formatDate";
 
 // お気に入り（ADR-0021）: 他者の公開なふだを保存した私的リスト。相手に不可視・ライブ参照。
 export const Route = createFileRoute("/_protected/favorites")({
@@ -71,7 +71,7 @@ function FavoriteCard({
   const [showConfirm, setShowConfirm] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  const savedDate = formatJstDate(fav.createdAt, locale);
+  const savedDate = formatLocalDate(fav.createdAt, locale);
 
   const handleRemove = async () => {
     setIsRemoving(true);

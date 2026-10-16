@@ -1,6 +1,8 @@
 // チェックイン受付窓の計算（ADR-0020）。
 // 開催期間 [開始, 終了] の前後に短い猶予を足した範囲だけチェックインを受け付ける。
 // 終了未指定のイベントは「開始日の終わり」を実効終了にフォールバックし、締め出しを避ける。
+// 「開始日の終わり」はイベント自身の開催タイムゾーンで判定する（ADR-0030）。
+import { zonedEndOfDay } from "../../lib/timezone";
 
 // 前後の猶予（「現場に実際に居た人だけ」を保つ短さ）。定数で調整可能。
 export const CHECKIN_GRACE_MS = 15 * 60 * 1000;
@@ -10,33 +12,23 @@ export const CHECKIN_GRACE_MS = 15 * 60 * 1000;
 // なお超過時の挙動は「文脈なし」（安全側）であり、誤った文脈を付けることはない。
 export const INSTANT_CONTEXT_MAX_AGE_MS = 60 * 60 * 1000;
 
-// イベント日時は JST のウォールクロックとして扱う（保存・表示とも JST 固定）。
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
 type EventTiming = {
   eventDate: Date | string;
   eventEndDate: Date | string | null;
   showTime: boolean;
+  timezone: string;
 };
-
-// 指定インスタントが属する JST の「その日の終わり」（翌 0:00 JST）を返す。
-function jstEndOfDay(d: Date): Date {
-  // JST のウォールクロック空間（UTC として読む）へずらし、翌 0:00 にして戻す。
-  const shifted = new Date(d.getTime() + JST_OFFSET_MS);
-  shifted.setUTCHours(24, 0, 0, 0);
-  return new Date(shifted.getTime() - JST_OFFSET_MS);
-}
 
 // 実効終了（受付の後ろ端、猶予を足す前）を求める。
 function effectiveEnd(event: EventTiming): Date {
   const start = new Date(event.eventDate);
   if (event.eventEndDate) {
     const end = new Date(event.eventEndDate);
-    // 時刻あり: 指定された終了時刻まで。時刻なし: その終了日の終わり（JST）まで。
-    return event.showTime ? end : jstEndOfDay(end);
+    // 時刻あり: 指定された終了時刻まで。時刻なし: その終了日の終わり（開催タイムゾーン）まで。
+    return event.showTime ? end : zonedEndOfDay(end, event.timezone);
   }
-  // 終了未指定: 開始日の終わり（JST の翌 0:00）までフォールバック。無期限にはしない。
-  return jstEndOfDay(start);
+  // 終了未指定: 開始日の終わり（開催タイムゾーンの翌 0:00）までフォールバック。無期限にはしない。
+  return zonedEndOfDay(start, event.timezone);
 }
 
 // 受付窓 [open, close]。この範囲外のチェックインは受け付けない。

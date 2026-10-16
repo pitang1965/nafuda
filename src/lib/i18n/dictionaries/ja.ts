@@ -142,6 +142,7 @@ const ja: DictionaryNode = {
     invalidOrderSpecified: "並び順の指定が不正です",
     slugInvalidChars: "スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます",
     oshiTagsMax: "推しタグは20個まで",
+    timezoneInvalid: "タイムゾーンの指定が正しくありません",
   },
   me: {
     edit: "編集",
@@ -251,6 +252,9 @@ const ja: DictionaryNode = {
     eventNamePlaceholder: "例: コミックマーケット105",
     venueNameLabel: "会場名",
     venueNamePlaceholder: "例: 東京ビッグサイト",
+    timezoneLabel: "開催タイムゾーン",
+    timezoneHint: "日付・時刻はこのタイムゾーンでの現地時間として解釈されます",
+    timezoneDetecting: "検出中...",
     startDateLabel: "開始日",
     endDateLabel: "終了日",
     addTime: "時刻を追加",

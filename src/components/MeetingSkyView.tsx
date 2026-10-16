@@ -10,7 +10,7 @@ import {
 import { UserAvatar } from "./UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useT, useLocale } from "../lib/i18n/context";
-import { formatJstDate } from "../lib/i18n/formatDate";
+import { formatLocalDate } from "../lib/i18n/formatDate";
 import type { Locale } from "../lib/i18n/types";
 import { dictionaries } from "../lib/i18n/dictionaries";
 import { translate } from "../lib/i18n/translate";
@@ -141,7 +141,7 @@ export function MeetingSkyView({ connections }: { connections: Connection[] }) {
                   {selected.toDisplayName}
                 </p>
                 <p className="text-xs text-white/60 truncate">
-                  {formatJstDate(selected.connectedAt, locale)}
+                  {formatLocalDate(selected.connectedAt, locale)}
                   {selected.eventName && ` · ${selected.eventName}`}
                 </p>
               </div>

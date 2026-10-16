@@ -209,6 +209,11 @@ export const events = sqliteTable("events", {
   // 即時イベントは常に null。チェックイン受付窓・終了による自動失効に使う(ADR-0020)。
   eventEndDate: integer("event_end_date", { mode: "timestamp" }),
   showTime: integer("show_time", { mode: "boolean" }).notNull().default(false),
+  // 開催タイムゾーン(IANA ID、例: "Asia/Tokyo")。企画イベントは作成者のブラウザの
+  // ローカルタイムゾーンを自動検出してデフォルトにし手動変更可、即時イベントは作成時点の
+  // ブラウザのローカルタイムゾーンを自動記録(変更不可)。属性導入前の既存行はデフォルト値
+  // "Asia/Tokyo"として後方互換解釈する(ADR-0030)。
+  timezone: text("timezone").notNull().default("Asia/Tokyo"),
   description: text("description"),
   isInstant: integer("is_instant", { mode: "boolean" }).notNull().default(false),
   // GPS: { x: longitude, y: latitude }。即時イベント作成時に自動取得。JSON列(Postgresのpoint型からの移行)。

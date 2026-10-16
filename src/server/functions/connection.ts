@@ -262,6 +262,7 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
         eventDate: events.eventDate,
         eventEndDate: events.eventEndDate,
         showTime: events.showTime,
+        timezone: events.timezone,
         isInstant: events.isInstant,
         checkedInAt: eventCheckins.checkedInAt,
       })
@@ -487,6 +488,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
         eventDate: events.eventDate,
         eventEndDate: events.eventEndDate,
         showTime: events.showTime,
+        timezone: events.timezone,
         isInstant: events.isInstant,
         checkedInAt: eventCheckins.checkedInAt,
       })
@@ -711,6 +713,9 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
         eventName: connections.eventName,
         venueName: connections.venueName,
         eventDate: connections.eventDate,
+        // 文脈の元イベントの開催タイムゾーン。eventId を持たない(自由記述)行は null
+        // (left join のため) — バッジ表示側でフォールバックする(ADR-0030)。
+        eventTimezone: events.timezone,
         privateMemo: connections.privateMemo,
         fromDisplayName: fromPersona.displayName,
         fromLabel: fromPersona.label,

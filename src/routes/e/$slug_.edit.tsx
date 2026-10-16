@@ -18,6 +18,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useT, useLocale } from "../../lib/i18n/context";
 import { LanguageToggle } from "../../components/LanguageToggle";
+import { listTimeZones } from "../../lib/timezone";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -64,6 +72,7 @@ function createEditEventSchema(t: (key: string) => string) {
       eventEndDate: z.string().optional(),
       eventEndTime: z.string().optional(),
       showTime: z.boolean(),
+      timezone: z.string().min(1),
       description: z.string().max(1000).optional(),
     })
     .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
@@ -95,21 +104,27 @@ function EditEventPage() {
     router.history.back();
   };
 
-  // 保存値（UTC instant）から JST のウォールクロック文字列を取り出す（入力欄の初期値用）。
-  // sv-SE ロケールは "YYYY-MM-DD" / "HH:MM" 形式を返すため date/time input にそのまま使える。
-  const toJstDate = (d: Date | string) =>
-    new Date(d).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-  const toJstTime = (d: Date | string) =>
+  // 保存値（UTC instant）から、イベント自身の開催タイムゾーンのウォールクロック文字列を
+  // 取り出す（入力欄の初期値用。ADR-0030）。sv-SE ロケールは "YYYY-MM-DD" / "HH:MM" 形式を
+  // 返すため date/time input にそのまま使える。
+  const toZonedDate = (d: Date | string) =>
+    new Date(d).toLocaleDateString("sv-SE", { timeZone: event.timezone });
+  const toZonedTime = (d: Date | string) =>
     new Date(d).toLocaleTimeString("sv-SE", {
-      timeZone: "Asia/Tokyo",
+      timeZone: event.timezone,
       hour: "2-digit",
       minute: "2-digit",
     });
-  const eventDateStr = toJstDate(event.eventDate);
-  const eventTimeStr = event.showTime ? toJstTime(event.eventDate) : "";
-  const eventEndDateStr = event.eventEndDate ? toJstDate(event.eventEndDate) : "";
+  const eventDateStr = toZonedDate(event.eventDate);
+  const eventTimeStr = event.showTime ? toZonedTime(event.eventDate) : "";
+  const eventEndDateStr = event.eventEndDate
+    ? toZonedDate(event.eventEndDate)
+    : "";
   const eventEndTimeStr =
-    event.eventEndDate && event.showTime ? toJstTime(event.eventEndDate) : "";
+    event.eventEndDate && event.showTime
+      ? toZonedTime(event.eventEndDate)
+      : "";
+  const timeZoneOptions = useMemo(() => listTimeZones(), []);
 
   // 言語切替への追従はせず、マウント時点のロケールでメッセージを固定する（意図的。wizard.tsxと同じ）。
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,6 +146,7 @@ function EditEventPage() {
       eventEndDate: eventEndDateStr,
       eventEndTime: eventEndTimeStr,
       showTime: event.showTime,
+      timezone: event.timezone,
       description: event.description ?? "",
     },
   });
@@ -138,6 +154,11 @@ function EditEventPage() {
   const showTime = useWatch({ control, name: "showTime", defaultValue: false });
   const description =
     useWatch({ control, name: "description", defaultValue: "" }) ?? "";
+  const timezone = useWatch({
+    control,
+    name: "timezone",
+    defaultValue: event.timezone,
+  });
 
   const onSubmit: SubmitHandler<FormValues> = async (formData) => {
     setSubmitError(null);
@@ -153,6 +174,7 @@ function EditEventPage() {
           eventEndDate: formData.eventEndDate || undefined,
           eventEndTime: formData.eventEndTime || undefined,
           showTime: formData.showTime,
+          timezone: formData.timezone,
           description: formData.description || null,
         },
       });
@@ -221,6 +243,32 @@ function EditEventPage() {
                   {errors.venueName.message}
                 </p>
               )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" htmlFor="timezone">
+                {t("eventForm.timezoneLabel")}
+              </label>
+              <Select
+                value={timezone}
+                onValueChange={(v) =>
+                  setValue("timezone", v, { shouldDirty: true })
+                }
+              >
+                <SelectTrigger id="timezone" className="w-full bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-64">
+                  {timeZoneOptions.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-400">
+                {t("eventForm.timezoneHint")}
+              </p>
             </div>
 
             <div className="flex gap-3">

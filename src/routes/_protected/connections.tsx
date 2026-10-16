@@ -40,7 +40,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { useT, useLocale } from "../../lib/i18n/context";
-import { formatJstDateTime } from "../../lib/i18n/formatDate";
+import { formatLocalDateTime } from "../../lib/i18n/formatDate";
 
 export const Route = createFileRoute("/_protected/connections")({
   loader: () => getMyConnections(),
@@ -149,7 +149,7 @@ function ConnectionCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
-  const connectedDate = formatJstDateTime(conn.connectedAt, locale);
+  const connectedDate = formatLocalDateTime(conn.connectedAt, locale);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -197,7 +197,10 @@ function ConnectionCard({
                     {new Date(conn.eventDate).toLocaleDateString(
                       locale === "ja" ? "ja-JP" : "en-US",
                       {
-                        timeZone: "Asia/Tokyo",
+                        // イベント自体の開催タイムゾーンで表示する（ADR-0030）。
+                        // eventId を持たない自由記述の文脈には紐づくイベントが無いため
+                        // Asia/Tokyo にフォールバック。
+                        timeZone: conn.eventTimezone ?? "Asia/Tokyo",
                         month: "short",
                         day: "numeric",
                       },

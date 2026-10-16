@@ -8,6 +8,7 @@ import { auth } from "../auth";
 import { isWithinCheckinWindow } from "../lib/eventCheckinWindow";
 import { pushToRoom } from "../realtimePush";
 import { serverT } from "../../lib/i18n/serverT";
+import { zonedWallClockToUtc, isValidTimeZone } from "../../lib/timezone";
 
 // 参加者一覧（presence）の更新を、そのイベントの EventRoom 閲覧者全員へ通知する。
 // 正本は Postgres。クライアントは通知を受けてローダーを再取得し収束する（realtime 無効環境では no-op）。
@@ -35,6 +36,7 @@ const eventColumnsWithoutGps = {
   eventDate: events.eventDate,
   eventEndDate: events.eventEndDate,
   showTime: events.showTime,
+  timezone: events.timezone,
   description: events.description,
   isInstant: events.isInstant,
   hostUserId: events.hostUserId,
@@ -42,16 +44,17 @@ const eventColumnsWithoutGps = {
   createdAt: events.createdAt,
 } as const;
 
-// フォームの日付・時刻は JST のウォールクロック入力。サーバーの実行タイムゾーン
-// （Workers は UTC）に依存しないよう、明示的に +09:00 として解釈・保存する。
-// 表示側も Asia/Tokyo 固定で描画し、往復を一致させる。
+// フォームの日付・時刻は、そのイベントの開催タイムゾーンのウォールクロック入力。
+// サーバーの実行タイムゾーン（Workers は UTC）に依存しないよう、イベント自身の
+// タイムゾーンとして明示的に解釈・保存する（ADR-0030）。
 function buildEventDate(
   eventDate: string,
   showTime: boolean,
+  timeZone: string,
   eventTime?: string,
 ): Date {
   const time = showTime && eventTime ? eventTime : "00:00";
-  return new Date(`${eventDate}T${time}:00+09:00`);
+  return zonedWallClockToUtc(eventDate, time, timeZone);
 }
 
 // Check in to an existing event by shareToken
@@ -144,6 +147,9 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
       eventEndDate: z.string().optional(),
       eventEndTime: z.string().optional(),
       showTime: z.boolean(),
+      timezone: z.string().refine(isValidTimeZone, {
+        error: () => serverT("errors.timezoneInvalid"),
+      }),
       description: z.string().max(1000).optional().nullable(),
       personaId: z.uuid(),
       hostPersonaId: z.uuid(),
@@ -192,16 +198,19 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
             eventDate: buildEventDate(
               data.eventDate,
               data.showTime,
+              data.timezone,
               data.eventTime,
             ),
             eventEndDate: data.eventEndDate
               ? buildEventDate(
                   data.eventEndDate,
                   data.showTime,
+                  data.timezone,
                   data.eventEndTime,
                 )
               : null,
             showTime: data.showTime,
+            timezone: data.timezone,
             description: data.description ?? null,
             hostUserId: session.user.id,
             hostPersonaId: data.hostPersonaId,
@@ -411,6 +420,9 @@ export const updateEvent = createServerFn({ method: "POST" })
       eventEndDate: z.string().optional(),
       eventEndTime: z.string().optional(),
       showTime: z.boolean(),
+      timezone: z.string().refine(isValidTimeZone, {
+        error: () => serverT("errors.timezoneInvalid"),
+      }),
       description: z.string().max(1000).optional().nullable(),
     }),
   )
@@ -437,12 +449,19 @@ export const updateEvent = createServerFn({ method: "POST" })
         eventDate: buildEventDate(
           data.eventDate,
           data.showTime,
+          data.timezone,
           data.eventTime,
         ),
         eventEndDate: data.eventEndDate
-          ? buildEventDate(data.eventEndDate, data.showTime, data.eventEndTime)
+          ? buildEventDate(
+              data.eventEndDate,
+              data.showTime,
+              data.timezone,
+              data.eventEndTime,
+            )
           : null,
         showTime: data.showTime,
+        timezone: data.timezone,
         description: data.description ?? null,
       })
       .where(eq(events.id, eventRow[0].id));
@@ -498,6 +517,7 @@ export const getMyEvents = createServerFn({ method: "GET" }).handler(
         venueName: events.venueName,
         eventDate: events.eventDate,
         showTime: events.showTime,
+        timezone: events.timezone,
         isInstant: events.isInstant,
         description: events.description,
         hostUserId: events.hostUserId,
@@ -529,6 +549,9 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
       eventName: z.string().min(1).max(100),
       personaId: z.uuid(),
       gpsCoordinates: z.object({ x: z.number(), y: z.number() }).optional(),
+      timezone: z.string().refine(isValidTimeZone, {
+        error: () => serverT("errors.timezoneInvalid"),
+      }),
     }),
   )
   .handler(async ({ data }) => {
@@ -572,6 +595,7 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
         venueName: null,
         eventDate: now,
         showTime: false,
+        timezone: data.timezone,
         isInstant: true,
         gpsCoordinates: data.gpsCoordinates ?? null,
         hostUserId: session.user.id,

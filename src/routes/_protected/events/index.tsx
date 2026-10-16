@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { getMyEvents } from "../../../server/functions/event";
 import { useT, useLocale } from "../../../lib/i18n/context";
 import type { Locale } from "../../../lib/i18n/types";
-import { formatJstDate, formatJstDateTime } from "../../../lib/i18n/formatDate";
+import {
+  formatEventDate,
+  formatEventDateTime,
+} from "../../../lib/i18n/formatDate";
 
 export const Route = createFileRoute("/_protected/events/")({
   loader: async () => {
@@ -12,14 +15,15 @@ export const Route = createFileRoute("/_protected/events/")({
   component: MyEventsPage,
 });
 
-function formatEventDate(
+function formatEventDateLabel(
   date: Date | string,
   showTime: boolean,
   isInstant: boolean,
   locale: Locale,
+  timeZone: string,
 ) {
-  if (showTime || isInstant) return formatJstDateTime(date, locale);
-  return formatJstDate(date, locale);
+  if (showTime || isInstant) return formatEventDateTime(date, locale, timeZone);
+  return formatEventDate(date, locale, timeZone);
 }
 
 interface EventCardProps {
@@ -29,6 +33,7 @@ interface EventCardProps {
   showTime: boolean;
   isInstant: boolean;
   shareToken: string;
+  timeZone: string;
 }
 
 function EventCard({
@@ -38,9 +43,10 @@ function EventCard({
   showTime,
   isInstant,
   shareToken,
+  timeZone,
 }: EventCardProps) {
   const { locale } = useLocale();
-  const dateStr = formatEventDate(eventDate, showTime, isInstant, locale);
+  const dateStr = formatEventDateLabel(eventDate, showTime, isInstant, locale, timeZone);
 
   if (isInstant) {
     return (
@@ -101,6 +107,7 @@ function MyEventsPage() {
                 showTime={event.showTime}
                 isInstant={false}
                 shareToken={event.shareToken}
+                timeZone={event.timezone}
               />
             ))
           )}
@@ -124,6 +131,7 @@ function MyEventsPage() {
                 showTime={event.showTime}
                 isInstant={event.isInstant}
                 shareToken={event.shareToken}
+                timeZone={event.timezone}
               />
             ))
           )}

@@ -20,7 +20,7 @@ import { NafudaFrame } from "../../components/NafudaFrame";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 import { EmptyState } from "../../components/EmptyState";
 import { useT, useLocale } from "../../lib/i18n/context";
-import { formatJstDate } from "../../lib/i18n/formatDate";
+import { formatLocalDate } from "../../lib/i18n/formatDate";
 import { LanguageToggle } from "../../components/LanguageToggle";
 
 export const Route = createFileRoute("/connect/$token")({
@@ -315,7 +315,7 @@ function ConnectPage() {
                       className="text-xs text-center"
                       style={{ color: subtextColor ?? "#9ca3af" }}
                     >
-                      {formatJstDate(connectedAt, locale)}
+                      {formatLocalDate(connectedAt, locale)}
                     </p>
                   )}
                   <Link

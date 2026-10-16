@@ -146,6 +146,7 @@ const en: DictionaryNode = {
     invalidOrderSpecified: "The order specified is invalid.",
     slugInvalidChars: "Slugs can only use URL-safe characters (letters, numbers, hyphens).",
     oshiTagsMax: "Up to 20 oshi tags",
+    timezoneInvalid: "That timezone isn't valid.",
   },
   me: {
     edit: "Edit",
@@ -260,6 +261,9 @@ const en: DictionaryNode = {
     eventNamePlaceholder: "e.g. Comiket 105",
     venueNameLabel: "Venue name",
     venueNamePlaceholder: "e.g. Tokyo Big Sight",
+    timezoneLabel: "Event timezone",
+    timezoneHint: "The date and time are treated as local time in this timezone",
+    timezoneDetecting: "Detecting...",
     startDateLabel: "Start date",
     endDateLabel: "End date",
     addTime: "Add a time",

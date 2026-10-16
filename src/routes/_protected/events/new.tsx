@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,8 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PersonaSwitcher } from "../../../components/PersonaSwitcher";
 import { useT, useLocale } from "../../../lib/i18n/context";
+import { getBrowserTimeZone, listTimeZones } from "../../../lib/timezone";
 
 function generateSlug(eventName: string, eventDate: string): string {
   const datePart = eventDate.replace(/-/g, "");
@@ -40,6 +48,7 @@ function createEventSchema(t: (key: string) => string) {
       eventEndDate: z.string().optional(),
       eventEndTime: z.string().optional(),
       showTime: z.boolean(),
+      timezone: z.string().min(1),
       description: z.string().max(1000).optional(),
     })
     .refine((d) => !d.eventEndDate || d.eventEndDate >= d.eventDate, {
@@ -82,12 +91,21 @@ function NewEventPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { showTime: false },
+    // タイムゾーンはサーバーでは判定できない（Workersの実行タイムゾーンとブラウザの
+    // タイムゾーンが異なるため）。空のままSSRし、マウント後にブラウザの検出値へ更新する
+    // （hydration時にSelectの表示が不一致になるのを避ける）。
+    defaultValues: { showTime: false, timezone: "" },
   });
 
   const showTime = useWatch({ control, name: "showTime", defaultValue: false });
   const description =
     useWatch({ control, name: "description", defaultValue: "" }) ?? "";
+  const timezone = useWatch({ control, name: "timezone", defaultValue: "" });
+  const timeZoneOptions = useMemo(() => listTimeZones(), []);
+
+  useEffect(() => {
+    setValue("timezone", getBrowserTimeZone());
+  }, [setValue]);
 
   const onSubmit = async (formData: FormValues) => {
     if (!selectedPersonaId) {
@@ -108,6 +126,7 @@ function NewEventPage() {
           eventEndDate: formData.eventEndDate || undefined,
           eventEndTime: formData.eventEndTime || undefined,
           showTime: formData.showTime,
+          timezone: formData.timezone,
           description: formData.description || null,
           personaId: selectedPersonaId,
           hostPersonaId: selectedPersonaId,
@@ -173,6 +192,34 @@ function NewEventPage() {
                   {errors.venueName.message}
                 </p>
               )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" htmlFor="timezone">
+                {t("eventForm.timezoneLabel")}
+              </label>
+              <Select
+                value={timezone}
+                onValueChange={(v) =>
+                  setValue("timezone", v, { shouldDirty: true })
+                }
+              >
+                <SelectTrigger id="timezone" className="w-full bg-white">
+                  <SelectValue
+                    placeholder={t("eventForm.timezoneDetecting")}
+                  />
+                </SelectTrigger>
+                <SelectContent className="max-h-64">
+                  {timeZoneOptions.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-400">
+                {t("eventForm.timezoneHint")}
+              </p>
             </div>
 
             <div className="flex gap-3">

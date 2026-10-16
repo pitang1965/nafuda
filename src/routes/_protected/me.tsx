@@ -8,6 +8,7 @@ import {
   checkQrConnectionStatus,
 } from "../../server/functions/connection";
 import { createInstantEventAndCheckin } from "../../server/functions/event";
+import { getBrowserTimeZone } from "../../lib/timezone";
 import {
   useQrConnectionRealtime,
   realtimeEnabled,
@@ -196,6 +197,7 @@ function MePage() {
           eventName,
           personaId: currentPersona.id,
           gpsCoordinates: gpsCoordinates ?? undefined,
+          timezone: getBrowserTimeZone(),
         },
       });
       setExchangeContextOpen(false);
