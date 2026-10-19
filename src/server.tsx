@@ -38,9 +38,11 @@ function sentrySecurityReportUri(dsn: string): string | undefined {
   }
 }
 
-// CSP は Report-Only で先行導入し、違反レポートで許可漏れがないことを確認してから
-// Content-Security-Policy（enforce）へ切り替える。report-uri は SENTRY_DSN から導出した
-// Sentry の Security Header Reports 受け口（未設定＝ローカル開発では report-uri 自体を付けない）。
+// CSP は 2026-09-28 に Report-Only で先行導入し、約2週間の違反レポートで許可漏れが
+// ないことを確認した（2026-10-19 に Content-Security-Policy（enforce）へ切り替え）。
+// report-uri は SENTRY_DSN から導出した Sentry の Security Header Reports 受け口
+// （未設定＝ローカル開発では report-uri 自体を付けない）。enforce 後も継続して付与し、
+// 想定外の違反が出ないか監視する。
 // script-src はリクエストごとの nonce のみ許可（'unsafe-inline' は付けない）。
 // style-src は motion / radix-ui 等が要素に直接 style 属性を書き込むため
 // 'unsafe-inline' を残す（style 属性には nonce が効かないため）。
@@ -76,7 +78,7 @@ function withSecurityHeaders(res: Response, nonce: string): Response {
   headers.set("X-Frame-Options", "DENY");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set("Content-Security-Policy-Report-Only", buildCsp(nonce));
+  headers.set("Content-Security-Policy", buildCsp(nonce));
   return new Response(res.body, {
     status: res.status,
     statusText: res.statusText,
