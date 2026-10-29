@@ -132,11 +132,21 @@ async function fetchOgpData(shareToken: string) {
       displayName: personas.displayName,
       bio: personas.bio,
       avatarUrl: personas.avatarUrl,
+      fieldVisibility: personas.fieldVisibility,
     })
     .from(personas)
     .where(eq(personas.shareToken, shareToken))
     .limit(1);
-  return rows[0] ?? null;
+  const row = rows[0];
+  if (!row) return null;
+  const { isPrivateField } = await import("./server/lib/visibility");
+  return {
+    displayName: row.displayName,
+    bio: isPrivateField(row.fieldVisibility, "bio") ? null : row.bio,
+    avatarUrl: isPrivateField(row.fieldVisibility, "avatar_url")
+      ? null
+      : row.avatarUrl,
+  };
 }
 
 async function handleRequest(request: Request): Promise<Response> {

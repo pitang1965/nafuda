@@ -17,6 +17,7 @@ import { serverT } from "../../lib/i18n/serverT";
 import { auth } from "../auth";
 import { isValidConnectionContext } from "../lib/eventCheckinWindow";
 import { pushToRoom } from "../realtimePush";
+import { isPrivateField } from "../lib/visibility";
 
 // 「なふだを交換する」用のつながりQRトークンを発行する（15分有効）
 // 1発行者あたりの有効な保留招待の上限（ensurePendingInvite の悪用ガード）
@@ -163,18 +164,18 @@ async function buildIssuerView(issuerPersonaId: string) {
     }
   }
 
-  const visibility = (personaRow.fieldVisibility ?? {}) as Record<
-    string,
-    string
-  >;
+  const visibility = personaRow.fieldVisibility;
 
   return {
     profile: {
       displayName: personaRow.displayName,
-      bio: visibility.bio === "private" ? null : personaRow.bio,
-      avatarUrl:
-        visibility.avatar_url === "private" ? null : personaRow.avatarUrl,
-      oshiTags: visibility.oshi_tags === "private" ? [] : personaRow.oshiTags,
+      bio: isPrivateField(visibility, "bio") ? null : personaRow.bio,
+      avatarUrl: isPrivateField(visibility, "avatar_url")
+        ? null
+        : personaRow.avatarUrl,
+      oshiTags: isPrivateField(visibility, "oshi_tags")
+        ? []
+        : personaRow.oshiTags,
       styleId: personaRow.styleId,
       urlId: urlIdRow?.urlId ?? null,
       shareToken: personaRow.shareToken,
@@ -701,7 +702,7 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
     const toUrlId = alias(urlIds, "to_url_ids");
     const userId = session.user.id;
 
-    return db
+    const rows = await db
       .select({
         connectionId: connections.id,
         connectedAt: connections.connectedAt,
@@ -721,6 +722,7 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
         fromLabel: fromPersona.label,
         toDisplayName: toPersona.displayName,
         toAvatarUrl: toPersona.avatarUrl,
+        toFieldVisibility: toPersona.fieldVisibility,
         toUrlId: toUrlId.urlId,
         toShareToken: toPersona.shareToken,
       })
@@ -731,5 +733,11 @@ export const getMyConnections = createServerFn({ method: "GET" }).handler(
       .leftJoin(events, eq(connections.eventId, events.id))
       .where(eq(fromPersona.userId, userId))
       .orderBy(desc(connections.connectedAt));
+    return rows.map(({ toFieldVisibility, ...r }) => ({
+      ...r,
+      toAvatarUrl: isPrivateField(toFieldVisibility, "avatar_url")
+        ? null
+        : r.toAvatarUrl,
+    }));
   },
 );

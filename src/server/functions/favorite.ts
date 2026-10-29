@@ -5,6 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { favoritePersonas, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
+import { isPrivateField } from "../lib/visibility";
 
 // お気に入りに追加する（ADR-0021）。公開ページの静的CTAから _protected へ遷移して呼ぶ。
 // 相手の shareToken で対象なふだを解決し、自分のなふだは保存させない。
@@ -91,13 +92,14 @@ export const getMyFavorites = createServerFn({ method: "GET" }).handler(
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
 
-    return db
+    const rows = await db
       .select({
         targetPersonaId: favoritePersonas.targetPersonaId,
         createdAt: favoritePersonas.createdAt,
         displayName: personas.displayName,
         avatarUrl: personas.avatarUrl,
         bio: personas.bio,
+        fieldVisibility: personas.fieldVisibility,
         urlId: urlIds.urlId,
         shareToken: personas.shareToken,
       })
@@ -106,5 +108,12 @@ export const getMyFavorites = createServerFn({ method: "GET" }).handler(
       .innerJoin(urlIds, eq(personas.userId, urlIds.userId))
       .where(eq(favoritePersonas.userId, session.user.id))
       .orderBy(desc(favoritePersonas.createdAt));
+    return rows.map(({ fieldVisibility, ...r }) => ({
+      ...r,
+      avatarUrl: isPrivateField(fieldVisibility, "avatar_url")
+        ? null
+        : r.avatarUrl,
+      bio: isPrivateField(fieldVisibility, "bio") ? null : r.bio,
+    }));
   },
 );

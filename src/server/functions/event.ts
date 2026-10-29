@@ -6,6 +6,7 @@ import { getDb } from "../db/client";
 import { events, eventCheckins, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
 import { isWithinCheckinWindow } from "../lib/eventCheckinWindow";
+import { isPrivateField } from "../lib/visibility";
 import { pushToRoom } from "../realtimePush";
 import { serverT } from "../../lib/i18n/serverT";
 import { zonedWallClockToUtc, isValidTimeZone } from "../../lib/timezone";
@@ -277,6 +278,7 @@ export const getEventParticipants = createServerFn({ method: "POST" })
         personaId: personas.id,
         displayName: personas.displayName,
         avatarUrl: personas.avatarUrl,
+        fieldVisibility: personas.fieldVisibility,
         shareToken: personas.shareToken,
         urlId: urlIds.urlId,
       })
@@ -298,11 +300,17 @@ export const getEventParticipants = createServerFn({ method: "POST" })
         seen.add(r.personaId);
         return true;
       })
-      .map((r) =>
-        isAuthenticated
-          ? r
-          : { ...r, shareToken: null as string | null, urlId: null },
-      );
+      .map(({ fieldVisibility, ...r }) => {
+        const p = {
+          ...r,
+          avatarUrl: isPrivateField(fieldVisibility, "avatar_url")
+            ? null
+            : r.avatarUrl,
+        };
+        return isAuthenticated
+          ? p
+          : { ...p, shareToken: null as string | null, urlId: null };
+      });
 
     return { event: eventRow[0], participants };
   });
