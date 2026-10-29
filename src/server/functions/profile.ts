@@ -237,7 +237,6 @@ export const createPersona = createServerFn({ method: "POST" })
       label: z.string().max(20).optional().nullable(),
       purpose: z.string().max(32).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
-      avatarUrl: z.url().optional().nullable(),
       isDefault: z.boolean().default(false),
       oshiTags: z.array(z.string()).default([]),
     }),
@@ -285,7 +284,6 @@ export const createPersona = createServerFn({ method: "POST" })
         purpose: data.purpose ?? null,
         bio: data.bio ?? null,
         shareToken,
-        avatarUrl: data.avatarUrl ?? null,
         isDefault: data.isDefault,
         oshiTags: data.oshiTags,
       })
@@ -303,7 +301,6 @@ export const updatePersona = createServerFn({ method: "POST" })
       label: z.string().max(20).optional().nullable(),
       purpose: z.string().max(32).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
-      avatarUrl: z.url().optional().nullable(),
       fieldVisibility: z
         .record(z.string(), z.enum(["public", "private"]))
         .optional(),
@@ -323,7 +320,6 @@ export const updatePersona = createServerFn({ method: "POST" })
     if (data.label !== undefined) updates.label = data.label;
     if (data.purpose !== undefined) updates.purpose = data.purpose;
     if (data.bio !== undefined) updates.bio = data.bio;
-    if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
     if (data.fieldVisibility !== undefined)
       updates.fieldVisibility = data.fieldVisibility;
     if (data.styleId !== undefined) updates.styleId = data.styleId;
