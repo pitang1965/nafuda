@@ -199,7 +199,7 @@ export const events = sqliteTable("events", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  slug: text("slug").notNull().unique(), // 重複検出用内部識別子 例: "animejapan-20260405"
+  slug: text("slug").notNull().unique(), // 内部識別子(合流には使わない) 例: "animejapan-20260405-1a2b3c4d5e6f"
   shareToken: text("share_token").notNull().unique(), // 公開URL用ランダムトークン(推測不可)
   name: text("name").notNull(),
   venueName: text("venue_name"), // 即時イベントは null 可

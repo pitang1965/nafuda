@@ -180,71 +180,37 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         ),
       );
 
-    let eventRow = await db
-      .select()
-      .from(events)
-      .where(eq(events.slug, data.slug))
-      .limit(1);
-
-    if (!eventRow[0]) {
-      try {
-        const inserted = await db
-          .insert(events)
-          .values({
-            slug: data.slug,
-            shareToken: generateShareToken(),
-            name: data.eventName,
-            venueName: data.venueName,
-            eventDate: buildEventDate(
-              data.eventDate,
+    // 常に新規作成する。slug 一致で既存イベントへ合流させない: クライアントの slug は
+    // 英数字以外を落とすため日本語名は同日で全て "-YYYYMMDD" に衝突し、他人のイベントへ
+    // 受付窓チェックも shareToken も無しに入れてしまうため。末尾のランダム部で一意化する。
+    const eventRow = await db
+      .insert(events)
+      .values({
+        slug: `${data.slug}-${generateShareToken().slice(0, 12)}`,
+        shareToken: generateShareToken(),
+        name: data.eventName,
+        venueName: data.venueName,
+        eventDate: buildEventDate(
+          data.eventDate,
+          data.showTime,
+          data.timezone,
+          data.eventTime,
+        ),
+        eventEndDate: data.eventEndDate
+          ? buildEventDate(
+              data.eventEndDate,
               data.showTime,
               data.timezone,
-              data.eventTime,
-            ),
-            eventEndDate: data.eventEndDate
-              ? buildEventDate(
-                  data.eventEndDate,
-                  data.showTime,
-                  data.timezone,
-                  data.eventEndTime,
-                )
-              : null,
-            showTime: data.showTime,
-            timezone: data.timezone,
-            description: data.description ?? null,
-            hostUserId: session.user.id,
-            hostPersonaId: data.hostPersonaId,
-          })
-          .returning();
-        eventRow = inserted;
-      } catch (err: unknown) {
-        // D1/SQLiteの一意制約違反はPostgresの"23505"のようなエラーコードを持たず、
-        // メッセージに"UNIQUE constraint failed"を含む形で投げられる。
-        const message = err instanceof Error ? err.message : String(err);
-        if (message.includes("UNIQUE constraint failed")) {
-          eventRow = await db
-            .select()
-            .from(events)
-            .where(eq(events.slug, data.slug))
-            .limit(1);
-        } else {
-          throw err;
-        }
-      }
-    }
-
-    if (!eventRow[0]) throw new Error("Failed to create or retrieve event");
-
-    // Remove other personas of same user from this event (1ユーザー = 1エントリ)
-    await db
-      .delete(eventCheckins)
-      .where(
-        and(
-          eq(eventCheckins.eventId, eventRow[0].id),
-          eq(eventCheckins.userId, session.user.id),
-          ne(eventCheckins.personaId, data.personaId),
-        ),
-      );
+              data.eventEndTime,
+            )
+          : null,
+        showTime: data.showTime,
+        timezone: data.timezone,
+        description: data.description ?? null,
+        hostUserId: session.user.id,
+        hostPersonaId: data.hostPersonaId,
+      })
+      .returning();
 
     const newCheckin = await db
       .insert(eventCheckins)
