@@ -597,11 +597,12 @@ export const setNafudaLinks = createServerFn({ method: "POST" })
     }
   });
 
-// 指定なふだ群に紐づく R2 画像（アバター＋ギャラリー写真）を物理削除する。
+// 指定なふだ群に紐づく R2 画像（アバター＋ギャラリー写真）の URL を集める。
 // DB行は FK cascade / 明示削除で消えるが R2 には効かないため、孤児を残さないよう
-// personas を消す前に呼ぶ（ADR-0014。アバターの既存孤児バグもここで塞ぐ）。
-async function cleanupPersonaR2Assets(personaIds: string[]) {
-  if (personaIds.length === 0) return;
+// personas を消す前に URL を控え、DB 削除の batch 成功後に物理削除する（ADR-0014）。
+// 先に R2 を消すと、DB 削除が失敗したとき画像だけ無いなふだが残る。
+async function collectPersonaR2Urls(personaIds: string[]) {
+  if (personaIds.length === 0) return [];
   const db = getDb();
   const [avatars, photos] = await Promise.all([
     db
@@ -613,11 +614,10 @@ async function cleanupPersonaR2Assets(personaIds: string[]) {
       .from(galleryPhotos)
       .where(inArray(galleryPhotos.personaId, personaIds)),
   ]);
-  const urls = [
+  return [
     ...avatars.map((a) => a.avatarUrl),
     ...photos.map((p) => p.imageUrl),
   ];
-  await Promise.all(urls.map((url) => deleteFromR2(url)));
 }
 
 export const deleteAccount = createServerFn({ method: "POST" }).handler(
@@ -634,43 +634,45 @@ export const deleteAccount = createServerFn({ method: "POST" }).handler(
       .where(eq(personas.userId, userId));
     const personaIds = myPersonas.map((p) => p.id);
 
-    // イベントは保持し、hostUserId のみ NULL に更新（ADR-0005）
-    await db
-      .update(events)
-      .set({ hostUserId: null })
-      .where(eq(events.hostUserId, userId));
+    const r2Urls = await collectPersonaR2Urls(personaIds);
 
-    // 自分が保存したお気に入りを削除（userId は FK でないため明示削除。ADR-0021）。
-    // 自分のなふだが他者に保存されていた被参照分は personas 削除時に FK cascade で消える。
-    await db
-      .delete(favoritePersonas)
-      .where(eq(favoritePersonas.userId, userId));
-
-    if (personaIds.length > 0) {
-      // R2 画像（アバター＋ギャラリー）を先に物理削除（孤児を残さない）
-      await cleanupPersonaR2Assets(personaIds);
+    // D1はトランザクションを持たないため、途中失敗で半端に消えないよう db.batch() で一括実行する。
+    await db.batch([
+      // イベントは保持し、hostUserId のみ NULL に更新（ADR-0005）
+      db
+        .update(events)
+        .set({ hostUserId: null })
+        .where(eq(events.hostUserId, userId)),
+      // 自分が保存したお気に入りを削除（userId は FK でないため明示削除。ADR-0021）。
+      // 自分のなふだが他者に保存されていた被参照分は personas 削除時に FK cascade で消える。
+      db.delete(favoritePersonas).where(eq(favoritePersonas.userId, userId)),
       // FK 制約順: connections → event_checkins → sns_links → personas
       // gallery_photos・nafuda_links は personas 削除時に DB cascade で自動削除される
-      await db
-        .delete(connections)
-        .where(
-          or(
-            inArray(connections.fromPersonaId, personaIds),
-            inArray(connections.toPersonaId, personaIds),
-          ),
-        );
-      await db
-        .delete(eventCheckins)
-        .where(inArray(eventCheckins.personaId, personaIds));
-      await db.delete(snsLinks).where(inArray(snsLinks.personaId, personaIds));
-      await db.delete(personas).where(eq(personas.userId, userId));
-    }
+      ...(personaIds.length > 0
+        ? [
+            db
+              .delete(connections)
+              .where(
+                or(
+                  inArray(connections.fromPersonaId, personaIds),
+                  inArray(connections.toPersonaId, personaIds),
+                ),
+              ),
+            db
+              .delete(eventCheckins)
+              .where(inArray(eventCheckins.personaId, personaIds)),
+            db.delete(snsLinks).where(inArray(snsLinks.personaId, personaIds)),
+            db.delete(personas).where(eq(personas.userId, userId)),
+          ]
+        : []),
+      db.delete(urlIds).where(eq(urlIds.userId, userId)),
+      // Better Auth テーブル: session・account は user より先に削除（FK 制約）
+      db.delete(sessionTable).where(eq(sessionTable.userId, userId)),
+      db.delete(accountTable).where(eq(accountTable.userId, userId)),
+      db.delete(userTable).where(eq(userTable.id, userId)),
+    ]);
 
-    await db.delete(urlIds).where(eq(urlIds.userId, userId));
-    // Better Auth テーブル: session・account は user より先に削除（FK 制約）
-    await db.delete(sessionTable).where(eq(sessionTable.userId, userId));
-    await db.delete(accountTable).where(eq(accountTable.userId, userId));
-    await db.delete(userTable).where(eq(userTable.id, userId));
+    await Promise.all(r2Urls.map((url) => deleteFromR2(url)));
   },
 );
 
@@ -702,36 +704,42 @@ export const deletePersona = createServerFn({ method: "POST" })
 
     const personaIds = [data.personaId];
 
-    // R2 画像（アバター＋ギャラリー）を先に物理削除（孤児を残さない — ADR-0014）
-    await cleanupPersonaR2Assets(personaIds);
-
-    // FK 制約順: connections（相手側の鏡像行も含む）→ event_checkins → sns_links → personas
-    // connection_qr_tokens・gallery_photos・nafuda_links・favorite_personas は onDelete: cascade で自動削除される
-    // （nafuda_links はこのなふだが指す行＋他のなふだからこのなふだを指す被参照の双方が消える。
-    //   favorite_personas は他者がこのなふだを保存していた被参照分が消える。自分が他者を保存した分は
-    //   userId 起点なので自分のなふだ削除では消えない — ADR-0021）
-    await db
-      .delete(connections)
-      .where(
-        or(
-          inArray(connections.fromPersonaId, personaIds),
-          inArray(connections.toPersonaId, personaIds),
-        ),
-      );
-    await db
-      .delete(eventCheckins)
-      .where(inArray(eventCheckins.personaId, personaIds));
-    await db.delete(snsLinks).where(inArray(snsLinks.personaId, personaIds));
-    await db.delete(personas).where(eq(personas.id, data.personaId));
+    const r2Urls = await collectPersonaR2Urls(personaIds);
 
     // デフォルトを削除した場合は残る最古のなふだに付け替える（不変条件維持）
-    if (target.isDefault) {
-      const nextDefault = myPersonas.find((p) => p.id !== data.personaId);
-      if (nextDefault) {
-        await db
-          .update(personas)
-          .set({ isDefault: true })
-          .where(eq(personas.id, nextDefault.id));
-      }
-    }
+    const nextDefault = target.isDefault
+      ? myPersonas.find((p) => p.id !== data.personaId)
+      : undefined;
+
+    // D1はトランザクションを持たないため、途中失敗で半端に消えないよう db.batch() で一括実行する。
+    await db.batch([
+      // FK 制約順: connections（相手側の鏡像行も含む）→ event_checkins → sns_links → personas
+      // connection_qr_tokens・gallery_photos・nafuda_links・favorite_personas は onDelete: cascade で自動削除される
+      // （nafuda_links はこのなふだが指す行＋他のなふだからこのなふだを指す被参照の双方が消える。
+      //   favorite_personas は他者がこのなふだを保存していた被参照分が消える。自分が他者を保存した分は
+      //   userId 起点なので自分のなふだ削除では消えない — ADR-0021）
+      db
+        .delete(connections)
+        .where(
+          or(
+            inArray(connections.fromPersonaId, personaIds),
+            inArray(connections.toPersonaId, personaIds),
+          ),
+        ),
+      db
+        .delete(eventCheckins)
+        .where(inArray(eventCheckins.personaId, personaIds)),
+      db.delete(snsLinks).where(inArray(snsLinks.personaId, personaIds)),
+      db.delete(personas).where(eq(personas.id, data.personaId)),
+      ...(nextDefault
+        ? [
+            db
+              .update(personas)
+              .set({ isDefault: true })
+              .where(eq(personas.id, nextDefault.id)),
+          ]
+        : []),
+    ]);
+
+    await Promise.all(r2Urls.map((url) => deleteFromR2(url)));
   });
