@@ -49,10 +49,6 @@ export const Route = createFileRoute("/_protected/me")({
   component: MePage,
 });
 
-function PrivateBadge() {
-  return <span className="text-xs text-gray-400 ml-1">🔒</span>;
-}
-
 const LAST_PERSONA_KEY = "nafuda_last_persona_id";
 
 // クライアント側で最後に見ていたなふだIDをCookieから読む。
@@ -304,12 +300,7 @@ function MePage() {
             )}
           </div>
 
-          <div
-            className={`flex items-center gap-1 ${isPrivate("display_name") ? "opacity-50" : ""}`}
-          >
-            <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
-            {isPrivate("display_name") && <PrivateBadge />}
-          </div>
+          <h1 className="text-xl font-bold">{currentPersona?.displayName}</h1>
 
           {!currentPersona?.label && (
             <Link

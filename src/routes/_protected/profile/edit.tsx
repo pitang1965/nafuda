@@ -184,7 +184,6 @@ function createEditSchema(t: (key: string) => string) {
       .max(50, t("wizard.errorDisplayNameMax")),
     label: z.string().max(20, t("wizard.errorLabelMax")).optional().or(z.literal("")),
     bio: z.string().max(200, t("edit.errorBioMax")).optional().or(z.literal("")),
-    displayNameVisibility: z.enum(["public", "private"]),
     bioVisibility: z.enum(["public", "private"]),
     avatarVisibility: z.enum(["public", "private"]),
     snsLinksVisibility: z.enum(["public", "private"]),
@@ -265,9 +264,6 @@ function EditPage() {
       initialPurpose={defaultPersona.purpose ?? null}
       initialBio={defaultPersona.bio ?? ""}
       initialAvatarUrl={defaultPersona.avatarUrl ?? ""}
-      initialDisplayNameVisibility={
-        (visibility.display_name as "public" | "private") ?? "public"
-      }
       initialBioVisibility={
         (visibility.bio as "public" | "private") ?? "public"
       }
@@ -309,7 +305,6 @@ function EditForm({
   initialPurpose,
   initialBio,
   initialAvatarUrl,
-  initialDisplayNameVisibility,
   initialBioVisibility,
   initialAvatarVisibility,
   initialSnsLinksVisibility,
@@ -330,7 +325,6 @@ function EditForm({
   initialPurpose: string | null;
   initialBio: string;
   initialAvatarUrl: string;
-  initialDisplayNameVisibility: "public" | "private";
   initialBioVisibility: "public" | "private";
   initialAvatarVisibility: "public" | "private";
   initialSnsLinksVisibility: "public" | "private";
@@ -439,7 +433,6 @@ function EditForm({
       displayName: initialDisplayName,
       label: initialLabel,
       bio: initialBio,
-      displayNameVisibility: initialDisplayNameVisibility,
       bioVisibility: initialBioVisibility,
       avatarVisibility: initialAvatarVisibility,
       snsLinksVisibility: initialSnsLinksVisibility,
@@ -502,9 +495,6 @@ function EditForm({
       defaultValue: initialDisplayName,
     }) ?? "";
   const bio = useWatch({ control, name: "bio", defaultValue: "" }) ?? "";
-  const [displayNameVisibility, setDisplayNameVisibility] = useState(
-    initialDisplayNameVisibility,
-  );
   const [bioVisibility, setBioVisibility] = useState(initialBioVisibility);
   const [avatarVisibility, setAvatarVisibility] = useState(
     initialAvatarVisibility,
@@ -624,7 +614,6 @@ function EditForm({
           purpose,
           bio: values.bio || null,
           fieldVisibility: {
-            display_name: values.displayNameVisibility,
             bio: values.bioVisibility,
             avatar_url: values.avatarVisibility,
             sns_links: values.snsLinksVisibility,
@@ -763,19 +752,9 @@ function EditForm({
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Display name */}
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
-                {t("edit.displayNameLabel")}
-              </label>
-              <VisibilityToggle
-                label={t("edit.displayNameLabel")}
-                value={displayNameVisibility}
-                onChange={(v) => {
-                  setDisplayNameVisibility(v);
-                  setValue("displayNameVisibility", v, { shouldDirty: true });
-                }}
-              />
-            </div>
+            <label className="text-sm font-medium">
+              {t("edit.displayNameLabel")}
+            </label>
             <Input {...register("displayName")} />
             {errors.displayName && (
               <p className="text-xs text-red-600">
