@@ -53,7 +53,8 @@ export function isWithinCheckinWindow(
 }
 
 // 発行者のアクティブチェックインが、つながり文脈の出どころとして有効か（ADR-0020）。
-// - 企画イベント: 開催期間が終わって（受付窓の close を過ぎて）いなければ有効。
+// - 企画イベント: 交換時刻が受付窓内のときだけ有効。開始前は無効
+//   （主催者は作成時に窓を見ずチェックインされるため、事前の交換に未来のイベントが付かないように）。
 // - 即時イベント: 直近セッション（INSTANT_CONTEXT_MAX_AGE_MS 以内）に作られたものだけ有効。
 //   古い即時チェックインは文脈に使わない（後続の交換を汚さない）。
 export function isValidConnectionContext(
@@ -64,5 +65,5 @@ export function isValidConnectionContext(
     const age = at.getTime() - new Date(checkin.checkedInAt).getTime();
     return age <= INSTANT_CONTEXT_MAX_AGE_MS;
   }
-  return at <= getCheckinWindow(checkin).close;
+  return isWithinCheckinWindow(checkin, at);
 }
