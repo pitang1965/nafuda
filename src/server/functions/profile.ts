@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { eq, and, inArray, or } from "drizzle-orm";
+import { eq, and, inArray, or, count } from "drizzle-orm";
 import { getDb } from "../db/client";
 import {
   personas,
@@ -21,6 +21,15 @@ import { auth } from "../auth";
 import { serverT } from "../../lib/i18n/serverT";
 import { deleteFromR2 } from "../storage";
 import { isPrivateField } from "../lib/visibility";
+import { oshiTagsSchema } from "./oshi";
+import { PURPOSE_IDS } from "../../lib/purpose";
+import { getNafudaStyle } from "../../lib/nafuda-styles";
+
+// なふだ枚数の上限（無料版の枠。将来の有料版で引き上げる想定）
+export const MAX_PERSONAS_PER_USER = 5;
+// API直叩きで巨大データを溜められないようにする上限（通常利用では届かない値）
+const MAX_SNS_LINKS_PER_PERSONA = 20;
+const SNS_URL_MAX = 2048;
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -236,10 +245,10 @@ export const createPersona = createServerFn({ method: "POST" })
         .min(1, { error: () => serverT("wizard.errorDisplayNameRequired") })
         .max(50, { error: () => serverT("wizard.errorDisplayNameMax") }),
       label: z.string().max(20).optional().nullable(),
-      purpose: z.string().max(32).optional().nullable(),
+      purpose: z.enum(PURPOSE_IDS).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
       isDefault: z.boolean().default(false),
-      oshiTags: z.array(z.string()).default([]),
+      oshiTags: oshiTagsSchema.default([]),
     }),
   )
   .handler(async ({ data }) => {
@@ -247,6 +256,17 @@ export const createPersona = createServerFn({ method: "POST" })
     const request = getRequest();
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) throw new Error("Unauthorized");
+
+    const owned = await db
+      .select({ id: personas.id })
+      .from(personas)
+      .where(eq(personas.userId, session.user.id))
+      .limit(MAX_PERSONAS_PER_USER);
+    if (owned.length >= MAX_PERSONAS_PER_USER) {
+      throw new Error(
+        serverT("errors.personaLimit", { max: MAX_PERSONAS_PER_USER }),
+      );
+    }
 
     // Generate share token
     const bytes = new Uint8Array(16);
@@ -290,6 +310,20 @@ export const createPersona = createServerFn({ method: "POST" })
       })
       .returning();
 
+    // 同時リクエストで上の事前チェックをすり抜けた分を、書き込み後の数え直しで取り消す。
+    // 最後に数えた1本の時点で残っている行はすべて揃っており、それが上限以下なので
+    // 残る枚数は上限を超えない（D1 は文を1つずつ順に実行する）。
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(personas)
+      .where(eq(personas.userId, session.user.id));
+    if (total > MAX_PERSONAS_PER_USER) {
+      await db.delete(personas).where(eq(personas.id, persona.id));
+      throw new Error(
+        serverT("errors.personaLimit", { max: MAX_PERSONAS_PER_USER }),
+      );
+    }
+
     return persona;
   });
 
@@ -300,12 +334,19 @@ export const updatePersona = createServerFn({ method: "POST" })
       personaId: z.uuid(),
       displayName: z.string().min(1).max(50).optional(),
       label: z.string().max(20).optional().nullable(),
-      purpose: z.string().max(32).optional().nullable(),
+      purpose: z.enum(PURPOSE_IDS).optional().nullable(),
       bio: z.string().max(200).optional().nullable(),
       fieldVisibility: z
-        .record(z.string(), z.enum(["public", "private"]))
+        .partialRecord(
+          z.enum(["bio", "avatar_url", "sns_links", "oshi_tags", "gallery"]),
+          z.enum(["public", "private"]),
+        )
         .optional(),
-      styleId: z.string().nullable().optional(), // undefined = 変更なし, null = スタイル解除
+      styleId: z
+        .string()
+        .refine((id) => getNafudaStyle(id) !== null)
+        .nullable()
+        .optional(), // undefined = 変更なし, null = スタイル解除
     }),
   )
   .handler(async ({ data }) => {
@@ -460,7 +501,7 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
         "pixiv",
         "other",
       ]),
-      url: z.string(),
+      url: z.string().max(SNS_URL_MAX),
       title: z.string().max(50).optional(),
       displayOrder: z.number().int().min(0),
     }),
@@ -510,6 +551,16 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
           ),
         );
     } else {
+      const existing = await db
+        .select({ id: snsLinks.id })
+        .from(snsLinks)
+        .where(eq(snsLinks.personaId, data.personaId))
+        .limit(MAX_SNS_LINKS_PER_PERSONA);
+      if (existing.length >= MAX_SNS_LINKS_PER_PERSONA) {
+        throw new Error(
+          serverT("errors.snsLinkLimit", { max: MAX_SNS_LINKS_PER_PERSONA }),
+        );
+      }
       await db.insert(snsLinks).values({
         personaId: data.personaId,
         platform: data.platform,

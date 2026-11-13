@@ -146,6 +146,8 @@ const en: DictionaryNode = {
     invalidOrderSpecified: "The order specified is invalid.",
     slugInvalidChars: "Slugs can only use URL-safe characters (letters, numbers, hyphens).",
     oshiTagsMax: "Up to 20 oshi tags",
+    personaLimit: "You can have up to {{max}} nafuda.",
+    snsLinkLimit: "You can add up to {{max}} social links.",
     timezoneInvalid: "That timezone isn't valid.",
   },
   me: {

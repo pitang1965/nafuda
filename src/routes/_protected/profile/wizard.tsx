@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   createPersona,
   getOwnProfile,
+  MAX_PERSONAS_PER_USER,
 } from "../../../server/functions/profile";
 import {
   PURPOSE_PICKER_ORDER,
@@ -82,7 +83,8 @@ function WizardPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    // isSubmitting: 送信中の2回押しで、なふだの二重作成や上限の取り消し合いが起きるのを防ぐ
+    formState: { errors, isSubmitting },
   } = methods;
 
   const displayName =
@@ -141,6 +143,20 @@ function WizardPage() {
   };
 
   const STEP_COUNT = 4;
+
+  // 上限到達時は入力させてから弾かず、最初に伝える（サーバー側でも同じ上限で拒否する）
+  if (personas.length >= MAX_PERSONAS_PER_USER) {
+    return (
+      <main className="min-h-screen p-6 flex flex-col items-center justify-center gap-4 max-w-md mx-auto text-center">
+        <p className="text-gray-700">
+          {t("errors.personaLimit", { max: MAX_PERSONAS_PER_USER })}
+        </p>
+        <Button asChild variant="outline">
+          <Link to="/me">{t("wizard.backToTop")}</Link>
+        </Button>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
@@ -366,6 +382,7 @@ function WizardPage() {
                   <Button
                     type="button"
                     onClick={() => handleSubmit((v) => onSubmit(v, "me"))()}
+                    disabled={isSubmitting}
                     className="flex-1"
                   >
                     {t("wizard.createAndGoToEvent")}
@@ -376,6 +393,7 @@ function WizardPage() {
                   <Button
                     type="button"
                     onClick={() => handleSubmit((v) => onSubmit(v, "edit"))()}
+                    disabled={isSubmitting}
                     className="w-full"
                   >
                     {t("wizard.finishInEditor")}
@@ -384,6 +402,7 @@ function WizardPage() {
                     type="button"
                     variant="outline"
                     onClick={() => handleSubmit((v) => onSubmit(v, "me"))()}
+                    disabled={isSubmitting}
                     className="w-full"
                   >
                     {t("wizard.finishLater")}

@@ -140,6 +140,9 @@ export function OshiTagInput({
         addTagsOnBlur
         placeholder={t("oshiTagInput.placeholder")}
         maxTags={20}
+        // サーバーの oshiTagsSchema（各50文字）と揃える。emblor の maxLength は超過タグを
+        // 黙って捨てるため、入力欄そのもので打てなくする。
+        inputProps={{ maxLength: 50 }}
         className="w-full"
         styleClasses={{
           // モバイルSafariはfontSize<16pxの入力欄をタップすると自動ズームする。

@@ -48,13 +48,16 @@ export const getPopularOshiTags = createServerFn({ method: 'GET' })
     return results.map((r) => r.tag)
   })
 
+// 推しタグの入力上限。人気タグ集計に載るため、書き込む全APIでこれを使う
+export const oshiTagsSchema = z.array(z.string().trim().min(1).max(50)).max(20, {
+  error: () => serverT('errors.oshiTagsMax'),
+})
+
 // Update oshi tags for a persona
 export const updateOshiTags = createServerFn({ method: 'POST' })
   .validator(z.object({
     personaId: z.uuid(),
-    tags: z.array(z.string().min(1).max(50)).max(20, {
-      error: () => serverT('errors.oshiTagsMax'),
-    }),
+    tags: oshiTagsSchema,
   }))
   .handler(async ({ data }) => {
     const db = getDb()

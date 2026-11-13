@@ -142,6 +142,8 @@ const ja: DictionaryNode = {
     invalidOrderSpecified: "並び順の指定が不正です",
     slugInvalidChars: "スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます",
     oshiTagsMax: "推しタグは20個まで",
+    personaLimit: "なふだは最大{{max}}枚までです",
+    snsLinkLimit: "SNSリンクは最大{{max}}件までです",
     timezoneInvalid: "タイムゾーンの指定が正しくありません",
   },
   me: {

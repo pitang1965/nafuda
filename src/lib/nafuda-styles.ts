@@ -27,6 +27,8 @@ export interface NafudaStyleDef {
   pearlBorder?: boolean;
 }
 
+// id を消す・変えるときは DB の personas.style_id も移行すること。
+// updatePersona はこの一覧にない styleId を拒否するため、残った人の保存が失敗する。
 export const NAFUDA_STYLES: NafudaStyleDef[] = [
   {
     id: "purple",

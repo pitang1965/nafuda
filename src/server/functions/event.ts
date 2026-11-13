@@ -45,6 +45,14 @@ const eventColumnsWithoutGps = {
   createdAt: events.createdAt,
 } as const;
 
+// 不正な文字列だと日付計算が Invalid Date になり DB 保存で 500 になるため入口で弾く。
+// 時刻は showTime=false のとき空文字で送られてくる。
+const eventDateField = z.iso.date();
+const eventTimeField = z.iso
+  .time({ precision: -1 })
+  .or(z.literal(""))
+  .optional();
+
 // フォームの日付・時刻は、そのイベントの開催タイムゾーンのウォールクロック入力。
 // サーバーの実行タイムゾーン（Workers は UTC）に依存しないよう、イベント自身の
 // タイムゾーンとして明示的に解釈・保存する（ADR-0030）。
@@ -143,10 +151,10 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         }),
       eventName: z.string().min(1).max(100),
       venueName: z.string().min(1).max(100),
-      eventDate: z.string(),
-      eventTime: z.string().optional(),
-      eventEndDate: z.string().optional(),
-      eventEndTime: z.string().optional(),
+      eventDate: eventDateField,
+      eventTime: eventTimeField,
+      eventEndDate: eventDateField.optional(),
+      eventEndTime: eventTimeField,
       showTime: z.boolean(),
       timezone: z.string().refine(isValidTimeZone, {
         error: () => serverT("errors.timezoneInvalid"),
@@ -389,10 +397,10 @@ export const updateEvent = createServerFn({ method: "POST" })
       token: z.string(),
       name: z.string().min(1).max(100),
       venueName: z.string().min(1).max(100),
-      eventDate: z.string(),
-      eventTime: z.string().optional(),
-      eventEndDate: z.string().optional(),
-      eventEndTime: z.string().optional(),
+      eventDate: eventDateField,
+      eventTime: eventTimeField,
+      eventEndDate: eventDateField.optional(),
+      eventEndTime: eventTimeField,
       showTime: z.boolean(),
       timezone: z.string().refine(isValidTimeZone, {
         error: () => serverT("errors.timezoneInvalid"),
