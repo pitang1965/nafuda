@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { eq, and, isNull, ne, desc } from "drizzle-orm";
+import { eq, and, or, isNull, ne, desc } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { events, eventCheckins, personas, urlIds } from "../db/schema";
 import { auth } from "../auth";
@@ -501,7 +501,11 @@ export const getMyEvents = createServerFn({ method: "GET" }).handler(
       .from(eventCheckins)
       .innerJoin(events, eq(eventCheckins.eventId, events.id))
       .where(
-        and(eq(eventCheckins.userId, userId), ne(events.hostUserId, userId)),
+        and(
+          eq(eventCheckins.userId, userId),
+          // 主催者退会後は hostUserId が NULL になる（ADR-0005）。NULL との ne は偽になるため明示的に拾う
+          or(isNull(events.hostUserId), ne(events.hostUserId, userId)),
+        ),
       )
       .orderBy(desc(eventCheckins.checkedInAt));
 
