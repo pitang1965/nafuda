@@ -20,6 +20,7 @@ import {
 import { auth } from "../auth";
 import { serverT } from "../../lib/i18n/serverT";
 import { deleteFromR2 } from "../storage";
+import { isPrivateField } from "../lib/visibility";
 
 const URLID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -403,6 +404,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
           .select({
             displayName: personas.displayName,
             avatarUrl: personas.avatarUrl,
+            fieldVisibility: personas.fieldVisibility,
             shareToken: personas.shareToken,
             displayOrder: nafudaLinks.displayOrder,
           })
@@ -415,7 +417,10 @@ export const getPublicProfile = createServerFn({ method: "GET" })
       urlId: urlId!,
       shareToken: r.shareToken,
       displayName: r.displayName,
-      avatarUrl: r.avatarUrl,
+      // リンク先なふだ側でアバター非公開なら出さない
+      avatarUrl: isPrivateField(r.fieldVisibility, "avatar_url")
+        ? null
+        : r.avatarUrl,
     }));
 
     return {
