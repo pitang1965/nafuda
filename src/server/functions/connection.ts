@@ -393,29 +393,30 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
       eventDate: inviteRow.eventDate,
     };
 
-    // 使用済み招待を即時削除
-    await db
-      .delete(pendingInvites)
-      .where(eq(pendingInvites.inviteToken, data.inviteToken));
-
-    // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）
-    await db
-      .insert(connections)
-      .values([
-        {
-          fromPersonaId: scannerPersonaRow.id,
-          toPersonaId: issuerPersonaId,
-          fromUserId: session.user.id,
-          ...ctx,
-        },
-        {
-          fromPersonaId: issuerPersonaId,
-          toPersonaId: scannerPersonaRow.id,
-          fromUserId: issuerPersonaRow.userId,
-          ...ctx,
-        },
-      ])
-      .onConflictDoNothing();
+    // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）し、使用済み招待を削除する。
+    // D1はトランザクションを持たないため、挿入失敗で招待だけ消えないよう db.batch() で一括実行する。
+    await db.batch([
+      db
+        .insert(connections)
+        .values([
+          {
+            fromPersonaId: scannerPersonaRow.id,
+            toPersonaId: issuerPersonaId,
+            fromUserId: session.user.id,
+            ...ctx,
+          },
+          {
+            fromPersonaId: issuerPersonaId,
+            toPersonaId: scannerPersonaRow.id,
+            fromUserId: issuerPersonaRow.userId,
+            ...ctx,
+          },
+        ])
+        .onConflictDoNothing(),
+      db
+        .delete(pendingInvites)
+        .where(eq(pendingInvites.inviteToken, data.inviteToken)),
+    ]);
 
     return { connectedAt: new Date().toISOString() };
   });
@@ -518,32 +519,33 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
     const issuerCtx = ctx;
     const scannerCtx = ctx;
 
-    // 使用済みトークンを即時削除
-    await db
-      .delete(connectionQrTokens)
-      .where(eq(connectionQrTokens.token, data.connectionQrToken));
-
-    // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）
-    await db
-      .insert(connections)
-      .values([
-        {
-          fromPersonaId: scannerPersonaRow.id,
-          toPersonaId: issuerPersonaId,
-          fromUserId: session.user.id,
-          ...scannerCtx,
-        },
-        {
-          fromPersonaId: issuerPersonaId,
-          toPersonaId: scannerPersonaRow.id,
-          fromUserId: issuerPersonaRow!.userId,
-          ...issuerCtx,
-        },
-      ])
-      .onConflictDoNothing();
+    // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）し、使用済みトークンを削除する。
+    // D1はトランザクションを持たないため、挿入失敗でトークンだけ消えないよう db.batch() で一括実行する。
+    await db.batch([
+      db
+        .insert(connections)
+        .values([
+          {
+            fromPersonaId: scannerPersonaRow.id,
+            toPersonaId: issuerPersonaId,
+            fromUserId: session.user.id,
+            ...scannerCtx,
+          },
+          {
+            fromPersonaId: issuerPersonaId,
+            toPersonaId: scannerPersonaRow.id,
+            fromUserId: issuerPersonaRow!.userId,
+            ...issuerCtx,
+          },
+        ])
+        .onConflictDoNothing(),
+      db
+        .delete(connectionQrTokens)
+        .where(eq(connectionQrTokens.token, data.connectionQrToken)),
+    ]);
 
     // 発行者A の PersonaChannel へ「つながりました」を push（realtime 確認用）。
-    // realtime 無効環境では no-op。失敗しても Postgres は書けており、A 側は
+    // realtime 無効環境では no-op。失敗しても D1 は書けており、A 側は
     // reconcile-on-connect / 縮退ポーリングで必ず収束する。
     await pushToRoom(`persona:${issuerPersonaId}`, {
       type: "connection",
