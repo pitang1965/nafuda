@@ -3,6 +3,7 @@ import {
   text,
   integer,
   unique,
+  index,
 } from "drizzle-orm/sqlite-core";
 
 // --- Better Auth required tables ---
@@ -16,18 +17,22 @@ export const user = sqliteTable("user", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
-export const session = sqliteTable("session", {
-  id: text("id").primaryKey(),
-  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id),
-});
+export const session = sqliteTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [index("session_user_id_idx").on(table.userId)],
+);
 
 export const account = sqliteTable("account", {
   id: text("id").primaryKey(),
@@ -70,57 +75,67 @@ export const urlIds = sqliteTable("url_ids", {
 });
 
 // Personas table: each user can have multiple personas
-export const personas = sqliteTable("personas", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id").notNull(), // FK to Better Auth user.id
-  displayName: text("display_name").notNull(),
-  shareToken: text("share_token").notNull().unique(), // crypto.randomBytes(16).toString('hex')
-  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
-  avatarUrl: text("avatar_url"), // null = use initials avatar
-  bio: text("bio"), // null = no bio set (max 200 chars enforced at app layer)
-  label: text("label"), // 自分だけが見る識別名(最大20文字)、公開プロフィールには出ない
-  // 用途タイプ: アプリが見せ方/編集体験を切り替える機械可読な分類。値は src/lib/purpose.ts のレジストリで管理。
-  // null = 用途タイプ導入前の既存なふだ(従来表示で互換維持)。新規作成は常に non-null(最低 'other')。
-  purpose: text("purpose"),
-  oshiTags: text("oshi_tags", { mode: "json" })
-    .$type<string[]>()
-    .notNull()
-    .default([]),
-  dojinReject: integer("dojin_reject", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  // fieldVisibility: { sns_links: 'public'|'private', oshi_tags: 'public'|'private', avatar_url: 'public'|'private' }
-  // Default {} = all public (QRを渡す行為自体が公開の意思表示)
-  fieldVisibility: text("field_visibility", { mode: "json" })
-    .$type<Record<string, string>>()
-    .notNull()
-    .default({}),
-  styleId: text("style_id"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-});
+export const personas = sqliteTable(
+  "personas",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull(), // FK to Better Auth user.id
+    displayName: text("display_name").notNull(),
+    shareToken: text("share_token").notNull().unique(), // crypto.randomBytes(16).toString('hex')
+    isDefault: integer("is_default", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    avatarUrl: text("avatar_url"), // null = use initials avatar
+    bio: text("bio"), // null = no bio set (max 200 chars enforced at app layer)
+    label: text("label"), // 自分だけが見る識別名(最大20文字)、公開プロフィールには出ない
+    // 用途タイプ: アプリが見せ方/編集体験を切り替える機械可読な分類。値は src/lib/purpose.ts のレジストリで管理。
+    // null = 用途タイプ導入前の既存なふだ(従来表示で互換維持)。新規作成は常に non-null(最低 'other')。
+    purpose: text("purpose"),
+    oshiTags: text("oshi_tags", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    dojinReject: integer("dojin_reject", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    // fieldVisibility: { sns_links: 'public'|'private', oshi_tags: 'public'|'private', avatar_url: 'public'|'private' }
+    // Default {} = all public (QRを渡す行為自体が公開の意思表示)
+    fieldVisibility: text("field_visibility", { mode: "json" })
+      .$type<Record<string, string>>()
+      .notNull()
+      .default({}),
+    styleId: text("style_id"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("personas_user_id_idx").on(table.userId)],
+);
 
 // SNS links table: multiple links per persona with ordering
-export const snsLinks = sqliteTable("sns_links", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  personaId: text("persona_id").notNull(), // FK to personas.id
-  // platform values: 'x' | 'instagram' | 'tiktok' | 'youtube' | 'discord' | 'line_openchat' | 'github' | 'spotify' | 'facebook' | 'other'
-  platform: text("platform").notNull(),
-  url: text("url").notNull(),
-  title: text("title"),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-});
+export const snsLinks = sqliteTable(
+  "sns_links",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    personaId: text("persona_id").notNull(), // FK to personas.id
+    // platform values: 'x' | 'instagram' | 'tiktok' | 'youtube' | 'discord' | 'line_openchat' | 'github' | 'spotify' | 'facebook' | 'other'
+    platform: text("platform").notNull(),
+    url: text("url").notNull(),
+    title: text("title"),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("sns_links_persona_id_idx").on(table.personaId)],
+);
 
 // Nafuda links table: 自分が持つ別のなふだへの内部参照リンク(ADR-0015)。
 // 外部サービスを指す sns_links とは別概念。リンク先は URL ではなく targetPersonaId で参照し、
@@ -176,23 +191,27 @@ export const favoritePersonas = sqliteTable(
 
 // Gallery photos table: アバター以外の「対象物」写真を最大6枚並べる独立コンテンツ(ADR-0014)。
 // なふだスタイル(コード管理の装飾)とは別レイヤーのユーザーアップロードコンテンツ。
-export const galleryPhotos = sqliteTable("gallery_photos", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  personaId: text("persona_id")
-    .notNull()
-    .references(() => personas.id, { onDelete: "cascade" }),
-  imageUrl: text("image_url").notNull(), // R2 公開URL(キー: gallery/{personaId}/{uuid}.jpg)
-  caption: text("caption"), // null = キャプションなし(最大30文字をアプリ層で強制)
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-});
+export const galleryPhotos = sqliteTable(
+  "gallery_photos",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    personaId: text("persona_id")
+      .notNull()
+      .references(() => personas.id, { onDelete: "cascade" }),
+    imageUrl: text("image_url").notNull(), // R2 公開URL(キー: gallery/{personaId}/{uuid}.jpg)
+    caption: text("caption"), // null = キャプションなし(最大30文字をアプリ層で強制)
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("gallery_photos_persona_id_idx").on(table.personaId)],
+);
 
 // Events table: self-created by first check-in (no admin management)
 export const events = sqliteTable("events", {
@@ -215,7 +234,9 @@ export const events = sqliteTable("events", {
   // "Asia/Tokyo"として後方互換解釈する(ADR-0030)。
   timezone: text("timezone").notNull().default("Asia/Tokyo"),
   description: text("description"),
-  isInstant: integer("is_instant", { mode: "boolean" }).notNull().default(false),
+  isInstant: integer("is_instant", { mode: "boolean" })
+    .notNull()
+    .default(false),
   // GPS: { x: longitude, y: latitude }。即時イベント作成時に自動取得。JSON列(Postgresのpoint型からの移行)。
   gpsCoordinates: text("gps_coordinates", { mode: "json" }).$type<{
     x: number;
@@ -229,30 +250,38 @@ export const events = sqliteTable("events", {
 });
 
 // Event check-ins table: one per persona per event (active = checkedOutAt IS NULL)
-export const eventCheckins = sqliteTable("event_checkins", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  eventId: text("event_id")
-    .notNull()
-    .references(() => events.id, { onDelete: "cascade" }),
-  personaId: text("persona_id")
-    .notNull()
-    .references(() => personas.id),
-  userId: text("user_id").notNull(), // Better Auth user.id(認証チェック用)
-  // GPS: { x: longitude, y: latitude }。即時イベント作成時のみ記録(拒否時 null)。通常イベントでは常に null
-  gpsCoordinates: text("gps_coordinates", { mode: "json" }).$type<{
-    x: number;
-    y: number;
-  }>(),
-  checkedInAt: integer("checked_in_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-  checkedOutAt: integer("checked_out_at", { mode: "timestamp" }), // NULL = チェックイン中
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-});
+export const eventCheckins = sqliteTable(
+  "event_checkins",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    personaId: text("persona_id")
+      .notNull()
+      .references(() => personas.id),
+    userId: text("user_id").notNull(), // Better Auth user.id(認証チェック用)
+    // GPS: { x: longitude, y: latitude }。即時イベント作成時のみ記録(拒否時 null)。通常イベントでは常に null
+    gpsCoordinates: text("gps_coordinates", { mode: "json" }).$type<{
+      x: number;
+      y: number;
+    }>(),
+    checkedInAt: integer("checked_in_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    checkedOutAt: integer("checked_out_at", { mode: "timestamp" }), // NULL = チェックイン中
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("event_checkins_event_id_idx").on(table.eventId),
+    index("event_checkins_persona_id_idx").on(table.personaId),
+    index("event_checkins_user_id_idx").on(table.userId),
+  ],
+);
 
 // Connection QR tokens: short-lived (15 min) tokens for "なふだを交換する" flow
 export const connectionQrTokens = sqliteTable("connection_qr_tokens", {
@@ -300,6 +329,8 @@ export const connections = sqliteTable(
   (table) => [
     // 同一ペルソナペアのコネクション重複防止(一方通行なのでfrom/to両方でユニーク)
     unique().on(table.fromPersonaId, table.toPersonaId),
+    // 一意制約は from 先頭なので、to 側からの検索用に別途必要
+    index("connections_to_persona_id_idx").on(table.toPersonaId),
   ],
 );
 

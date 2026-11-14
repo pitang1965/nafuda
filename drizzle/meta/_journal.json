@@ -15,6 +15,13 @@
       "when": 1792117757132,
       "tag": "0001_nice_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794621970610,
+      "tag": "0002_mysterious_richard_fisk",
+      "breakpoints": true
     }
   ]
 }
