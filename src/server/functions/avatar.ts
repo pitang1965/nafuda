@@ -41,8 +41,6 @@ export const uploadAvatar = createServerFn({ method: "POST" })
 
     const bytes = decodeJpegDataUrl(data.dataUrl);
 
-    await deleteFromR2(persona.avatarUrl);
-
     const key = `avatars/${data.personaId}/${crypto.randomUUID()}.jpg`;
     await putToR2(key, bytes, "image/jpeg");
 
@@ -51,6 +49,9 @@ export const uploadAvatar = createServerFn({ method: "POST" })
       .update(personas)
       .set({ avatarUrl, updatedAt: new Date() })
       .where(eq(personas.id, data.personaId));
+
+    // 旧画像は DB 更新成功後に消す。先に消すと更新失敗時に画像だけ無いなふだが残る
+    await deleteFromR2(persona.avatarUrl);
 
     return { avatarUrl };
   });
@@ -75,10 +76,11 @@ export const deleteAvatar = createServerFn({ method: "POST" })
       .limit(1);
     if (!persona) throw new Error("Forbidden");
 
-    await deleteFromR2(persona.avatarUrl);
-
     await db
       .update(personas)
       .set({ avatarUrl: null, updatedAt: new Date() })
       .where(eq(personas.id, data.personaId));
+
+    // DB 更新成功後に R2 を消す
+    await deleteFromR2(persona.avatarUrl);
   });

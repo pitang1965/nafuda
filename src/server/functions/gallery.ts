@@ -109,9 +109,9 @@ export const deleteGalleryPhoto = createServerFn({ method: "POST" })
       .limit(1);
     if (!photo) throw new Error("Forbidden");
 
-    // 孤児を残さない: R2 実体を消してから行を消す（ADR-0014）
-    await deleteFromR2(photo.imageUrl);
+    // 行を消してから R2 実体を消す。先に R2 を消すと行削除失敗時に壊れた画像が残る
     await db.delete(galleryPhotos).where(eq(galleryPhotos.id, data.photoId));
+    await deleteFromR2(photo.imageUrl);
   });
 
 export const updateGalleryCaption = createServerFn({ method: "POST" })
