@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'c:\\Users\\pitan\\dev\\nafuda\\.codex\\hooks\\block-env-dump.sh'",
+            "timeout": 10,
+            "statusMessage": "Checking for secret-file dumps..."
+          }
+        ]
+      }
+    ]
+  }
+}
