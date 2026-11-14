@@ -5,7 +5,7 @@ import { eq, and, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import { personas } from '../db/schema'
 import { auth } from '../auth'
-import { serverT } from '../../lib/i18n/serverT'
+import { oshiTagsSchema } from '../lib/oshiTags'
 
 // Get oshi tag suggestions for autocomplete
 // Returns top 20 most-used tags matching the query prefix across all personas.
@@ -47,11 +47,6 @@ export const getPopularOshiTags = createServerFn({ method: 'GET' })
     `)
     return results.map((r) => r.tag)
   })
-
-// 推しタグの入力上限。人気タグ集計に載るため、書き込む全APIでこれを使う
-export const oshiTagsSchema = z.array(z.string().trim().min(1).max(50)).max(20, {
-  error: () => serverT('errors.oshiTagsMax'),
-})
 
 // Update oshi tags for a persona
 export const updateOshiTags = createServerFn({ method: 'POST' })

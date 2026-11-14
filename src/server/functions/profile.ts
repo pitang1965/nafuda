@@ -21,7 +21,7 @@ import { auth } from "../auth";
 import { serverT } from "../../lib/i18n/serverT";
 import { deleteFromR2 } from "../storage";
 import { isPrivateField } from "../lib/visibility";
-import { oshiTagsSchema } from "./oshi";
+import { oshiTagsSchema } from "../lib/oshiTags";
 import { PURPOSE_IDS } from "../../lib/purpose";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
 
