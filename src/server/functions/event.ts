@@ -161,7 +161,6 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
       }),
       description: z.string().max(1000).optional().nullable(),
       personaId: z.uuid(),
-      hostPersonaId: z.uuid(),
     }),
   )
   .handler(async ({ data }) => {
@@ -217,7 +216,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         timezone: data.timezone,
         description: data.description ?? null,
         hostUserId: session.user.id,
-        hostPersonaId: data.hostPersonaId,
+        hostPersonaId: data.personaId,
       })
       .returning();
 

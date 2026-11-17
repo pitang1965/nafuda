@@ -129,7 +129,6 @@ function NewEventPage() {
           timezone: formData.timezone,
           description: formData.description || null,
           personaId: selectedPersonaId,
-          hostPersonaId: selectedPersonaId,
         },
       });
       await router.navigate({
