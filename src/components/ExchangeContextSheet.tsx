@@ -60,11 +60,7 @@ export function ExchangeContextSheet({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      setEventName("");
-      setGeoPermission("unknown");
-      return;
-    }
+    if (!isOpen) return;
     // ダイアログを出さずに許可状態だけ確認する
     if (navigator.permissions) {
       navigator.permissions
@@ -77,7 +73,12 @@ export function ExchangeContextSheet({
         .catch(() => setGeoPermission("unknown"));
     }
     const focusTimer = setTimeout(() => inputRef.current?.focus(), 300);
-    return () => clearTimeout(focusTimer);
+    // 閉じたとき（isOpen true→false）にリセットする
+    return () => {
+      clearTimeout(focusTimer);
+      setEventName("");
+      setGeoPermission("unknown");
+    };
   }, [isOpen]);
 
   const handleSubmit = async () => {

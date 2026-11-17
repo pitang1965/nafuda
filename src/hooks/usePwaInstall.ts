@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer, useSyncExternalStore } from "react";
+
+const noopSubscribe = () => () => {};
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -25,79 +27,72 @@ export function dismissPwaBanner(): void {
   }
 }
 
+// prompt の正本は __root.tsx のインラインスクリプトが保存する window.__pwaPrompt
+const pwaWindow = () => window as { __pwaPrompt?: BeforeInstallPromptEvent };
+
+function subscribePrompt(onChange: () => void) {
+  const handler = (e: Event) => {
+    e.preventDefault();
+    pwaWindow().__pwaPrompt = e as BeforeInstallPromptEvent;
+    onChange();
+  };
+  window.addEventListener("beforeinstallprompt", handler);
+  return () => window.removeEventListener("beforeinstallprompt", handler);
+}
+
 export function usePwaInstall() {
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(() => {
-      if (typeof window === "undefined") return null;
-      return (
-        (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt ??
-        null
-      );
-    });
+  // 購読直後にも値を読み直すので、描画〜リスナー登録の間に来たイベントも取りこぼさない。
+  // SSR では null 固定でハイドレーション不一致を起こさない
+  const installPrompt = useSyncExternalStore(
+    subscribePrompt,
+    () => pwaWindow().__pwaPrompt ?? null,
+    () => null,
+  );
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isInStandaloneMode =
-      "standalone" in navigator &&
-      (navigator as { standalone?: boolean }).standalone === true;
-    if (isIos && isInStandaloneMode) {
+    const onInstalled = () => {
+      pwaWindow().__pwaPrompt = undefined;
       setIsInstalled(true);
-      return;
-    }
-
-    // グローバルキャプチャで既に取得済みの場合はstateに反映
-    const captured = (window as { __pwaPrompt?: BeforeInstallPromptEvent })
-      .__pwaPrompt;
-    if (captured && !installPrompt) {
-      setInstallPrompt(captured);
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      const prompt = e as BeforeInstallPromptEvent;
-      (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt =
-        prompt;
-      setInstallPrompt(prompt);
     };
-
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", () => {
-      setInstallPrompt(null);
-      setIsInstalled(true);
-    });
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-    };
+    window.addEventListener("appinstalled", onInstalled);
+    return () => window.removeEventListener("appinstalled", onInstalled);
   }, []);
+
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
 
   const promptInstall = async () => {
     if (!installPrompt) return;
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice;
+    // prompt() は1イベント1回しか呼べないので、結果にかかわらず破棄する
+    pwaWindow().__pwaPrompt = undefined;
     if (choice.outcome === "accepted") {
-      setInstallPrompt(null);
+      setIsInstalled(true); // appinstalled を待たずにバナーを閉じる
+    } else {
+      rerender(); // 破棄した値を読み直させる
     }
   };
 
-  const isIos =
-    typeof navigator !== "undefined" &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isIosSafari =
-    isIos &&
-    typeof navigator !== "undefined" &&
-    !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
-  const isInStandaloneMode =
-    typeof navigator !== "undefined" &&
-    "standalone" in navigator &&
-    (navigator as { standalone?: boolean }).standalone === true;
+  // SSR では空/false 固定、ハイドレーション後にブラウザの値へ切り替える（不一致を起こさない）
+  const ua = useSyncExternalStore(
+    noopSubscribe,
+    () => navigator.userAgent,
+    () => "",
+  );
+  const isInStandaloneMode = useSyncExternalStore(
+    noopSubscribe,
+    () => (navigator as { standalone?: boolean }).standalone === true,
+    () => false,
+  );
+  const isIos = /iphone|ipad|ipod/i.test(ua);
+  const isIosSafari = isIos && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
 
   return {
     canInstall: !!installPrompt,
     isIos: isIos && !isInStandaloneMode,
     isIosSafari: isIosSafari && !isInStandaloneMode,
-    isInstalled,
+    isInstalled: isInstalled || (isIos && isInStandaloneMode),
     promptInstall,
   };
 }

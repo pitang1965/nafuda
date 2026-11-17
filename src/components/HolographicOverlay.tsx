@@ -1,26 +1,27 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useT } from "../lib/i18n/context";
+
+const noopSubscribe = () => () => {};
+const getNeedsPermission = () =>
+  typeof (
+    DeviceOrientationEvent as unknown as {
+      requestPermission?: () => Promise<string>;
+    }
+  ).requestPermission === "function";
 
 export function HolographicOverlay() {
   const t = useT();
   const tiltLayerRef = useRef<HTMLDivElement>(null);
-  const [needsIOSPermission, setNeedsIOSPermission] = useState(false);
-  const [listening, setListening] = useState(false);
-
-  useEffect(() => {
-    const needsPermission =
-      typeof (
-        DeviceOrientationEvent as unknown as {
-          requestPermission?: () => Promise<string>;
-        }
-      ).requestPermission === "function";
-
-    if (needsPermission) {
-      setNeedsIOSPermission(true);
-    } else {
-      setListening(true);
-    }
-  }, []);
+  // SSR では false、ハイドレーション後にブラウザの値へ切り替わる（不一致を起こさない）
+  const needsPermission = useSyncExternalStore(
+    noopSubscribe,
+    getNeedsPermission,
+    () => false,
+  );
+  const [asked, setAsked] = useState(false);
+  const [granted, setGranted] = useState(false);
+  const needsIOSPermission = needsPermission && !asked;
+  const listening = !needsPermission || granted;
 
   useEffect(() => {
     if (!listening) return;
@@ -50,10 +51,10 @@ export function HolographicOverlay() {
         }
       ).requestPermission();
       if (state === "granted") {
-        setListening(true);
+        setGranted(true);
       }
     } finally {
-      setNeedsIOSPermission(false);
+      setAsked(true);
     }
   };
 
