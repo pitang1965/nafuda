@@ -18,36 +18,53 @@ import { auth } from "../auth";
 import { isValidConnectionContext } from "../lib/eventCheckinWindow";
 import { pushToRoom } from "../realtimePush";
 import { isPrivateField } from "../lib/visibility";
+import { requireUser } from "../lib/session";
+import { assertOwnedPersona } from "../lib/persona";
+import { generateToken } from "../lib/token";
 
 // 「なふだを交換する」用のつながりQRトークンを発行する（15分有効）
 // 1発行者あたりの有効な保留招待の上限（ensurePendingInvite の悪用ガード）
 const MAX_PENDING_INVITES_PER_ISSUER = 30;
 
+// 発行者のアクティブチェックインを、つながりの文脈として有効なものに限って返す
+// （企画=開催期間内／即時=直近セッションのみ。ADR-0020）。無効・未チェックインなら null
+async function getIssuerConnectionContext(issuerPersonaId: string) {
+  const [activeCheckin] = await getDb()
+    .select({
+      eventId: eventCheckins.eventId,
+      eventName: events.name,
+      venueName: events.venueName,
+      eventDate: events.eventDate,
+      eventEndDate: events.eventEndDate,
+      showTime: events.showTime,
+      timezone: events.timezone,
+      isInstant: events.isInstant,
+      checkedInAt: eventCheckins.checkedInAt,
+    })
+    .from(eventCheckins)
+    .innerJoin(events, eq(eventCheckins.eventId, events.id))
+    .where(
+      and(
+        eq(eventCheckins.personaId, issuerPersonaId),
+        isNull(eventCheckins.checkedOutAt),
+      ),
+    )
+    .limit(1);
+  return activeCheckin && isValidConnectionContext(activeCheckin)
+    ? activeCheckin
+    : null;
+}
+
 export const createConnectionQrToken = createServerFn({ method: "POST" })
   .validator(z.object({ fromPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const personaRows = await db
-      .select({ id: personas.id })
-      .from(personas)
-      .where(
-        and(
-          eq(personas.id, data.fromPersonaId),
-          eq(personas.userId, session.user.id),
-        ),
-      )
-      .limit(1);
-    if (!personaRows[0]) throw new Error(serverT("errors.personaNotFound"));
+    if (!(await assertOwnedPersona(data.fromPersonaId, user.id)))
+      throw new Error(serverT("errors.personaNotFound"));
 
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    const token = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const token = generateToken();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     // 同一ペルソナの期限切れトークンを掃除してから発行
@@ -72,9 +89,7 @@ export const deleteConnectionQrToken = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string().min(1) }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     // 自分が発行したトークンのみ削除可能
     const [tokenRow] = await db
@@ -89,7 +104,7 @@ export const deleteConnectionQrToken = createServerFn({ method: "POST" })
       .from(personas)
       .where(eq(personas.id, tokenRow.fromPersonaId))
       .limit(1);
-    if (personaRow?.userId !== session.user.id)
+    if (personaRow?.userId !== user.id)
       throw new Error(serverT("errors.noPermission"));
 
     await db
@@ -255,38 +270,9 @@ export const ensurePendingInvite = createServerFn({ method: "POST" })
 
     // 文脈スナップショット: 発行者のアクティブチェックイン（企画・即時とも eventId 付き）。
     // ただし有効な文脈に限る（企画=開催期間内／即時=直近セッションのみ。ADR-0020）。
-    const [activeCheckin] = await db
-      .select({
-        eventId: eventCheckins.eventId,
-        eventName: events.name,
-        venueName: events.venueName,
-        eventDate: events.eventDate,
-        eventEndDate: events.eventEndDate,
-        showTime: events.showTime,
-        timezone: events.timezone,
-        isInstant: events.isInstant,
-        checkedInAt: eventCheckins.checkedInAt,
-      })
-      .from(eventCheckins)
-      .innerJoin(events, eq(eventCheckins.eventId, events.id))
-      .where(
-        and(
-          eq(eventCheckins.personaId, issuerPersonaId),
-          isNull(eventCheckins.checkedOutAt),
-        ),
-      )
-      .limit(1);
+    const ctx = await getIssuerConnectionContext(issuerPersonaId);
 
-    const ctx =
-      activeCheckin && isValidConnectionContext(activeCheckin)
-        ? activeCheckin
-        : null;
-
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    const inviteToken = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const inviteToken = generateToken();
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
     await db.insert(pendingInvites).values({
@@ -337,20 +323,12 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const [scannerPersonaRow] = await db
-      .select({ id: personas.id })
-      .from(personas)
-      .where(
-        and(
-          eq(personas.id, data.fromPersonaId),
-          eq(personas.userId, session.user.id),
-        ),
-      )
-      .limit(1);
+    const scannerPersonaRow = await assertOwnedPersona(
+      data.fromPersonaId,
+      user.id,
+    );
     if (!scannerPersonaRow) throw new Error(serverT("errors.ownPersonaNotFound"));
 
     const now = new Date();
@@ -382,7 +360,7 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
       .where(eq(personas.id, issuerPersonaId))
       .limit(1);
     if (!issuerPersonaRow) throw new Error(serverT("errors.otherNafudaNotFound"));
-    if (issuerPersonaRow.userId === session.user.id)
+    if (issuerPersonaRow.userId === user.id)
       throw new Error(serverT("errors.cannotConnectToSelf"));
 
     // 文脈は招待のスナップショットを双方の行へ（ADR-0012: 成立時点のコピー、編集は各自独立）
@@ -402,7 +380,7 @@ export const applyPendingInvite = createServerFn({ method: "POST" })
           {
             fromPersonaId: scannerPersonaRow.id,
             toPersonaId: issuerPersonaId,
-            fromUserId: session.user.id,
+            fromUserId: user.id,
             ...ctx,
           },
           {
@@ -431,20 +409,12 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const [scannerPersonaRow] = await db
-      .select({ id: personas.id })
-      .from(personas)
-      .where(
-        and(
-          eq(personas.id, data.fromPersonaId),
-          eq(personas.userId, session.user.id),
-        ),
-      )
-      .limit(1);
+    const scannerPersonaRow = await assertOwnedPersona(
+      data.fromPersonaId,
+      user.id,
+    );
     if (!scannerPersonaRow) throw new Error(serverT("errors.ownPersonaNotFound"));
 
     const now = new Date();
@@ -469,7 +439,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       .from(personas)
       .where(eq(personas.id, issuerPersonaId))
       .limit(1);
-    if (issuerPersonaRow?.userId === session.user.id)
+    if (issuerPersonaRow?.userId === user.id)
       throw new Error(serverT("errors.cannotConnectToSelf"));
 
     // 発行者A（QRを見せて /me で待っている側）へ realtime 通知するため、
@@ -482,40 +452,18 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
 
     // 文脈はQR発行側（A）のアクティブチェックインから取得する。ただし有効な文脈に限る
     // （企画=開催期間内／即時=直近セッションのみ。古い即時チェックインは使わない。ADR-0020）。
-    const [activeCheckin] = await db
-      .select({
-        eventId: eventCheckins.eventId,
-        eventName: events.name,
-        venueName: events.venueName,
-        eventDate: events.eventDate,
-        eventEndDate: events.eventEndDate,
-        showTime: events.showTime,
-        timezone: events.timezone,
-        isInstant: events.isInstant,
-        checkedInAt: eventCheckins.checkedInAt,
-      })
-      .from(eventCheckins)
-      .innerJoin(events, eq(eventCheckins.eventId, events.id))
-      .where(
-        and(
-          eq(eventCheckins.personaId, issuerPersonaId),
-          isNull(eventCheckins.checkedOutAt),
-        ),
-      )
-      .limit(1);
-
     // 文脈は双方のコネクション行に付与する（ADR-0012）。即時・企画とも eventId 付きで
     // 双方にコピーする。編集可否はロック判定（isInstant）で出し分け、即時イベントは
     // 各自が自分の行を③で編集できる。
-    const ctx =
-      activeCheckin && isValidConnectionContext(activeCheckin)
-        ? {
-            eventId: activeCheckin.eventId,
-            eventName: activeCheckin.eventName,
-            venueName: activeCheckin.venueName,
-            eventDate: activeCheckin.eventDate,
-          }
-        : { eventId: null, eventName: null, venueName: null, eventDate: null };
+    const activeCtx = await getIssuerConnectionContext(issuerPersonaId);
+    const ctx = activeCtx
+      ? {
+          eventId: activeCtx.eventId,
+          eventName: activeCtx.eventName,
+          venueName: activeCtx.venueName,
+          eventDate: activeCtx.eventDate,
+        }
+      : { eventId: null, eventName: null, venueName: null, eventDate: null };
     const issuerCtx = ctx;
     const scannerCtx = ctx;
 
@@ -528,7 +476,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
           {
             fromPersonaId: scannerPersonaRow.id,
             toPersonaId: issuerPersonaId,
-            fromUserId: session.user.id,
+            fromUserId: user.id,
             ...scannerCtx,
           },
           {
@@ -568,16 +516,9 @@ export const checkQrConnectionStatus = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const [personaRow] = await db
-      .select({ userId: personas.userId })
-      .from(personas)
-      .where(eq(personas.id, data.fromPersonaId))
-      .limit(1);
-    if (personaRow?.userId !== session.user.id)
+    if (!(await assertOwnedPersona(data.fromPersonaId, user.id)))
       throw new Error(serverT("errors.noPermission"));
 
     const [tokenRow] = await db
@@ -628,9 +569,7 @@ export const updateConnection = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const [row] = await db
       .select({ eventId: connections.eventId, isInstant: events.isInstant })
@@ -639,7 +578,7 @@ export const updateConnection = createServerFn({ method: "POST" })
       .where(
         and(
           eq(connections.id, data.connectionId),
-          eq(connections.fromUserId, session.user.id),
+          eq(connections.fromUserId, user.id),
         ),
       )
       .limit(1);
@@ -677,16 +616,14 @@ export const deleteConnection = createServerFn({ method: "POST" })
   .validator(z.object({ connectionId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     await db
       .delete(connections)
       .where(
         and(
           eq(connections.id, data.connectionId),
-          eq(connections.fromUserId, session.user.id),
+          eq(connections.fromUserId, user.id),
         ),
       );
   });
@@ -695,14 +632,11 @@ export const deleteConnection = createServerFn({ method: "POST" })
 export const getMyConnections = createServerFn({ method: "GET" }).handler(
   async () => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const { id: userId } = await requireUser();
 
     const fromPersona = alias(personas, "from_persona");
     const toPersona = alias(personas, "to_persona");
     const toUrlId = alias(urlIds, "to_url_ids");
-    const userId = session.user.id;
 
     const rows = await db
       .select({

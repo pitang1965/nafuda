@@ -1,11 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { eq, and, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import { personas } from '../db/schema'
-import { auth } from '../auth'
 import { oshiTagsSchema } from '../lib/oshiTags'
+import { requireUser } from '../lib/session'
 
 // Get oshi tag suggestions for autocomplete
 // Returns top 20 most-used tags matching the query prefix across all personas.
@@ -56,13 +55,11 @@ export const updateOshiTags = createServerFn({ method: 'POST' })
   }))
   .handler(async ({ data }) => {
     const db = getDb()
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user) throw new Error('Unauthorized')
+    const user = await requireUser()
 
     await db.update(personas)
       .set({ oshiTags: data.tags, updatedAt: new Date() })
-      .where(and(eq(personas.id, data.personaId), eq(personas.userId, session.user.id)))
+      .where(and(eq(personas.id, data.personaId), eq(personas.userId, user.id)))
   })
 
 // Update dojin_reject flag for a persona
@@ -73,11 +70,9 @@ export const updateDojinReject = createServerFn({ method: 'POST' })
   }))
   .handler(async ({ data }) => {
     const db = getDb()
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user) throw new Error('Unauthorized')
+    const user = await requireUser()
 
     await db.update(personas)
       .set({ dojinReject: data.dojinReject, updatedAt: new Date() })
-      .where(and(eq(personas.id, data.personaId), eq(personas.userId, session.user.id)))
+      .where(and(eq(personas.id, data.personaId), eq(personas.userId, user.id)))
   })

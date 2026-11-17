@@ -1,13 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { personas } from "../db/schema";
-import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 import { decodeJpegDataUrl } from "../lib/image";
 import { serverT } from "../../lib/i18n/serverT";
+import { requireUser } from "../lib/session";
 
 export const uploadAvatar = createServerFn({ method: "POST" })
   .validator(
@@ -23,19 +22,12 @@ export const uploadAvatar = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const [persona] = await db
       .select({ id: personas.id, avatarUrl: personas.avatarUrl })
       .from(personas)
-      .where(
-        and(
-          eq(personas.id, data.personaId),
-          eq(personas.userId, session.user.id),
-        ),
-      )
+      .where(and(eq(personas.id, data.personaId), eq(personas.userId, user.id)))
       .limit(1);
     if (!persona) throw new Error("Forbidden");
 
@@ -60,19 +52,12 @@ export const deleteAvatar = createServerFn({ method: "POST" })
   .validator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const [persona] = await db
       .select({ id: personas.id, avatarUrl: personas.avatarUrl })
       .from(personas)
-      .where(
-        and(
-          eq(personas.id, data.personaId),
-          eq(personas.userId, session.user.id),
-        ),
-      )
+      .where(and(eq(personas.id, data.personaId), eq(personas.userId, user.id)))
       .limit(1);
     if (!persona) throw new Error("Forbidden");
 

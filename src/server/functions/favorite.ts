@@ -1,11 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { favoritePersonas, personas, urlIds } from "../db/schema";
-import { auth } from "../auth";
 import { isPrivateField } from "../lib/visibility";
+import { requireUser } from "../lib/session";
 
 // お気に入りに追加する（ADR-0021）。公開ページの静的CTAから _protected へ遷移して呼ぶ。
 // 相手の shareToken で対象なふだを解決し、自分のなふだは保存させない。
@@ -14,9 +13,7 @@ export const addFavorite = createServerFn({ method: "POST" })
   .validator(z.object({ shareToken: z.string().min(1) }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const [target] = await db
       .select({
@@ -32,7 +29,7 @@ export const addFavorite = createServerFn({ method: "POST" })
     if (!target) return { status: "notfound" as const };
 
     // 自分のなふだは保存できない（マイなふだ・なふだリンクで到達できるため）
-    if (target.userId === session.user.id) {
+    if (target.userId === user.id) {
       return { status: "self" as const, displayName: target.displayName };
     }
 
@@ -42,7 +39,7 @@ export const addFavorite = createServerFn({ method: "POST" })
       .from(favoritePersonas)
       .where(
         and(
-          eq(favoritePersonas.userId, session.user.id),
+          eq(favoritePersonas.userId, user.id),
           eq(favoritePersonas.targetPersonaId, target.id),
         ),
       )
@@ -51,7 +48,7 @@ export const addFavorite = createServerFn({ method: "POST" })
     if (!existing) {
       await db
         .insert(favoritePersonas)
-        .values({ userId: session.user.id, targetPersonaId: target.id })
+        .values({ userId: user.id, targetPersonaId: target.id })
         .onConflictDoNothing();
     }
 
@@ -69,15 +66,13 @@ export const removeFavorite = createServerFn({ method: "POST" })
   .validator(z.object({ targetPersonaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     await db
       .delete(favoritePersonas)
       .where(
         and(
-          eq(favoritePersonas.userId, session.user.id),
+          eq(favoritePersonas.userId, user.id),
           eq(favoritePersonas.targetPersonaId, data.targetPersonaId),
         ),
       );
@@ -88,9 +83,7 @@ export const removeFavorite = createServerFn({ method: "POST" })
 export const getMyFavorites = createServerFn({ method: "GET" }).handler(
   async () => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const rows = await db
       .select({
@@ -106,7 +99,7 @@ export const getMyFavorites = createServerFn({ method: "GET" }).handler(
       .from(favoritePersonas)
       .innerJoin(personas, eq(favoritePersonas.targetPersonaId, personas.id))
       .innerJoin(urlIds, eq(personas.userId, urlIds.userId))
-      .where(eq(favoritePersonas.userId, session.user.id))
+      .where(eq(favoritePersonas.userId, user.id))
       .orderBy(desc(favoritePersonas.createdAt));
     return rows.map(({ fieldVisibility, ...r }) => ({
       ...r,

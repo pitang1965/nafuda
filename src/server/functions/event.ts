@@ -10,19 +10,14 @@ import { isPrivateField } from "../lib/visibility";
 import { pushToRoom } from "../realtimePush";
 import { serverT } from "../../lib/i18n/serverT";
 import { zonedWallClockToUtc, isValidTimeZone } from "../../lib/timezone";
+import { requireUser } from "../lib/session";
+import { assertOwnedPersona } from "../lib/persona";
+import { generateToken } from "../lib/token";
 
 // 参加者一覧（presence）の更新を、そのイベントの EventRoom 閲覧者全員へ通知する。
 // 正本は Postgres。クライアントは通知を受けてローダーを再取得し収束する（realtime 無効環境では no-op）。
 function notifyEventRoster(eventId: string): Promise<void> {
   return pushToRoom(`event:${eventId}`, { type: "roster" });
-}
-
-function generateShareToken(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 // events の全カラムから gpsCoordinates を除いた明示カラム集合。座標は即時イベント
@@ -76,18 +71,10 @@ export const checkinToEvent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const persona = await db
-      .select({ id: personas.id, userId: personas.userId })
-      .from(personas)
-      .where(eq(personas.id, data.personaId))
-      .limit(1);
-    if (!persona[0]) throw new Error("Persona not found");
-    if (persona[0].userId !== session.user.id)
-      throw new Error("Forbidden: persona does not belong to current user");
+    if (!(await assertOwnedPersona(data.personaId, user.id)))
+      throw new Error("Forbidden");
 
     const eventRow = await db
       .select(eventColumnsWithoutGps)
@@ -107,7 +94,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
       .where(
         and(
           eq(eventCheckins.eventId, eventRow[0].id),
-          eq(eventCheckins.userId, session.user.id),
+          eq(eventCheckins.userId, user.id),
           ne(eventCheckins.personaId, data.personaId),
         ),
       );
@@ -128,7 +115,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
       .values({
         eventId: eventRow[0].id,
         personaId: data.personaId,
-        userId: session.user.id,
+        userId: user.id,
         gpsCoordinates: null,
       })
       .returning();
@@ -166,18 +153,10 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const persona = await db
-      .select({ id: personas.id, userId: personas.userId })
-      .from(personas)
-      .where(eq(personas.id, data.personaId))
-      .limit(1);
-    if (!persona[0]) throw new Error("Persona not found");
-    if (persona[0].userId !== session.user.id)
-      throw new Error("Forbidden: persona does not belong to current user");
+    if (!(await assertOwnedPersona(data.personaId, user.id)))
+      throw new Error("Forbidden");
 
     await db
       .update(eventCheckins)
@@ -195,8 +174,8 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
     const eventRow = await db
       .insert(events)
       .values({
-        slug: `${data.slug}-${generateShareToken().slice(0, 12)}`,
-        shareToken: generateShareToken(),
+        slug: `${data.slug}-${generateToken().slice(0, 12)}`,
+        shareToken: generateToken(),
         name: data.eventName,
         venueName: data.venueName,
         eventDate: buildEventDate(
@@ -216,7 +195,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
         showTime: data.showTime,
         timezone: data.timezone,
         description: data.description ?? null,
-        hostUserId: session.user.id,
+        hostUserId: user.id,
         hostPersonaId: data.hostPersonaId,
       })
       .returning();
@@ -226,7 +205,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
       .values({
         eventId: eventRow[0].id,
         personaId: data.personaId,
-        userId: session.user.id,
+        userId: user.id,
         gpsCoordinates: null,
       })
       .returning();
@@ -241,9 +220,7 @@ export const checkoutFromEvent = createServerFn({ method: "POST" })
   .validator(z.object({ checkinId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const checkin = await db
       .select({ id: eventCheckins.id, userId: eventCheckins.userId })
@@ -251,7 +228,7 @@ export const checkoutFromEvent = createServerFn({ method: "POST" })
       .where(eq(eventCheckins.id, data.checkinId))
       .limit(1);
     if (!checkin[0]) throw new Error("Checkin not found");
-    if (checkin[0].userId !== session.user.id)
+    if (checkin[0].userId !== user.id)
       throw new Error("Forbidden: checkin does not belong to current user");
 
     const updated = await db
@@ -357,16 +334,9 @@ export const cancelCheckin = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string().min(1), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const persona = await db
-      .select({ userId: personas.userId })
-      .from(personas)
-      .where(eq(personas.id, data.personaId))
-      .limit(1);
-    if (!persona[0] || persona[0].userId !== session.user.id)
+    if (!(await assertOwnedPersona(data.personaId, user.id)))
       throw new Error("Forbidden");
 
     const eventRow = await db
@@ -410,9 +380,7 @@ export const updateEvent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const eventRow = await db
       .select({ id: events.id, hostUserId: events.hostUserId })
@@ -420,7 +388,7 @@ export const updateEvent = createServerFn({ method: "POST" })
       .where(eq(events.shareToken, data.token))
       .limit(1);
     if (!eventRow[0]) throw new Error("Event not found");
-    if (eventRow[0].hostUserId !== session.user.id)
+    if (eventRow[0].hostUserId !== user.id)
       throw new Error("Forbidden: only the host can edit this event");
 
     await db
@@ -456,9 +424,7 @@ export const deleteEvent = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const eventRow = await db
       .select({ id: events.id, hostUserId: events.hostUserId })
@@ -466,7 +432,7 @@ export const deleteEvent = createServerFn({ method: "POST" })
       .where(eq(events.shareToken, data.token))
       .limit(1);
     if (!eventRow[0]) throw new Error("Event not found");
-    if (eventRow[0].hostUserId !== session.user.id)
+    if (eventRow[0].hostUserId !== user.id)
       throw new Error("Forbidden: only the host can delete this event");
 
     await db.delete(events).where(eq(events.id, eventRow[0].id));
@@ -477,11 +443,7 @@ export const deleteEvent = createServerFn({ method: "POST" })
 export const getMyEvents = createServerFn({ method: "GET" }).handler(
   async () => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
-
-    const userId = session.user.id;
+    const { id: userId } = await requireUser();
 
     const hostedEvents = await db
       .select()
@@ -542,17 +504,10 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const [personaRow] = await db
-      .select({ id: personas.id, userId: personas.userId })
-      .from(personas)
-      .where(eq(personas.id, data.personaId))
-      .limit(1);
-    if (!personaRow) throw new Error("Persona not found");
-    if (personaRow.userId !== session.user.id) throw new Error("Forbidden");
+    if (!(await assertOwnedPersona(data.personaId, user.id)))
+      throw new Error("Forbidden");
 
     // 既存アクティブチェックインをチェックアウト
     await db
@@ -576,7 +531,7 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
       .insert(events)
       .values({
         slug,
-        shareToken: generateShareToken(),
+        shareToken: generateToken(),
         name: data.eventName,
         venueName: null,
         eventDate: now,
@@ -584,7 +539,7 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
         timezone: data.timezone,
         isInstant: true,
         gpsCoordinates: data.gpsCoordinates ?? null,
-        hostUserId: session.user.id,
+        hostUserId: user.id,
         hostPersonaId: data.personaId,
       })
       .returning();
@@ -594,7 +549,7 @@ export const createInstantEventAndCheckin = createServerFn({ method: "POST" })
       .values({
         eventId: newEvent.id,
         personaId: data.personaId,
-        userId: session.user.id,
+        userId: user.id,
         gpsCoordinates: data.gpsCoordinates ?? null,
       })
       .returning();

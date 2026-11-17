@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { personas, galleryPhotos } from "../db/schema";
-import { auth } from "../auth";
 import { deleteFromR2, putToR2, r2PublicUrl } from "../storage";
 import { decodeJpegDataUrl } from "../lib/image";
 import { serverT } from "../../lib/i18n/serverT";
+import { requireUser } from "../lib/session";
+import { assertOwnedPersona } from "../lib/persona";
 
 // アバター以外の「対象物」写真の上限とキャプション長（ADR-0014）
 export const MAX_GALLERY_PHOTOS = 6;
@@ -15,17 +15,6 @@ const CAPTION_MAX = 30;
 
 // 長辺1080px・JPEG品質0.85 で ~600KB を見込み、base64 膨張(約1.33x)を足して上限を引き上げる
 const MAX_DATA_URL_LEN = 850_000;
-
-// 指定なふだが本人のものか検証する。所有していなければ null を返す
-async function assertOwnedPersona(personaId: string, userId: string) {
-  const db = getDb();
-  const [persona] = await db
-    .select({ id: personas.id })
-    .from(personas)
-    .where(and(eq(personas.id, personaId), eq(personas.userId, userId)))
-    .limit(1);
-  return persona ?? null;
-}
 
 export const uploadGalleryPhoto = createServerFn({ method: "POST" })
   .validator(
@@ -42,11 +31,9 @@ export const uploadGalleryPhoto = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const persona = await assertOwnedPersona(data.personaId, session.user.id);
+    const persona = await assertOwnedPersona(data.personaId, user.id);
     if (!persona) throw new Error("Forbidden");
 
     // 6枚上限。先に件数を確認してから書き込む
@@ -91,9 +78,7 @@ export const deleteGalleryPhoto = createServerFn({ method: "POST" })
   .validator(z.object({ photoId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     // 所有チェック: personas を JOIN して本人の写真であることを確認
     const [photo] = await db
@@ -101,10 +86,7 @@ export const deleteGalleryPhoto = createServerFn({ method: "POST" })
       .from(galleryPhotos)
       .innerJoin(personas, eq(galleryPhotos.personaId, personas.id))
       .where(
-        and(
-          eq(galleryPhotos.id, data.photoId),
-          eq(personas.userId, session.user.id),
-        ),
+        and(eq(galleryPhotos.id, data.photoId), eq(personas.userId, user.id)),
       )
       .limit(1);
     if (!photo) throw new Error("Forbidden");
@@ -120,19 +102,14 @@ export const updateGalleryCaption = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const [photo] = await db
       .select({ id: galleryPhotos.id })
       .from(galleryPhotos)
       .innerJoin(personas, eq(galleryPhotos.personaId, personas.id))
       .where(
-        and(
-          eq(galleryPhotos.id, data.photoId),
-          eq(personas.userId, session.user.id),
-        ),
+        and(eq(galleryPhotos.id, data.photoId), eq(personas.userId, user.id)),
       )
       .limit(1);
     if (!photo) throw new Error("Forbidden");
@@ -153,11 +130,9 @@ export const reorderGalleryPhotos = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const persona = await assertOwnedPersona(data.personaId, session.user.id);
+    const persona = await assertOwnedPersona(data.personaId, user.id);
     if (!persona) throw new Error("Forbidden");
 
     // 渡された id が全て本人のなふだの写真であることを確認してから採番し直す

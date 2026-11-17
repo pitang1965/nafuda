@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { personas, events } from "../db/schema";
-import { auth } from "../auth";
+import { events } from "../db/schema";
 import { signTicket } from "../lib/ticket";
 import { serverT } from "../../lib/i18n/serverT";
+import { requireUser } from "../lib/session";
+import { assertOwnedPersona } from "../lib/persona";
 
 // クライアントが realtime コンパニオン Worker へ WebSocket 接続する直前に呼ぶ。
 // セッションを持つ本体がペルソナ所有権を確認した上で、persona room の短命署名チケットを発行する。
@@ -14,20 +14,12 @@ import { serverT } from "../../lib/i18n/serverT";
 export const issueRealtimeTicket = createServerFn({ method: "POST" })
   .validator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const secret = process.env.REALTIME_SECRET;
     if (!secret) return { ticket: null as string | null }; // realtime 無効環境（本番）→ null
 
-    const db = getDb();
-    const [personaRow] = await db
-      .select({ userId: personas.userId })
-      .from(personas)
-      .where(eq(personas.id, data.personaId))
-      .limit(1);
-    if (personaRow?.userId !== session.user.id)
+    if (!(await assertOwnedPersona(data.personaId, user.id)))
       throw new Error(serverT("errors.noPermission"));
 
     const ticket = await signTicket(`persona:${data.personaId}`, secret);

@@ -17,13 +17,15 @@ import {
   session as sessionTable,
   account as accountTable,
 } from "../db/schema";
-import { auth } from "../auth";
 import { serverT } from "../../lib/i18n/serverT";
 import { deleteFromR2 } from "../storage";
 import { isPrivateField } from "../lib/visibility";
 import { oshiTagsSchema } from "../lib/oshiTags";
 import { PURPOSE_IDS } from "../../lib/purpose";
 import { getNafudaStyle } from "../../lib/nafuda-styles";
+import { requireUser } from "../lib/session";
+import { assertOwnedPersona } from "../lib/persona";
+import { generateToken } from "../lib/token";
 
 // なふだ枚数の上限（無料版の枠。将来の有料版で引き上げる想定）
 export const MAX_PERSONAS_PER_USER = 5;
@@ -92,19 +94,18 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
   async () => {
     const db = getDb();
     const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const myPersonas = await db
       .select()
       .from(personas)
-      .where(eq(personas.userId, session.user.id))
+      .where(eq(personas.userId, user.id))
       .orderBy(personas.createdAt);
 
     const urlIdRow = await db
       .select({ urlId: urlIds.urlId })
       .from(urlIds)
-      .where(eq(urlIds.userId, session.user.id))
+      .where(eq(urlIds.userId, user.id))
       .limit(1);
 
     const personaIds = myPersonas.map((p) => p.id);
@@ -198,9 +199,7 @@ export const getOwnProfile = createServerFn({ method: "GET" }).handler(
 export const getNafudaMap = createServerFn({ method: "GET" }).handler(
   async () => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     // 全なふだをノードにする（孤立含む）。孤立＝露出も被露出もない安全なふだを
     // 盤面に見せることが監査価値の核（「見せていない＝安全」を確認できる）。
@@ -212,7 +211,7 @@ export const getNafudaMap = createServerFn({ method: "GET" }).handler(
         avatarUrl: personas.avatarUrl,
       })
       .from(personas)
-      .where(eq(personas.userId, session.user.id))
+      .where(eq(personas.userId, user.id))
       .orderBy(personas.createdAt);
 
     const nodeIds = new Set(nodes.map((n) => n.id));
@@ -253,14 +252,12 @@ export const createPersona = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const owned = await db
       .select({ id: personas.id })
       .from(personas)
-      .where(eq(personas.userId, session.user.id))
+      .where(eq(personas.userId, user.id))
       .limit(MAX_PERSONAS_PER_USER);
     if (owned.length >= MAX_PERSONAS_PER_USER) {
       throw new Error(
@@ -268,24 +265,19 @@ export const createPersona = createServerFn({ method: "POST" })
       );
     }
 
-    // Generate share token
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    const shareToken = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const shareToken = generateToken();
 
     // Auto-generate UrlId on first persona creation
     const existingUrlId = await db
       .select({ urlId: urlIds.urlId })
       .from(urlIds)
-      .where(eq(urlIds.userId, session.user.id))
+      .where(eq(urlIds.userId, user.id))
       .limit(1);
     if (!existingUrlId[0]) {
       const newUrlId = await generateUniqueUrlId();
       await db
         .insert(urlIds)
-        .values({ urlId: newUrlId, userId: session.user.id });
+        .values({ urlId: newUrlId, userId: user.id });
     }
 
     // If this is default persona, clear existing defaults first
@@ -293,13 +285,13 @@ export const createPersona = createServerFn({ method: "POST" })
       await db
         .update(personas)
         .set({ isDefault: false })
-        .where(eq(personas.userId, session.user.id));
+        .where(eq(personas.userId, user.id));
     }
 
     const [persona] = await db
       .insert(personas)
       .values({
-        userId: session.user.id,
+        userId: user.id,
         displayName: data.displayName,
         label: data.label ?? null,
         purpose: data.purpose ?? null,
@@ -316,7 +308,7 @@ export const createPersona = createServerFn({ method: "POST" })
     const [{ total }] = await db
       .select({ total: count() })
       .from(personas)
-      .where(eq(personas.userId, session.user.id));
+      .where(eq(personas.userId, user.id));
     if (total > MAX_PERSONAS_PER_USER) {
       await db.delete(personas).where(eq(personas.id, persona.id));
       throw new Error(
@@ -351,9 +343,7 @@ export const updatePersona = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     const updates: Partial<typeof personas.$inferInsert> = {
       updatedAt: new Date(),
@@ -372,7 +362,7 @@ export const updatePersona = createServerFn({ method: "POST" })
       .where(
         and(
           eq(personas.id, data.personaId),
-          eq(personas.userId, session.user.id),
+          eq(personas.userId, user.id),
         ),
       );
   });
@@ -508,21 +498,10 @@ export const upsertSnsLink = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
-    const persona = await db
-      .select({ id: personas.id })
-      .from(personas)
-      .where(
-        and(
-          eq(personas.id, data.personaId),
-          eq(personas.userId, session.user.id),
-        ),
-      )
-      .limit(1);
-    if (!persona[0]) throw new Error("Forbidden");
+    if (!(await assertOwnedPersona(data.personaId, user.id)))
+      throw new Error("Forbidden");
 
     if (!isValidHttpsUrl(data.url)) {
       throw new Error(serverT("errors.urlMustBeHttps"));
@@ -575,9 +554,7 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
   .validator(z.object({ linkId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
+    const user = await requireUser();
 
     // linkId → persona → user を辿り所有者を検証（他人のリンク削除防止）
     const [owned] = await db
@@ -585,7 +562,7 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
       .from(snsLinks)
       .innerJoin(personas, eq(snsLinks.personaId, personas.id))
       .where(
-        and(eq(snsLinks.id, data.linkId), eq(personas.userId, session.user.id)),
+        and(eq(snsLinks.id, data.linkId), eq(personas.userId, user.id)),
       )
       .limit(1);
     if (!owned) throw new Error("Forbidden");
@@ -604,18 +581,11 @@ export const setNafudaLinks = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
-    const userId = session.user.id;
+    const { id: userId } = await requireUser();
 
     // リンク元が自分のものか確認
-    const [owned] = await db
-      .select({ id: personas.id })
-      .from(personas)
-      .where(and(eq(personas.id, data.personaId), eq(personas.userId, userId)))
-      .limit(1);
-    if (!owned) throw new Error("Forbidden");
+    if (!(await assertOwnedPersona(data.personaId, userId)))
+      throw new Error("Forbidden");
 
     // 重複除去・自己参照除去（順序は保持）
     const seen = new Set<string>();
@@ -679,10 +649,7 @@ async function collectPersonaR2Urls(personaIds: string[]) {
 export const deleteAccount = createServerFn({ method: "POST" }).handler(
   async () => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
-    const userId = session.user.id;
+    const { id: userId } = await requireUser();
 
     const myPersonas = await db
       .select({ id: personas.id })
@@ -738,10 +705,7 @@ export const deletePersona = createServerFn({ method: "POST" })
   .validator(z.object({ personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) throw new Error("Unauthorized");
-    const userId = session.user.id;
+    const { id: userId } = await requireUser();
 
     // 自分のなふだ一覧（最古順）。所有チェックと最後の1枚ガードに使う
     const myPersonas = await db
