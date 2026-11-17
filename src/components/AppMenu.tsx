@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
-import { authClient } from "../lib/auth-client";
+import { logout } from "../lib/auth-client";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -18,7 +18,7 @@ export function AppMenu({ iconColor }: { iconColor?: string }) {
   const t = useT();
 
   const handleLogout = async () => {
-    await authClient.signOut();
+    await logout();
     await navigate({ to: "/login" });
   };
 

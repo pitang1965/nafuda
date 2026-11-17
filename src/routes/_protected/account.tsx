@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { authClient } from "../../lib/auth-client";
+import { logout } from "../../lib/auth-client";
 import { deleteAccount } from "../../server/functions/profile";
 import { useT } from "../../lib/i18n/context";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ function AccountPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleLogout = async () => {
-    await authClient.signOut();
+    await logout();
     await navigate({ to: "/login" });
   };
 
@@ -38,7 +38,7 @@ function AccountPage() {
     setDeleteError(null);
     try {
       await deleteAccount();
-      await authClient.signOut();
+      await logout();
       await navigate({ to: "/login" });
     } catch {
       setDeleteError(t("account.deleteFailedError"));

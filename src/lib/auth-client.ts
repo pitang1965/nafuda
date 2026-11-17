@@ -7,4 +7,18 @@ export const authClient = createAuthClient({
 });
 
 // Re-export commonly used hooks for convenience
-export const { useSession, signIn, signOut } = authClient;
+// signOut は出さない: ログアウトは必ずキャッシュも消す logout() を通す
+export const { useSession } = authClient;
+
+// ログアウト後に /me のオフライン用キャッシュを消す（共有端末で前の人のなふだを出さない）。
+// キャッシュ名は src/sw.js の PAGE_CACHE と揃えること。
+export async function logout() {
+  try {
+    await authClient.signOut();
+  } finally {
+    // signOut が失敗（オフライン等）しても必ず消す
+    if (typeof caches !== "undefined") {
+      await caches.delete("nafuda-pages-v2").catch(() => {});
+    }
+  }
+}

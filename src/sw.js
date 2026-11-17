@@ -47,7 +47,10 @@ self.addEventListener('fetch', (event) => {
       caches.match(request).then(cached => {
         if (cached) return cached
         return fetch(request).then(response => {
-          caches.open(ASSET_CACHE).then(c => c.put(request, response.clone()))
+          // 一時的な 404/500 を永続化しない。R2 のアバター等は別ドメインの opaque 応答で
+          // 成否が見えないが、オフライン /me 表示に要るので保存する
+          // shortcut: opaque は R2 側の 404/500 も保存してしまう、R2 に CORS を設定し <img crossOrigin> にしたら response.ok だけにする
+          if (response.ok || response.type === 'opaque') caches.open(ASSET_CACHE).then(c => c.put(request, response.clone()))
           return response
         })
       })
