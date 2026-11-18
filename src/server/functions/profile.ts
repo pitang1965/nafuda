@@ -445,6 +445,8 @@ export const getPublicProfile = createServerFn({ method: "GET" })
     }));
 
     return {
+      // 呼び出し側で URL の urlId と照合する（/u/なんでも/p/{token} を弾く）
+      urlId,
       displayName: persona.displayName,
       bio: isPrivateField(visibility, "bio") ? null : persona.bio,
       avatarUrl: isPrivateField(visibility, "avatar_url")

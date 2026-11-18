@@ -23,7 +23,8 @@ export const Route = createFileRoute("/u/$urlId/p/$token")({
     const profile = await getPublicProfile({
       data: { shareToken: params.token },
     });
-    if (!profile) return null;
+    // 持ち主の urlId と違う URL は not found（同じなふだに URL が複数できるのを防ぐ）
+    if (!profile || profile.urlId !== params.urlId) return null;
     const avatarUrl = profile.avatarUrl?.startsWith("/")
       ? `${BASE_URL}${profile.avatarUrl}`
       : profile.avatarUrl;
