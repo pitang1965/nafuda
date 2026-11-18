@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { eq, and, isNull, desc, gt, lt } from "drizzle-orm";
+import { eq, and, isNull, desc, gt, lt, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "../db/client";
 import {
@@ -159,23 +159,20 @@ async function buildIssuerView(issuerPersonaId: string) {
 
     // 既つながり確認: 自分の fromPersona → 相手の persona が存在するか
     if (myPersonas.length > 0) {
-      const myPersonaIds = myPersonas.map((p) => p.id);
-      for (const myPersonaId of myPersonaIds) {
-        const existing = await db
-          .select({ id: connections.id })
-          .from(connections)
-          .where(
-            and(
-              eq(connections.fromPersonaId, myPersonaId),
-              eq(connections.toPersonaId, issuerPersonaId),
+      const [existing] = await db
+        .select({ id: connections.id })
+        .from(connections)
+        .where(
+          and(
+            inArray(
+              connections.fromPersonaId,
+              myPersonas.map((p) => p.id),
             ),
-          )
-          .limit(1);
-        if (existing[0]) {
-          alreadyConnected = true;
-          break;
-        }
-      }
+            eq(connections.toPersonaId, issuerPersonaId),
+          ),
+        )
+        .limit(1);
+      alreadyConnected = !!existing;
     }
   }
 
