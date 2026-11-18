@@ -62,7 +62,7 @@
 
 ### 2026-09-24: 初回マイグレーション生成・適用(dev)
 
-- `drizzle/`配下のPostgres時代のマイグレーション(20ファイル)を`drizzle-postgres-archive/`へ退避(方言がsqliteに変わり流用不可のため)
+- `drizzle/`配下のPostgres時代のマイグレーション(20ファイル)を`drizzle-postgres-archive/`へ退避(方言がsqliteに変わり流用不可のため)。2026-11-17に未参照のため削除(git履歴に残る)
 - `pnpm db:generate` で現行スキーマから初回マイグレーション`0000_overjoyed_vanisher.sql`を生成、15テーブル全てが正しく出力されたことを確認
 - `wrangler d1 migrations apply` は既定で`./migrations`を見るため、drizzle-kitの出力先`./drizzle`に合わせて`wrangler.toml`・`wrangler-dev.toml`の`[[d1_databases]]`ブロックに`migrations_dir = "drizzle"`を追加(本番・staging・devの3箇所とも)
 - `npx wrangler d1 migrations apply nafuda-db-dev --local --config wrangler-dev.toml` 実行、27コマンド成功・dev用ローカルD1にスキーマ作成完了

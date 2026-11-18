@@ -215,31 +215,6 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
     return { checkin: newCheckin[0], event: eventRow[0] };
   });
 
-// Checkout from event (set checkedOutAt = now)
-export const checkoutFromEvent = createServerFn({ method: "POST" })
-  .validator(z.object({ checkinId: z.uuid() }))
-  .handler(async ({ data }) => {
-    const db = getDb();
-    const user = await requireUser();
-
-    const checkin = await db
-      .select({ id: eventCheckins.id, userId: eventCheckins.userId })
-      .from(eventCheckins)
-      .where(eq(eventCheckins.id, data.checkinId))
-      .limit(1);
-    if (!checkin[0]) throw new Error("Checkin not found");
-    if (checkin[0].userId !== user.id)
-      throw new Error("Forbidden: checkin does not belong to current user");
-
-    const updated = await db
-      .update(eventCheckins)
-      .set({ checkedOutAt: new Date() })
-      .where(eq(eventCheckins.id, data.checkinId))
-      .returning();
-
-    return updated[0];
-  });
-
 // Get event participants by shareToken — public endpoint (no auth required)
 // ただし参加者の永続プロフィールURL（shareToken/urlId）はログインユーザーにのみ返す
 export const getEventParticipants = createServerFn({ method: "POST" })

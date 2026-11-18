@@ -1,1 +1,0 @@
-ALTER TABLE "personas" DROP COLUMN "is_public";

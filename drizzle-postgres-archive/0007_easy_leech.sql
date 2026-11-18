@@ -1,1 +1,0 @@
-ALTER TABLE "personas" ADD COLUMN "label" text;

@@ -464,8 +464,6 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
           eventDate: activeCtx.eventDate,
         }
       : { eventId: null, eventName: null, venueName: null, eventDate: null };
-    const issuerCtx = ctx;
-    const scannerCtx = ctx;
 
     // A→B と B→A を同時生成（ON CONFLICT DO NOTHING で冪等）し、使用済みトークンを削除する。
     // D1はトランザクションを持たないため、挿入失敗でトークンだけ消えないよう db.batch() で一括実行する。
@@ -477,13 +475,13 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
             fromPersonaId: scannerPersonaRow.id,
             toPersonaId: issuerPersonaId,
             fromUserId: user.id,
-            ...scannerCtx,
+            ...ctx,
           },
           {
             fromPersonaId: issuerPersonaId,
             toPersonaId: scannerPersonaRow.id,
             fromUserId: issuerPersonaRow!.userId,
-            ...issuerCtx,
+            ...ctx,
           },
         ])
         .onConflictDoNothing(),
@@ -502,7 +500,7 @@ export const createConnectionFromQr = createServerFn({ method: "POST" })
       since: now.toISOString(),
     });
 
-    return { alreadyConnected: false, connectedAt: new Date().toISOString() };
+    return { connectedAt: new Date().toISOString() };
   });
 
 // QRを見せた側がリアルタイムで接続成立を確認するためのポーリング用

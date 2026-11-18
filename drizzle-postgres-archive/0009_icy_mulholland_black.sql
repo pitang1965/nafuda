@@ -1,1 +1,0 @@
-ALTER TABLE "events" ADD COLUMN "host_persona_id" uuid;
