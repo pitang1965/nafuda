@@ -275,9 +275,7 @@ export const createPersona = createServerFn({ method: "POST" })
       .limit(1);
     if (!existingUrlId[0]) {
       const newUrlId = await generateUniqueUrlId();
-      await db
-        .insert(urlIds)
-        .values({ urlId: newUrlId, userId: user.id });
+      await db.insert(urlIds).values({ urlId: newUrlId, userId: user.id });
     }
 
     // If this is default persona, clear existing defaults first
@@ -360,10 +358,7 @@ export const updatePersona = createServerFn({ method: "POST" })
       .update(personas)
       .set(updates)
       .where(
-        and(
-          eq(personas.id, data.personaId),
-          eq(personas.userId, user.id),
-        ),
+        and(eq(personas.id, data.personaId), eq(personas.userId, user.id)),
       );
   });
 
@@ -385,41 +380,36 @@ export const getPublicProfile = createServerFn({ method: "GET" })
 
     if (!persona) return null;
 
-    const visibility = (persona.fieldVisibility ?? {}) as Record<
-      string,
-      string
-    >;
+    const visibility = persona.fieldVisibility;
 
     // CRITICAL: filter SNS links at query level — do not fetch then hide client-side
     // id (linkId) は返さない: 匿名収集→削除APIへの攻撃面になるため
-    const links =
-      visibility.sns_links === "private"
-        ? []
-        : await db
-            .select({
-              platform: snsLinks.platform,
-              url: snsLinks.url,
-              title: snsLinks.title,
-              displayOrder: snsLinks.displayOrder,
-            })
-            .from(snsLinks)
-            .where(eq(snsLinks.personaId, persona.id))
-            .orderBy(snsLinks.displayOrder);
+    const links = isPrivateField(visibility, "sns_links")
+      ? []
+      : await db
+          .select({
+            platform: snsLinks.platform,
+            url: snsLinks.url,
+            title: snsLinks.title,
+            displayOrder: snsLinks.displayOrder,
+          })
+          .from(snsLinks)
+          .where(eq(snsLinks.personaId, persona.id))
+          .orderBy(snsLinks.displayOrder);
 
     // CRITICAL: ギャラリーも非公開ならクエリ段階で除外する（取得して隠すのは不可）
     // id (photoId) は返さない: 匿名収集→削除APIへの攻撃面になるため（SNSリンクと同じ方針）
-    const gallery =
-      visibility.gallery === "private"
-        ? []
-        : await db
-            .select({
-              imageUrl: galleryPhotos.imageUrl,
-              caption: galleryPhotos.caption,
-              displayOrder: galleryPhotos.displayOrder,
-            })
-            .from(galleryPhotos)
-            .where(eq(galleryPhotos.personaId, persona.id))
-            .orderBy(galleryPhotos.displayOrder);
+    const gallery = isPrivateField(visibility, "gallery")
+      ? []
+      : await db
+          .select({
+            imageUrl: galleryPhotos.imageUrl,
+            caption: galleryPhotos.caption,
+            displayOrder: galleryPhotos.displayOrder,
+          })
+          .from(galleryPhotos)
+          .where(eq(galleryPhotos.personaId, persona.id))
+          .orderBy(galleryPhotos.displayOrder);
 
     // なふだリンク（ADR-0015）: 自分の別のなふだへの内部参照。リンク先は同一ユーザーなので
     // urlId は共通。表示名・アバター・shareToken をリンク先 personas から動的取得する。
@@ -456,9 +446,11 @@ export const getPublicProfile = createServerFn({ method: "GET" })
 
     return {
       displayName: persona.displayName,
-      bio: visibility.bio === "private" ? null : persona.bio,
-      avatarUrl: visibility.avatar_url === "private" ? null : persona.avatarUrl,
-      oshiTags: visibility.oshi_tags === "private" ? [] : persona.oshiTags,
+      bio: isPrivateField(visibility, "bio") ? null : persona.bio,
+      avatarUrl: isPrivateField(visibility, "avatar_url")
+        ? null
+        : persona.avatarUrl,
+      oshiTags: isPrivateField(visibility, "oshi_tags") ? [] : persona.oshiTags,
       // 用途タイプはタグ見出しの出し分けに使う（値自体は公開情報ではないが、効果が見える）
       purpose: persona.purpose,
       dojinReject: persona.dojinReject,
@@ -561,9 +553,7 @@ export const deleteSnsLink = createServerFn({ method: "POST" })
       .select({ id: snsLinks.id })
       .from(snsLinks)
       .innerJoin(personas, eq(snsLinks.personaId, personas.id))
-      .where(
-        and(eq(snsLinks.id, data.linkId), eq(personas.userId, user.id)),
-      )
+      .where(and(eq(snsLinks.id, data.linkId), eq(personas.userId, user.id)))
       .limit(1);
     if (!owned) throw new Error("Forbidden");
 
@@ -640,10 +630,7 @@ async function collectPersonaR2Urls(personaIds: string[]) {
       .from(galleryPhotos)
       .where(inArray(galleryPhotos.personaId, personaIds)),
   ]);
-  return [
-    ...avatars.map((a) => a.avatarUrl),
-    ...photos.map((p) => p.imageUrl),
-  ];
+  return [...avatars.map((a) => a.avatarUrl), ...photos.map((p) => p.imageUrl)];
 }
 
 export const deleteAccount = createServerFn({ method: "POST" }).handler(

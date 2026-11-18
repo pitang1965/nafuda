@@ -1,24 +1,24 @@
-import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { genericOAuth, line } from 'better-auth/plugins/generic-oauth'
-import { getDb } from './db/client'
-import * as schema from './db/schema'
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { genericOAuth, line } from "better-auth/plugins/generic-oauth";
+import { getDb } from "./db/client";
+import * as schema from "./db/schema";
 
 const requiredEnvVars = [
-  'BETTER_AUTH_URL',
-  'BETTER_AUTH_SECRET',
-  'GOOGLE_CLIENT_ID',
-  'GOOGLE_CLIENT_SECRET',
-  'FACEBOOK_CLIENT_ID',
-  'FACEBOOK_CLIENT_SECRET',
-  'LINE_CLIENT_ID',
-  'LINE_CLIENT_SECRET',
-] as const
+  "BETTER_AUTH_URL",
+  "BETTER_AUTH_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "FACEBOOK_CLIENT_ID",
+  "FACEBOOK_CLIENT_SECRET",
+  "LINE_CLIENT_ID",
+  "LINE_CLIENT_SECRET",
+] as const;
 
-const missing = requiredEnvVars.filter((key) => !process.env[key])
+const missing = requiredEnvVars.filter((key) => !process.env[key]);
 if (missing.length > 0) {
-  console.error(`[FATAL] Missing environment variables: ${missing.join(', ')}`)
-  throw new Error(`Missing environment variables: ${missing.join(', ')}`)
+  console.error(`[FATAL] Missing environment variables: ${missing.join(", ")}`);
+  throw new Error(`Missing environment variables: ${missing.join(", ")}`);
 }
 
 export const auth = betterAuth({
@@ -27,13 +27,17 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
   // D1はトランザクションをサポートしない(BEGIN不可、db.batch()のみ)。
   // transaction: false でBetter Auth内部の実トランザクション使用を止める。
-  database: drizzleAdapter(getDb(), { provider: 'sqlite', schema, transaction: false }),
+  database: drizzleAdapter(getDb(), {
+    provider: "sqlite",
+    schema,
+    transaction: false,
+  }),
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      accessType: 'offline',        // ensures refresh token is issued
-      prompt: 'select_account',     // forces account picker every time
+      accessType: "offline", // ensures refresh token is issued
+      prompt: "select_account", // forces account picker every time
     },
     facebook: {
       clientId: process.env.FACEBOOK_CLIENT_ID!,
@@ -60,8 +64,8 @@ export const auth = betterAuth({
       enabled: true,
       maxAge: 60 * 5, // 5 minutes
     },
-    expiresIn: 60 * 60 * 24 * 30,   // 30 days (iOS ITP mitigation — users open app ~monthly)
-    updateAge: 60 * 60 * 24,          // Refresh session token after 1 day of activity
+    expiresIn: 60 * 60 * 24 * 30, // 30 days (iOS ITP mitigation — users open app ~monthly)
+    updateAge: 60 * 60 * 24, // Refresh session token after 1 day of activity
   },
   plugins: [
     genericOAuth({
@@ -77,4 +81,4 @@ export const auth = betterAuth({
       ],
     }),
   ],
-})
+});

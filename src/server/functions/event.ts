@@ -81,7 +81,7 @@ export const checkinToEvent = createServerFn({ method: "POST" })
       .from(events)
       .where(eq(events.shareToken, data.token))
       .limit(1);
-    if (!eventRow[0]) throw new Error("Event not found");
+    if (!eventRow[0]) throw new Error(serverT("errors.eventNotFound"));
 
     // 受付窓ゲート（ADR-0020）: 開催期間±猶予の外からのチェックインは受け付けない。
     if (!isWithinCheckinWindow(eventRow[0])) {
@@ -217,7 +217,7 @@ export const createEventAndCheckin = createServerFn({ method: "POST" })
 
 // Get event participants by shareToken — public endpoint (no auth required)
 // ただし参加者の永続プロフィールURL（shareToken/urlId）はログインユーザーにのみ返す
-export const getEventParticipants = createServerFn({ method: "POST" })
+export const getEventParticipants = createServerFn({ method: "GET" })
   .validator(z.object({ token: z.string() }))
   .handler(async ({ data }) => {
     const db = getDb();
@@ -276,7 +276,7 @@ export const getEventParticipants = createServerFn({ method: "POST" })
   });
 
 // Check if the current user's persona has any checkin for this event
-export const getMyCheckinStatus = createServerFn({ method: "POST" })
+export const getMyCheckinStatus = createServerFn({ method: "GET" })
   .validator(z.object({ token: z.string(), personaId: z.uuid() }))
   .handler(async ({ data }) => {
     const db = getDb();
@@ -319,7 +319,7 @@ export const cancelCheckin = createServerFn({ method: "POST" })
       .from(events)
       .where(eq(events.shareToken, data.token))
       .limit(1);
-    if (!eventRow[0]) throw new Error("Event not found");
+    if (!eventRow[0]) throw new Error(serverT("errors.eventNotFound"));
 
     await db
       .delete(eventCheckins)
@@ -362,9 +362,9 @@ export const updateEvent = createServerFn({ method: "POST" })
       .from(events)
       .where(eq(events.shareToken, data.token))
       .limit(1);
-    if (!eventRow[0]) throw new Error("Event not found");
+    if (!eventRow[0]) throw new Error(serverT("errors.eventNotFound"));
     if (eventRow[0].hostUserId !== user.id)
-      throw new Error("Forbidden: only the host can edit this event");
+      throw new Error(serverT("errors.noPermission"));
 
     await db
       .update(events)
@@ -406,9 +406,9 @@ export const deleteEvent = createServerFn({ method: "POST" })
       .from(events)
       .where(eq(events.shareToken, data.token))
       .limit(1);
-    if (!eventRow[0]) throw new Error("Event not found");
+    if (!eventRow[0]) throw new Error(serverT("errors.eventNotFound"));
     if (eventRow[0].hostUserId !== user.id)
-      throw new Error("Forbidden: only the host can delete this event");
+      throw new Error(serverT("errors.noPermission"));
 
     await db.delete(events).where(eq(events.id, eventRow[0].id));
     return { success: true };

@@ -123,7 +123,8 @@ const ja: DictionaryNode = {
   errors: {
     personaNotFound: "ペルソナが見つかりません",
     qrInvalidOrExpired: "QRコードが無効または期限切れです",
-    inviteRateLimited: "招待の発行が上限に達しました。時間をおいてもう一度お試しください",
+    inviteRateLimited:
+      "招待の発行が上限に達しました。時間をおいてもう一度お試しください",
     ownPersonaNotFound: "自分のペルソナが見つかりません",
     inviteInvalidOrExpired: "招待が無効または期限切れです",
     cannotConnectToSelf: "自分自身にはつながれません",
@@ -140,11 +141,13 @@ const ja: DictionaryNode = {
     checkinWindowClosed: "チェックインの受付期間外です",
     galleryPhotoLimit: "写真は最大{{max}}枚までです",
     invalidOrderSpecified: "並び順の指定が不正です",
-    slugInvalidChars: "スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます",
+    slugInvalidChars:
+      "スラッグはURL-safe文字（英数字・ハイフン）のみ使用できます",
     oshiTagsMax: "推しタグは20個まで",
     personaLimit: "なふだは最大{{max}}枚までです",
     snsLinkLimit: "SNSリンクは最大{{max}}件までです",
     timezoneInvalid: "タイムゾーンの指定が正しくありません",
+    eventNotFound: "イベントが見つかりません",
   },
   me: {
     edit: "編集",
@@ -178,7 +181,8 @@ const ja: DictionaryNode = {
       "用途を選ぶと、なふだの見せ方がそれに合わせて変わります。あとから変更できます。",
     next: "次へ",
     step2Title: "表示名を決めましょう",
-    step2Description: "本名は不要です。ハンドル名・ニックネームでOK。絵文字も使えます。",
+    step2Description:
+      "本名は不要です。ハンドル名・ニックネームでOK。絵文字も使えます。",
     displayNamePlaceholder: "例：ゆきたん⭐",
     errorDisplayNameRequired: "表示名を入力してください",
     errorDisplayNameMax: "50文字以下",
@@ -230,7 +234,8 @@ const ja: DictionaryNode = {
     privateMemoHint: "— 自分だけに表示されます",
     memoPlaceholder: "相手についての覚え書き",
     emptyTitle: "まだつながりがありません",
-    emptyHint: "「なふだを交換する」で相手にQRコードをスキャンしてもらいましょう",
+    emptyHint:
+      "「なふだを交換する」で相手にQRコードをスキャンしてもらいましょう",
   },
   favorites: {
     savedOn: "{{date}} に保存",
@@ -362,7 +367,8 @@ const ja: DictionaryNode = {
     logoutDescription: "このデバイスからサインアウトします。",
     logoutButton: "ログアウト",
     deleteHeading: "退会",
-    deleteDescription: "アカウントとすべてのデータを削除します。元に戻せません。",
+    deleteDescription:
+      "アカウントとすべてのデータを削除します。元に戻せません。",
     deleteButton: "退会手続きに進む",
     deleteFailedError: "退会処理に失敗しました。再度お試しください。",
     confirmTitle: "退会の確認",
@@ -383,16 +389,19 @@ const ja: DictionaryNode = {
     noLinksBody:
       "なふだ同士のリンクがないため、リンク経由の露出もありません。自分の別のなふだへの導線は、なふだの編集画面から追加できます。",
     backToMyNafuda: "マイなふだへ戻る",
-    tapHint: "なふだをタップすると、それを見せたときに広がる露出を色で示します。",
+    tapHint:
+      "なふだをタップすると、それを見せたときに広がる露出を色で示します。",
     legendExposesTo: "露出する先",
     legendExposedBy: "露出させる元",
     legendArrow: "矢印 A→B ＝ A を見せると B が開ける",
     selectedAriaSuffix: "（選択中）",
     exposesToHeading: "露出する先",
-    exposesToHelp: "これを見せた相手が、なふだリンクをたどって開けてしまう別のなふだ",
+    exposesToHelp:
+      "これを見せた相手が、なふだリンクをたどって開けてしまう別のなふだ",
     exposedByHeading: "露出させる元",
     exposedByHelp: "これらを見せると、このなふだが開けてしまう入口",
-    editHint: "意図しない露出があれば、そのなふだの編集画面でなふだリンクを外してください。",
+    editHint:
+      "意図しない露出があれば、そのなふだの編集画面でなふだリンクを外してください。",
     isolatedHint:
       "孤立したなふだ（どことも繋がっていない＝露出なし）は枠だけで表示されます。",
     none: "（なし）",

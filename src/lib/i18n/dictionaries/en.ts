@@ -98,7 +98,8 @@ const en: DictionaryNode = {
       "Keep separate Nafuda for oshi activities, meetups, drinks and more. Show only what you want to show.",
   },
   login: {
-    tagline: "All your social links in one place, with the story of how you met",
+    tagline:
+      "All your social links in one place, with the story of how you met",
     lineLogin: "Continue with LINE",
     googleLogin: "Continue with Google",
     facebookLogin: "Continue with Facebook",
@@ -144,11 +145,13 @@ const en: DictionaryNode = {
     checkinWindowClosed: "Check-in isn't open right now.",
     galleryPhotoLimit: "You can have up to {{max}} photos.",
     invalidOrderSpecified: "The order specified is invalid.",
-    slugInvalidChars: "Slugs can only use URL-safe characters (letters, numbers, hyphens).",
+    slugInvalidChars:
+      "Slugs can only use URL-safe characters (letters, numbers, hyphens).",
     oshiTagsMax: "Up to 20 oshi tags",
     personaLimit: "You can have up to {{max}} nafuda.",
     snsLinkLimit: "You can add up to {{max}} social links.",
     timezoneInvalid: "That timezone isn't valid.",
+    eventNotFound: "Couldn't find this event.",
   },
   me: {
     edit: "Edit",
@@ -264,7 +267,8 @@ const en: DictionaryNode = {
     venueNameLabel: "Venue name",
     venueNamePlaceholder: "e.g. Tokyo Big Sight",
     timezoneLabel: "Event timezone",
-    timezoneHint: "The date and time are treated as local time in this timezone",
+    timezoneHint:
+      "The date and time are treated as local time in this timezone",
     timezoneDetecting: "Detecting...",
     startDateLabel: "Start date",
     endDateLabel: "End date",
@@ -283,8 +287,7 @@ const en: DictionaryNode = {
   addFavorite: {
     backToFavorites: "Back to Favorites",
     selfTitle: "You can't save your own Nafuda",
-    selfDescription:
-      'You can always see your own Nafuda from "My Nafuda".',
+    selfDescription: 'You can always see your own Nafuda from "My Nafuda".',
     backToMyNafuda: "Go to My Nafuda",
     removedTitle: "Removed from Favorites",
     removedBody: "Removed {{name}} from your list.",
@@ -317,8 +320,10 @@ const en: DictionaryNode = {
     skyLabel: "{{period}} sky ★ {{count}}",
   },
   pwaInstallBanner: {
-    iosSafariHint: 'Tap Share (↑) in Safari → "Add to Home Screen" to open anytime',
-    iosOtherHint: 'Open the browser menu → "Add to Home Screen" to open anytime',
+    iosSafariHint:
+      'Tap Share (↑) in Safari → "Add to Home Screen" to open anytime',
+    iosOtherHint:
+      'Open the browser menu → "Add to Home Screen" to open anytime',
     close: "Close",
     installPrompt: "Add to your home screen so you can open it anytime",
     install: "Add",
@@ -406,8 +411,7 @@ const en: DictionaryNode = {
     exposesToHelp:
       "Other Nafuda someone could reach by following Nafuda links, after you show them this one",
     exposedByHeading: "Exposed by",
-    exposedByHelp:
-      "Nafuda that, if shown, would open up this one as well",
+    exposedByHelp: "Nafuda that, if shown, would open up this one as well",
     editHint:
       "If any of this exposure is unintended, remove the Nafuda link from that Nafuda's edit screen.",
     isolatedHint:
@@ -439,8 +443,7 @@ const en: DictionaryNode = {
     moveRightAriaLabel: "Move right",
     captionPlaceholder: "Caption",
     addPhotoAriaLabel: "Add photo",
-    hint:
-      "Up to {{max}} photos. Show off what you love — your oshi, your work, your car. Tap to view full size.",
+    hint: "Up to {{max}} photos. Show off what you love — your oshi, your work, your car. Tap to view full size.",
   },
   avatarUpload: {
     saveFailedError: "Couldn't save the photo. Please try again.",
