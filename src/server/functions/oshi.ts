@@ -17,6 +17,8 @@ export const getOshiSuggestions = createServerFn({ method: "GET" })
     // oshi_tags はD1ではJSON文字列で保持しているため、Postgresの UNNEST() の代わりに
     // SQLiteの json_each() テーブル関数でJSON配列を行に展開する。
     // ILIKE相当は LOWER() 比較で近似する(日本語には大文字小文字の区別が無いため実害は小さい)。
+    // shortcut: 呼ぶたびに全なふだのJSONを展開する(認証不要・入力はクライアントでdebounce済み)。
+    // なふだが数千を超えたら、タグ→件数の集計表を作ってそちらを引く。getPopularOshiTags も同様。
     const results = await db.all<{ tag: string; count: number }>(sql`
       SELECT je.value as tag, COUNT(*) as count
       FROM personas, json_each(personas.oshi_tags) as je
@@ -36,6 +38,7 @@ export const getPopularOshiTags = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = getDb();
     const purpose = data.purpose ?? null;
+    // shortcut: getOshiSuggestions と同じく全件走査。なふだが数千を超えたら集計表へ。
     const results = await db.all<{ tag: string; count: number }>(sql`
       SELECT je.value as tag, COUNT(*) as count
       FROM personas, json_each(personas.oshi_tags) as je
