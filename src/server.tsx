@@ -167,10 +167,10 @@ async function handleRequest(request: Request): Promise<Response> {
   if (pathname.startsWith("/api/auth/")) {
     try {
       const { auth } = await import("./server/auth");
-      return auth.handler(request);
+      return await auth.handler(request);
     } catch (e) {
       console.error("[server] /api/auth error:", e);
-      return new Response(String(e), { status: 500 });
+      return new Response("Internal Server Error", { status: 500 });
     }
   }
 
