@@ -39,3 +39,6 @@ tmp/
 
 # Cloudflare Wrangler local state
 .wrangler/
+
+# Personal Claude Code settings
+.claude/settings.local.json
