@@ -45,15 +45,14 @@ database_name = "nafuda-db-staging"
 database_id = "775c12d1-6e8e-4e5f-9b97-a1dc8e8f746d"
 migrations_dir = "drizzle"
 
-# realtime コンパニオン Worker への Service Binding（staging 実験用）。
-# Preview 環境にのみ存在 → 本番（top-level）には無いため pushToPersona は no-op になる。
+# realtime コンパニオン Worker への Service Binding（staging 用。本番は top-level の [[services]]）。
 [[env.preview.services]]
 binding = "REALTIME"
 service = "nafuda-realtime-staging"
 
 [env.preview.vars]
 R2_PUBLIC_URL = "https://pub-4b271ae313654596b3a0f88236892b5b.r2.dev"
-# WebSocket 接続先（ビルド時変数）。Preview のみ＝本番は未設定でフラグOFF（既存ポーリング）。
+# WebSocket 接続先（ビルド時変数）。staging 用。
 VITE_REALTIME_URL = "wss://nafuda-realtime-staging.pitang1965.workers.dev"
 
 [observability]

@@ -15,7 +15,7 @@ import { assertOwnedPersona } from "../lib/persona";
 import { generateToken } from "../lib/token";
 
 // 参加者一覧（presence）の更新を、そのイベントの EventRoom 閲覧者全員へ通知する。
-// 正本は Postgres。クライアントは通知を受けてローダーを再取得し収束する（realtime 無効環境では no-op）。
+// 正本は D1。クライアントは通知を受けてローダーを再取得し収束する（realtime 無効環境では no-op）。
 function notifyEventRoster(eventId: string): Promise<void> {
   return pushToRoom(`event:${eventId}`, { type: "roster" });
 }

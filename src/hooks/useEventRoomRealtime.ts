@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { issueEventRoomTicket } from "../server/functions/realtime";
 
-// realtime コンパニオン Worker の URL（ビルド時フラグ）。未設定（本番）ならこのフックは不活性で、
-// イベントページは従来どおり静的な参加者一覧（ローダー取得のまま）になる。設定済み（staging）なら
+// realtime コンパニオン Worker の URL（ビルド時フラグ）。未設定（ローカル開発）ならこのフックは不活性で、
+// イベントページは従来どおり静的な参加者一覧（ローダー取得のまま）になる。設定済み（本番/staging）なら
 // EventRoom に WS 接続し、チェックイン/取消の通知や再接続のたびに onChange でローダーを再取得する。
 const REALTIME_URL = import.meta.env.VITE_REALTIME_URL as string | undefined;
 const realtimeEnabled = Boolean(REALTIME_URL);
@@ -18,7 +18,7 @@ type Params = {
   onChange: () => void; // 名簿が変わった/再同期すべき時に呼ぶ（通常は router.invalidate）
 };
 
-// イベント参加者一覧をリアルタイムに保つ。正本は Postgres で、通知/再接続のたびに onChange を
+// イベント参加者一覧をリアルタイムに保つ。正本は D1 で、通知/再接続のたびに onChange を
 // 呼んでローダーを再取得し収束させる（「signal + 再取得」）。差分は持たない。
 export function useEventRoomRealtime({ enabled, token, onChange }: Params) {
   const onChangeRef = useRef(onChange);

@@ -1,4 +1,4 @@
-// なふだ realtime コンパニオン Worker（staging 実験用・本体 Pages とは別デプロイ）。
+// なふだ realtime コンパニオン Worker（本番/staging・本体 Pages とは別デプロイ）。
 // DO はここでしか定義できない（Pages からは export 不可）。本体はこれを Service Binding で叩く。
 //
 // ルート:

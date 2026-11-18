@@ -4,8 +4,8 @@ import { checkQrConnectionStatus } from "../server/functions/connection";
 import { useT } from "../lib/i18n/context";
 
 // realtime コンパニオン Worker の URL（ビルド時フラグ）。
-// 未設定（本番）なら このフックは完全に不活性になり、me.tsx 側の既存3秒ポーリングが使われる。
-// 設定済み（staging Preview）なら WebSocket で接続成立を即時検知し、WS が張れない時だけ
+// 未設定（ローカル開発）なら このフックは完全に不活性になり、me.tsx 側の既存3秒ポーリングが使われる。
+// 設定済み（本番/staging）なら WebSocket で接続成立を即時検知し、WS が張れない時だけ
 // 縮退ポーリング（低頻度）にフォールバックする。
 const REALTIME_URL = import.meta.env.VITE_REALTIME_URL as string | undefined;
 
@@ -15,7 +15,7 @@ const MAX_WS_RETRIES = 3;
 const FALLBACK_POLL_MS = 12000; // WS 不成立時の縮退ポーリング間隔
 const PING_MS = 30000;
 // WS は繋がっているのに push だけ取りこぼした場合に永久に気づけない穴を塞ぐ安全網。
-// 接続中も低頻度で正本(Postgres)を読み、必ず収束させる。会場の不安定回線向けの保険。
+// 接続中も低頻度で正本(D1)を読み、必ず収束させる。会場の不安定回線向けの保険。
 const SAFETY_RECONCILE_MS = 30000;
 
 type Params = {
@@ -26,7 +26,7 @@ type Params = {
   onConnected: (displayName: string) => void;
 };
 
-// QR接続成立を realtime（WebSocket）で検知する。正本は Postgres で、(再)接続のたびに
+// QR接続成立を realtime（WebSocket）で検知する。正本は D1 で、(再)接続のたびに
 // checkQrConnectionStatus を1回読んで取りこぼしを収束させる（reconcile-on-connect）。
 export function useQrConnectionRealtime({
   enabled,
@@ -52,7 +52,7 @@ export function useQrConnectionRealtime({
     let pingTimer: ReturnType<typeof setInterval> | null = null;
     let safetyTimer: ReturnType<typeof setInterval> | null = null;
 
-    // Postgres から成立を1回読む。成立していれば通知して true を返す。
+    // D1 から成立を1回読む。成立していれば通知して true を返す。
     const reconcile = async (): Promise<boolean> => {
       try {
         const result = await checkQrConnectionStatus({

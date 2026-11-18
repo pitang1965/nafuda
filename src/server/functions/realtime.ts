@@ -17,7 +17,7 @@ export const issueRealtimeTicket = createServerFn({ method: "POST" })
     const user = await requireUser();
 
     const secret = process.env.REALTIME_SECRET;
-    if (!secret) return { ticket: null as string | null }; // realtime 無効環境（本番）→ null
+    if (!secret) return { ticket: null as string | null }; // realtime 無効環境（ローカル開発）→ null
 
     if (!(await assertOwnedPersona(data.personaId, user.id)))
       throw new Error(serverT("errors.noPermission"));
@@ -33,7 +33,7 @@ export const issueEventRoomTicket = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string().min(1) }))
   .handler(async ({ data }) => {
     const secret = process.env.REALTIME_SECRET;
-    if (!secret) return { ticket: null as string | null }; // realtime 無効環境（本番）→ null
+    if (!secret) return { ticket: null as string | null }; // realtime 無効環境（ローカル開発）→ null
 
     const db = getDb();
     const [eventRow] = await db

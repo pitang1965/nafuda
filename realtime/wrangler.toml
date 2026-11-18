@@ -1,11 +1,11 @@
-# なふだ realtime コンパニオン Worker（staging 実験用）。
+# なふだ realtime コンパニオン Worker（top-level = staging、[env.production] = 本番）。
 # 本体 Pages (nafuda) とは別デプロイ単位。`cd realtime && wrangler deploy` で上げる。
-# 後戻り: `wrangler delete nafuda-realtime-staging` で丸ごと消える（DB変更ゼロ）。
+# 後戻り: `wrangler delete nafuda-realtime-staging` で丸ごと消える（DB変更ゼロ）。本番は `wrangler delete -e production`（nafuda-realtime が消える）。
 #
 # シークレットはこのファイルに書かず secret で投入する:
 #   wrangler secret put REALTIME_SECRET
 #   wrangler secret put INTERNAL_PUSH_SECRET
-# 同じ値を本体 Pages の Preview 環境にも設定する（REALTIME_SECRET / INTERNAL_PUSH_SECRET）。
+# 同じ値を本体 Pages 側にも設定する（staging=Preview、本番=Production 環境）。本番 Worker への投入は -e production を付ける。
 
 name = "nafuda-realtime-staging"
 main = "src/index.ts"

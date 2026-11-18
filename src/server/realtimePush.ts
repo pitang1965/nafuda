@@ -2,8 +2,8 @@
 // createServerFn を含まず、クライアントからは直接 import しない（ハンドラ内からのみ使う）。
 // storage.ts と同じく cloudflare:workers の env からバインディングを読む。
 //
-// 方針: 決して throw しない。realtime はあくまで「速い確認」の付加機能で、Postgres が正本。
-// バインディング未設定（本番＝フラグOFF）なら無言で no-op になり、既存ポーリング動作に一切影響しない。
+// 方針: 決して throw しない。realtime はあくまで「速い確認」の付加機能で、D1 が正本。
+// バインディング未設定（ローカル開発＝フラグOFF）なら無言で no-op になり、既存ポーリング動作に一切影響しない。
 import { env } from "cloudflare:workers";
 
 type RealtimeEnv = {
@@ -12,7 +12,7 @@ type RealtimeEnv = {
 };
 
 // 指定 room（"persona:<id>" / "event:<id>"）へ payload を push する。
-// REALTIME バインディングが無ければ no-op（フラグOFF＝本番では何も起きない）。
+// REALTIME バインディングが無ければ no-op（フラグOFF＝ローカル開発では何も起きない）。
 export async function pushToRoom(
   room: string,
   payload: unknown,
@@ -31,7 +31,7 @@ export async function pushToRoom(
       }),
     );
   } catch (err) {
-    // realtime が落ちていても接続フロー（Postgres 書き込み）は完了済み。
+    // realtime が落ちていても接続フロー（D1 書き込み）は完了済み。
     // クライアントは reconcile-on-connect で必ず収束するので握りつぶす。
     console.error("[pushToRoom] realtime push 失敗", String(err));
   }
