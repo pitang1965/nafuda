@@ -5,6 +5,7 @@ import { auth } from "../server/auth";
 import { HeroVideo } from "../components/HeroVideo";
 import { useT } from "../lib/i18n/context";
 import { LanguageToggle } from "../components/LanguageToggle";
+import { LineBrowserNotice } from "../components/LineBrowserNotice";
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const request = getRequest();
@@ -60,6 +61,8 @@ function LandingPage() {
         <p className="text-sm text-gray-600 mb-10 text-center leading-relaxed">
           {t("landing.heroSubtitle")}
         </p>
+
+        <LineBrowserNotice className="mb-6" />
 
         <Link
           to="/login"

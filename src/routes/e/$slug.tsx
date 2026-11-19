@@ -17,6 +17,7 @@ import { QRBottomSheet } from "../../components/QRBottomSheet";
 import { PersonaSwitcher } from "../../components/PersonaSwitcher";
 import { EmptyState } from "../../components/EmptyState";
 import { LanguageToggle } from "../../components/LanguageToggle";
+import { LineBrowserNotice } from "../../components/LineBrowserNotice";
 import { useT, useLocale } from "../../lib/i18n/context";
 import { formatEventPeriod } from "../../lib/i18n/formatDate";
 
@@ -212,6 +213,7 @@ function EventPage() {
         </div>
 
         <main className="p-6 flex flex-col gap-6">
+          <LineBrowserNotice />
           {/* イベント情報ヘッダー */}
           <div className="flex flex-col gap-1">
             <p className="text-sm text-gray-500">{data.event.venueName}</p>

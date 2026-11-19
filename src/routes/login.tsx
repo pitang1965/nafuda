@@ -5,6 +5,7 @@ import { authClient } from "../lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { useT } from "../lib/i18n/context";
 import { LanguageToggle } from "../components/LanguageToggle";
+import { LineBrowserNotice } from "../components/LineBrowserNotice";
 
 export const Route = createFileRoute("/login")({
   validateSearch: z.object({
@@ -53,6 +54,8 @@ function LoginPage() {
         </h1>
         <p className="mt-2 text-sm text-gray-500">{t("login.tagline")}</p>
       </div>
+
+      <LineBrowserNotice className="max-w-xs" />
 
       <div className="w-full max-w-xs flex flex-col gap-3">
         {/* メイン客層（推し活層）の入口。最強ゲートかつ最頻なので主ボタンとして最上段（ADR-0023） */}

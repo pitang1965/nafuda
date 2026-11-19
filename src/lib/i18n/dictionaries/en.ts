@@ -114,6 +114,11 @@ const en: DictionaryNode = {
     errorGeneric: "Login failed. Please try again.",
     retry: "Retry",
   },
+  lineBrowser: {
+    notice:
+      "You're viewing this inside LINE. Open it in your usual browser to log in with Google too, and add it to your home screen to use it like an app.",
+    openInBrowser: "Open in browser",
+  },
   connect: {
     expiredTitle: "This QR code has expired or is invalid",
     expiredDescription: "Ask the other person to show you a new QR code.",

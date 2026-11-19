@@ -14,6 +14,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { NafudaIcon } from "../../components/NafudaIcon";
 import { useT } from "../../lib/i18n/context";
 import { LanguageToggle } from "../../components/LanguageToggle";
+import { LineBrowserNotice } from "../../components/LineBrowserNotice";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://nafuda.me";
 
@@ -137,6 +138,8 @@ function PublicProfilePage() {
           )}
           <LanguageToggle />
         </div>
+
+        <LineBrowserNotice className="mx-4 mt-4 w-auto" />
 
         {/* なふだ領域（公開ページと編集プレビューで共通の表示部品） */}
         <main className="flex-1 flex flex-col">

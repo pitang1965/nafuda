@@ -1,4 +1,5 @@
 import { useState, useEffect, useReducer, useSyncExternalStore } from "react";
+import { isLineUa } from "../lib/utils";
 
 const noopSubscribe = () => () => {};
 
@@ -85,7 +86,8 @@ export function usePwaInstall() {
     () => (navigator as { standalone?: boolean }).standalone === true,
     () => false,
   );
-  const isIos = /iphone|ipad|ipod/i.test(ua);
+  // LINE の中ではホーム画面に追加できないので案内しない（LineBrowserNotice が外部ブラウザへ誘導する）
+  const isIos = /iphone|ipad|ipod/i.test(ua) && !isLineUa(ua);
   const isIosSafari = isIos && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
 
   return {

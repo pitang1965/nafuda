@@ -110,6 +110,11 @@ const ja: DictionaryNode = {
     errorGeneric: "ログインに失敗しました。もう一度お試しください。",
     retry: "再試行",
   },
+  lineBrowser: {
+    notice:
+      "LINEの中で開いています。いつものブラウザで開くと、Googleでもログインでき、ホーム画面に追加してアプリのように使えます。",
+    openInBrowser: "ブラウザで開く",
+  },
   connect: {
     expiredTitle: "このQRコードは期限切れか無効です",
     expiredDescription: "相手に新しいQRコードを表示してもらってください。",
